@@ -1,0 +1,111 @@
+// PulTrack — Prisma schema (Postgres + Neon adapter, Prisma 6)
+// driverAdapters is GA in Prisma 6 — no previewFeatures needed
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum TxType {
+  income
+  expense
+}
+
+model User {
+  id          String   @id @default(cuid())
+  telegramId  BigInt   @unique
+  firstName   String?
+  username    String?
+  language    String   @default("uz")
+  createdAt   DateTime @default(now())
+
+  transactions  Transaction[]
+  categories    Category[]
+  budgets       Budget[]
+  pendingAction PendingAction?
+  magicTokens   MagicToken[]
+  sessions      Session[]
+}
+
+model Category {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  type      TxType
+  emoji     String?
+  isDefault Boolean @default(false)
+
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([userId, name, type])
+  @@index([userId, type])
+}
+
+model Transaction {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  type       TxType
+  amountUzs  BigInt
+  note       String?
+  occurredAt DateTime
+  source     String    @default("bot")
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([userId, type, occurredAt])
+  @@index([userId, categoryId, occurredAt])
+}
+
+model Budget {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  limitUzs      BigInt
+  lastAlertedYm String?
+
+  @@unique([userId, categoryId])
+}
+
+model PendingAction {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intent            String
+  draft             Json
+  question          String
+  lastTransactionId String?
+  expiresAt         DateTime
+  updatedAt         DateTime @updatedAt
+}
+
+model MagicToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+
+  @@index([userId])
+}
