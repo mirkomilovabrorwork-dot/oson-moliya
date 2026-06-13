@@ -53,8 +53,21 @@
   disabled Vercel deployment-protection (was SSO-walling the public); set project `framework=nextjs`
   (was empty → all routes NOT_FOUND); set all env vars + APP_URL=prod. `/login` renders v3; webhook clean.
   Deploy via Vercel CLI + token (gh/vercel not installed; sandbox non-interactive). README live-demo filled.
-- **Active:** SUBMISSION LIVE. Task-01 required items DONE except the user's screen recording (`docs/demo-script.md`).
-  Optional extras still available: Debts(008)/Accounts+More(009)/bot-reply(011). On any code change → `git push` (Vercel auto-redeploys via GitHub once connected, or `vercel deploy --prod --token`).
+- **DESIGN v4 — BLUE/SLATE (2026-06-13, commit 876b41c):** User said the warm terracotta/cream v3 looked "too
+  yellow". Per the user's design playbook, switched `globals.css` tokens to a professional **blue #2563eb primary
+  + slate neutrals + green income + red expense** (light & dark) — finance-trust palette, color = signal only.
+  Charts recolored (cool). Token-only swap (components unchanged). Live.
+- **CODEX FIXES INTEGRATED + VERIFIED (2026-06-13, commit 876b41c):** Codex's local uncommitted work (money signs
+  +/-, tx/budget/category API hardening, suppressHydrationWarning, login ?start=login, TypedDeleteDialog, STT
+  audioBufferToBlob) committed. Opus re-ran gates and CAUGHT a TS error Codex missed: `blob.ts` SharedArrayBuffer
+  not a BlobPart → rewrote with a copied Uint8Array. typecheck 0, test 60/60, build OK.
+- **DEPLOY BUGS FOUND & FIXED (Opus, live debugging):** (1) `vercel env add` via stdin stored ALL env vars EMPTY →
+  re-set every var via the Vercel REST API (exact values); (2) Vercel deployment-protection (SSO) was walling the
+  public → disabled; (3) project `framework` was empty → set `nextjs` (routes were NOT_FOUND); (4) webhook returned
+  500 on a failed reply → `route.ts` now `await`s webhookCallback so it always returns 200 (commit 2d8f144).
+- **Active:** LIVE & WORKING. Dashboard https://oson-moliya.vercel.app (blue, light/dark), bot @oson_moliya_bot
+  (webhook verified — real messages parse+log+reply; secret matches). GitHub pushed. Remaining: user records the
+  demo; optional extras Debts(008)/Accounts+More(009)/bot-reply(011)/voice-blob-test/WebApp button (Codex handoff list).
 - **CODEX FULL-REVIEW FIXES (2026-06-13, local only; NOT pushed/deployed):** User asked for full review + fixes and
   Claude handoff. Fixed visible money signs: Overview KPI cards now show income `+`, expense `-`, net `+/-`; expense
   deltas now treat higher expense as bad/red and lower expense as good/green. Bot finance answers now sign income,
