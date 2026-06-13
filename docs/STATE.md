@@ -4,7 +4,7 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-13, Opus — task-014 budget alert deployed)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — task-015 Kissa IA redesign deployed)
 - **HOZIRGI:** LIVE & WORKING. Bot @oson_moliya_bot + dashboard https://oson-moliya.vercel.app.
   **Assessment full-audit (3 Explore agent + Opus) = barcha talab bajarilgan:** bot 9/9, dashboard
   6/6, topshirish hujjatlari to'liq. Yagona ochiq qolgan kamchilik — proactive budget alert — **HOZIR
@@ -19,9 +19,18 @@
   rebrand qilindi (PulTrack = ichki kod-nomi). **Deploy usuli:** Vercel CLI LOGGED IN
   (`npx vercel --prod --yes` `C:\Users\localhost\Desktop\pultrack`'dan; token kerak emas; GitHub
   auto-deploy YO'Q). Telegram menu button API orqali o'rnatiladi (setChatMenuButton, deploysiz darhol).
+- **task-015 DONE (Kissa IA redesign, commit 02d9707, deployed):** bottom nav = Bosh sahifa/Harakatlar/
+  Qarzlar/Yana + floating "+" FAB (`AddSheet.tsx` — bottom-sheet, lazy `/api/categories`, QuickAddForm
+  `bare` mode) on every page. New **/more (Yana)** settings page: **mavzu + til shu yerga ko'chdi** (TopNav'dan
+  olib tashlandi) + Hisoblar/Kategoriyalar/Asosiy valyuta(UZS)/Chiqish. Home = balans hero + xarajat-doira
+  (`HomeExpenseDonut`) + recent + budjet; inline quick-add olib tashlandi. /debts + /accounts = "Tez orada".
+  Barcha sahifa bitta konteyner (max-w-2xl, pb-28) — izchil. Spec `docs/tasks/015` + ultracode workflow
+  (Sonnet impl + 2 adversarial critic) + Opus review. Gate: typecheck 0, test 67/67, build OK. **Verifikatsiya:**
+  skrinshot tool'lari bu muhitda pultrack uchun ishlamadi (Preview = sessiya-cwd/port; Chrome = ulanmagan) →
+  autentifikatsiyalangan HTML fetch bilan 7 route'ning hammasi 200 + /more'da mavzu/til + FAB tasdiqlandi.
+  **VIZUAL ko'rinishni user telefonда tasdiqlaydi.**
 - **Topshirishga qolgan yagona narsa:** user demo videoni yozadi (skript `docs/demo-script.md`).
-- **KEYINGI (user tasdiqladi: "Avval struktura, keyin modullar"):** Kissa IA — bottom nav
-  (Bosh/Harakatlar/Qarzlar/Yana) + FAB + Home-summary + Yana sahifa; KEYIN Debts(008) + Accounts(009).
+- **KEYINGI (user tanlasa):** to'liq **Qarzlar (008)** + **Hisoblar (009)** modullari ("tez orada" o'rniga).
 - **Loyiha:** PulTrack — IELTS emas! data365 vibecoder imtihoni, Task 01 (Business Finance Manager).
   Telegram bot (matn+ovoz) + ko'p sahifali veb-dashboard, bitta Neon Postgres bazasi. Muddat ~20 soat.
 - **Stack:** Next.js 16 (App Router) + TS + Tailwind v4 + Recharts · Prisma 6 + Neon Postgres ·
