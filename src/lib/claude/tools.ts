@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // ---- Zod schema for server-side validation of the tool output ----
 export const QuerySchema = z.object({
-  metric: z.enum(["sum", "count", "avg", "net", "breakdown"]),
+  metric: z.enum(["sum", "count", "avg", "net", "breakdown", "report"]),
   type: z.enum(["income", "expense"]).nullable().optional(),
   category: z.string().nullable().optional(),
   period: z.enum([
@@ -113,7 +113,7 @@ export const RECORD_INTENT_TOOL = {
         properties: {
           metric: {
             type: "string",
-            enum: ["sum", "count", "avg", "net", "breakdown"],
+            enum: ["sum", "count", "avg", "net", "breakdown", "report"],
           },
           type: { type: ["string", "null"], enum: ["income", "expense", null] },
           category: { type: ["string", "null"] },

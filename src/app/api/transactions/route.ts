@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { listTransactions, createTransaction } from "@/lib/services/transactions";
 import { resolveOrCreateCategory } from "@/lib/services/categories";
 import { serializeBigInt } from "@/lib/serialize";
+import { db } from "@/lib/db";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,71 @@ export async function GET(request: NextRequest): Promise<Response> {
   const limit = parseInt(url.searchParams.get("limit") ?? "50", 10);
   const offset = parseInt(url.searchParams.get("offset") ?? "0", 10);
 
-  const txs = await listTransactions(user.id, { limit, offset });
+  // Filters: type, category, from, to, search
+  const typeParam = url.searchParams.get("type");
+  const categoryParam = url.searchParams.get("category");
+  const fromParam = url.searchParams.get("from");
+  const toParam = url.searchParams.get("to");
+  const searchParam = url.searchParams.get("search");
+
+  // Resolve type filter
+  let typeFilter: TxType | undefined;
+  if (typeParam === "income") typeFilter = TxType.income;
+  else if (typeParam === "expense") typeFilter = TxType.expense;
+
+  // Resolve category filter via name lookup
+  let categoryIdFilter: string | undefined;
+  if (categoryParam) {
+    const prisma = db as import("@prisma/client").PrismaClient;
+    const cat = await prisma.category.findFirst({
+      where: {
+        userId: user.id,
+        name: { contains: categoryParam.toLowerCase(), mode: "insensitive" },
+      },
+    });
+    if (cat) {
+      categoryIdFilter = cat.id;
+    } else {
+      // No matching category → return empty result
+      return Response.json([]);
+    }
+  }
+
+  // Date filters
+  const fromFilter = fromParam ? new Date(fromParam) : undefined;
+  const toFilter = toParam ? new Date(toParam) : undefined;
+
+  // Search: fetch more and filter in memory (no full-text index needed for MVP)
+  if (searchParam) {
+    const all = await listTransactions(user.id, {
+      limit: 500,
+      offset: 0,
+      filters: {
+        type: typeFilter,
+        categoryId: categoryIdFilter,
+        from: fromFilter,
+        to: toFilter,
+      },
+    });
+    const q = searchParam.toLowerCase();
+    const filtered = all.filter(
+      (tx) =>
+        (tx.note && tx.note.toLowerCase().includes(q)) ||
+        (tx.category?.name && tx.category.name.toLowerCase().includes(q))
+    );
+    return Response.json(serializeBigInt(filtered.slice(offset, offset + limit)));
+  }
+
+  const txs = await listTransactions(user.id, {
+    limit,
+    offset,
+    filters: {
+      type: typeFilter,
+      categoryId: categoryIdFilter,
+      from: fromFilter,
+      to: toFilter,
+    },
+  });
   return Response.json(serializeBigInt(txs));
 }
 

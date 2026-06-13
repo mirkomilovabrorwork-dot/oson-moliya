@@ -1,5 +1,5 @@
-// Route group layout — minimal passthrough
-// Each page in this group renders its own nav for now (Phase 1)
+// Dashboard group layout — passthrough.
+// Shared nav (TopNav) is in src/components/TopNav.tsx and imported per-page.
 export default function DashboardGroupLayout({
   children,
 }: {
