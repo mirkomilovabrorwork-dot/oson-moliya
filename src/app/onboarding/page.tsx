@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { t, type LangCode } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/LangSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +27,9 @@ export default async function OnboardingPage() {
       className="min-h-screen flex flex-col items-center justify-center p-4"
       style={{ background: "var(--color-bg)" }}
     >
-      {/* Lang switcher top-right */}
-      <div className="fixed top-4 right-4">
+      {/* Lang + Theme switchers top-right */}
+      <div className="fixed top-4 right-4 flex items-center gap-2">
+        <ThemeToggle lang={lang} />
         <LangSwitcher currentLang={lang} />
       </div>
 

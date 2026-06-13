@@ -48,7 +48,7 @@ const CustomTooltip = ({
   return (
     <div
       className="text-xs rounded-[10px] p-3 space-y-1"
-      style={{ background: "#fff", border: "1px solid var(--color-border)" }}
+      style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
     >
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2">

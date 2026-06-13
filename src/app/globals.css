@@ -46,7 +46,40 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Force the warm light theme (no dark-mode inversion — keeps the calm palette consistent). */
+/* ── Warm dark theme — same token names, dark values. Warm near-black, NOT cold gray. */
+[data-theme="dark"] {
+  /* Surfaces */
+  --color-bg: #15140f;
+  --color-surface: #1f1d18;
+  --color-surface-2: #272420;
+  --color-border: #36322b;
+
+  /* Text */
+  --color-text-primary: #f0ede6;
+  --color-text-secondary: #b7b2a8;
+  --color-text-muted: #827d73;
+
+  /* Accent — terracotta, slightly brighter for dark bg */
+  --color-brand: #d6754f;
+  --color-brand-hover: #be5e3a;
+  --color-brand-light: #3a2a22;
+
+  /* Semantics */
+  --color-income: #5fae82;
+  --color-income-bg: #1e2a23;
+  --color-expense: #d9685e;
+  --color-expense-bg: #2c211f;
+
+  /* Budget thresholds */
+  --color-budget-ok: #5fae82;
+  --color-budget-warn: #d49a53;
+  --color-budget-over: #d9685e;
+
+  /* Next.js scaffold compatibility */
+  --background: var(--color-bg);
+  --foreground: var(--color-text-primary);
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text-primary);

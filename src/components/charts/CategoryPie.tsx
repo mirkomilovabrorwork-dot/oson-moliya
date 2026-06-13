@@ -87,7 +87,7 @@ const CustomTooltip = ({
   return (
     <div
       className="text-xs rounded-[10px] p-3"
-      style={{ background: "#fff", border: "1px solid var(--color-border)" }}
+      style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
     >
       <div className="flex items-center gap-2">
         <span

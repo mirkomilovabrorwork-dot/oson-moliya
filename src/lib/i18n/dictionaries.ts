@@ -9,6 +9,11 @@ const uz: Dictionary = {
   "nav.analytics": "Tahlil",
   "nav.categories": "Kategoriyalar",
   "nav.logout": "Chiqish",
+  "nav.theme": "Mavzu",
+  // ── Theme
+  "theme.light": "Yorug'",
+  "theme.dark": "Qorong'i",
+  "theme.system": "Tizim",
   // ── Overview page
   "overview.title": "Umumiy ko'rinish",
   "overview.income": "Daromad",
@@ -164,6 +169,11 @@ const ru: Dictionary = {
   "nav.analytics": "Аналитика",
   "nav.categories": "Категории",
   "nav.logout": "Выйти",
+  "nav.theme": "Тема",
+  // ── Theme
+  "theme.light": "Светлая",
+  "theme.dark": "Тёмная",
+  "theme.system": "Система",
   // ── Overview page
   "overview.title": "Общий обзор",
   "overview.income": "Доходы",
@@ -318,6 +328,11 @@ const en: Dictionary = {
   "nav.analytics": "Analytics",
   "nav.categories": "Categories",
   "nav.logout": "Logout",
+  "nav.theme": "Theme",
+  // ── Theme
+  "theme.light": "Light",
+  "theme.dark": "Dark",
+  "theme.system": "System",
   // ── Overview page
   "overview.title": "Overview",
   "overview.income": "Income",

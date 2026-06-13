@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LangSwitcher } from "@/components/LangSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { useState } from "react";
@@ -64,6 +65,7 @@ export function TopNav({ lang }: TopNavProps) {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
+            <ThemeToggle lang={lang} />
             <LangSwitcher currentLang={lang} />
             <button
               onClick={async () => {
