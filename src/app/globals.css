@@ -32,7 +32,7 @@
   --color-budget-warn: #c8893f;
   --color-budget-over: #b5453b;
 
-  --radius: 10px;
+  --radius: 12px;
 
   /* Next.js scaffold compatibility */
   --background: var(--color-bg);

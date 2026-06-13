@@ -2,6 +2,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { resolveLang, t } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { TopNav } from "@/components/TopNav";
+import { BottomNav } from "@/components/BottomNav";
 import { AnalyticsClient } from "./AnalyticsClient";
 import { redirect } from "next/navigation";
 
@@ -78,7 +79,8 @@ export default async function AnalyticsPage() {
   return (
     <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       <TopNav lang={lang} />
-      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 space-y-8">
+      <BottomNav lang={lang} />
+      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 pb-24 sm:pb-8 space-y-8">
         <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
           {t("analytics.title", lang)}
         </h1>

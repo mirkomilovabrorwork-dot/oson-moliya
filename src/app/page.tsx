@@ -6,6 +6,7 @@ import { StatCard } from "@/components/StatCard";
 import { QuickAddForm } from "@/components/QuickAddForm";
 import { BudgetBar } from "@/components/BudgetBar";
 import { TopNav } from "@/components/TopNav";
+import { BottomNav } from "@/components/BottomNav";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { BudgetDTO } from "@/lib/types";
@@ -99,8 +100,9 @@ export default async function OverviewPage() {
   return (
     <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       <TopNav lang={lang} />
+      <BottomNav lang={lang} />
 
-      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 space-y-8">
+      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 pb-24 sm:pb-8 space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
             {t("overview.title", lang)}

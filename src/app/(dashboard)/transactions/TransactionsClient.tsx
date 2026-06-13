@@ -73,6 +73,9 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
 
+  // Date panel toggle
+  const [showDatePanel, setShowDatePanel] = useState(false);
+
   // Live rows (optimistic delete/edit)
   const [rows, setRows] = useState<TxRow[]>(initial);
 
@@ -104,7 +107,6 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
           (tx.categoryName ?? "").toLowerCase().includes(q)
       );
     }
-    // Compare on Tashkent date (UTC+5) to avoid day-boundary misclassification
     if (dateFrom || dateTo) {
       r = r.filter((tx) => {
         const tashkentDate = new Date(new Date(tx.occurredAt).getTime() + 5 * 60 * 60 * 1000)
@@ -118,6 +120,16 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
     return r;
   }, [rows, typeFilter, catFilter, searchQuery, dateFrom, dateTo]);
 
+  // Summary totals for the active filter
+  const summaryIncome = useMemo(
+    () => filtered.filter((tx) => tx.type === "income").reduce((s, tx) => s + Number(tx.amountUzs), 0),
+    [filtered]
+  );
+  const summaryExpense = useMemo(
+    () => filtered.filter((tx) => tx.type === "expense").reduce((s, tx) => s + Number(tx.amountUzs), 0),
+    [filtered]
+  );
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pagedRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -127,6 +139,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
     setSearchQuery("");
     setDateFrom("");
     setDateTo("");
+    setShowDatePanel(false);
     setPage(1);
   };
 
@@ -181,7 +194,6 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         }),
       });
       if (!res.ok) throw new Error();
-      // optimistic update
       setRows((r) =>
         r.map((tx) =>
           tx.id === editing.id
@@ -210,8 +222,6 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
     }
   };
 
-  const inputCls =
-    "rounded-[10px] px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 min-h-[44px] h-11";
   const inputStyle = {
     border: "1px solid var(--color-border)",
     background: "var(--color-surface)",
@@ -219,6 +229,12 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
   };
 
   const hasFilters = typeFilter || catFilter || searchQuery || dateFrom || dateTo;
+  const hasDateFilter = dateFrom || dateTo;
+
+  // Selected category label for chip
+  const catLabel = catFilter
+    ? categories.find((c) => c.id === catFilter)?.name ?? t("transactions.filter.category", lang)
+    : t("transactions.filter.category", lang);
 
   return (
     <>
@@ -226,39 +242,64 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />
       )}
 
-      {/* Filters bar */}
-      <div
-        className="rounded-[10px] p-5 space-y-3"
-        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
-      >
-        {/* Row 1: type + category + search */}
-        <div className="flex flex-wrap gap-2">
-          {/* Type pills */}
-          <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--color-border)" }}>
-            {(["", "income", "expense"] as const).map((v) => (
-              <button
-                key={v || "all"}
-                onClick={() => { setTypeFilter(v); setPage(1); }}
-                className="px-3 py-1.5 text-xs font-semibold transition-all min-h-[36px]"
-                style={
-                  typeFilter === v
-                    ? { background: "var(--color-brand)", color: "#fff" }
-                    : { background: "transparent", color: "var(--color-text-secondary)" }
-                }
-              >
-                {v === ""
-                  ? t("transactions.filter.all", lang)
-                  : t(`transactions.filter.${v}`, lang)}
-              </button>
-            ))}
-          </div>
+      {/* ── Rounded search ── */}
+      <div className="relative">
+        <span
+          className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fillRule="evenodd"
+              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </span>
+        <input
+          type="text"
+          placeholder={t("transactions.filter.search", lang)}
+          value={searchQuery}
+          onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+          className="w-full h-11 pl-11 pr-4 text-sm transition-all focus:outline-none focus:ring-2"
+          style={{
+            ...inputStyle,
+            borderRadius: "12px",
+            background: "var(--color-surface-2)",
+            border: "1px solid var(--color-border)",
+          }}
+        />
+      </div>
 
-          {/* Category */}
+      {/* ── Chip filters ── */}
+      <div className="flex flex-wrap gap-2 items-center">
+        {/* Type chips */}
+        {(["", "income", "expense"] as const).map((v) => (
+          <button
+            key={v || "all"}
+            onClick={() => { setTypeFilter(v); setPage(1); }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all min-h-[36px]"
+            style={
+              typeFilter === v
+                ? { background: "var(--color-brand)", color: "#fff" }
+                : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)", border: "1px solid var(--color-border)" }
+            }
+          >
+            {v === "" ? t("transactions.filter.all", lang) : t(`transactions.filter.${v}`, lang)}
+          </button>
+        ))}
+
+        {/* Category chip with caret */}
+        <div className="relative">
           <select
             value={catFilter}
             onChange={(e) => { setCatFilter(e.target.value); setPage(1); }}
-            className={`${inputCls} pr-8`}
-            style={{ ...inputStyle, minWidth: 130 }}
+            className="appearance-none pl-3.5 pr-8 py-2 rounded-full text-xs font-semibold min-h-[36px] transition-all cursor-pointer focus:outline-none"
+            style={
+              catFilter
+                ? { background: "var(--color-brand)", color: "#fff", border: "none" }
+                : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)", border: "1px solid var(--color-border)" }
+            }
           >
             <option value="">{t("transactions.filter.category", lang)}</option>
             {categories.map((c) => (
@@ -267,158 +308,262 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
               </option>
             ))}
           </select>
-
-          {/* Search */}
-          <input
-            type="text"
-            placeholder={t("transactions.filter.search", lang)}
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            className={`${inputCls} flex-1 min-w-[140px]`}
-            style={inputStyle}
-          />
+          <span
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
+            style={{ color: catFilter ? "#fff" : "var(--color-text-muted)" }}
+          >
+            <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
+            </svg>
+          </span>
         </div>
 
-        {/* Row 2: date range + reset */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <label className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+        {/* Date chip with caret */}
+        <button
+          onClick={() => setShowDatePanel((v) => !v)}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all min-h-[36px]"
+          style={
+            hasDateFilter
+              ? { background: "var(--color-brand)", color: "#fff" }
+              : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)", border: "1px solid var(--color-border)" }
+          }
+        >
+          {hasDateFilter
+            ? `${dateFrom || "…"} → ${dateTo || "…"}`
+            : t("transactions.filter.period", lang)}
+          <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
+          </svg>
+        </button>
+
+        {/* Reset chip */}
+        {hasFilters && (
+          <button
+            onClick={resetFilters}
+            className="flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-semibold transition-all min-h-[36px]"
+            style={{ background: "var(--color-expense-bg)", color: "var(--color-expense)" }}
+          >
+            ✕ {t("transactions.filter.reset", lang)}
+          </button>
+        )}
+      </div>
+
+      {/* Date panel (collapsible) */}
+      {showDatePanel && (
+        <div
+          className="flex flex-wrap gap-3 items-center px-4 py-3 rounded-[12px]"
+          style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)" }}
+        >
+          <label className="text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>
             {t("transactions.filter.from", lang)}
           </label>
           <input
             type="date"
             value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className={inputCls}
+            className="rounded-[10px] px-3 py-2 text-sm min-h-[40px] focus:outline-none"
             style={inputStyle}
           />
-          <label className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+          <label className="text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>
             {t("transactions.filter.to", lang)}
           </label>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className={inputCls}
+            className="rounded-[10px] px-3 py-2 text-sm min-h-[40px] focus:outline-none"
             style={inputStyle}
           />
-          {hasFilters && (
-            <button
-              onClick={resetFilters}
-              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all min-h-[36px]"
-              style={{ background: "var(--color-expense-bg)", color: "var(--color-expense)" }}
-            >
-              {t("transactions.filter.reset", lang)}
-            </button>
-          )}
+        </div>
+      )}
+
+      {/* ── Summary cards ── */}
+      <div className="grid grid-cols-2 gap-3">
+        <div
+          className="rounded-[12px] px-4 py-4 space-y-1"
+          style={{ background: "var(--color-income-bg)", border: "1px solid transparent" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: "var(--color-income)" }}
+          >
+            {t("transactions.summary.income", lang)}
+          </p>
+          <p
+            className="text-lg font-bold tabular"
+            style={{ color: "var(--color-income)" }}
+          >
+            +{formatMoney(String(summaryIncome))} <span className="text-xs font-medium opacity-70">so&apos;m</span>
+          </p>
+        </div>
+        <div
+          className="rounded-[12px] px-4 py-4 space-y-1"
+          style={{ background: "var(--color-expense-bg)", border: "1px solid transparent" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: "var(--color-expense)" }}
+          >
+            {t("transactions.summary.expense", lang)}
+          </p>
+          <p
+            className="text-lg font-bold tabular"
+            style={{ color: "var(--color-expense)" }}
+          >
+            −{formatMoney(String(summaryExpense))} <span className="text-xs font-medium opacity-70">so&apos;m</span>
+          </p>
         </div>
       </div>
 
-      {/* Table */}
+      {/* ── Transaction list ── */}
       <div
-        className="rounded-[10px] overflow-hidden"
+        className="rounded-[12px] overflow-hidden"
         style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
       >
         {filtered.length === 0 ? (
-          <div className="py-16 text-center space-y-2">
+          <div className="py-16 text-center space-y-3">
             <div className="text-4xl">🔍</div>
             <p className="font-medium" style={{ color: "var(--color-text-secondary)" }}>
               {t("transactions.no_results", lang)}
             </p>
+            {hasFilters && (
+              <button
+                onClick={resetFilters}
+                className="text-xs px-4 py-2 rounded-full font-medium transition-all"
+                style={{ background: "var(--color-surface-2)", color: "var(--color-text-secondary)" }}
+              >
+                {t("transactions.filter.reset", lang)}
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead style={{ background: "var(--color-surface-2)", borderBottom: "1px solid var(--color-border)" }}>
+              <thead
+                style={{
+                  background: "var(--color-surface-2)",
+                  borderBottom: "1px solid var(--color-border)",
+                }}
+              >
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  <th
+                    className="px-4 py-3 text-left font-medium text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
                     {t("transactions.date", lang)}
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  <th
+                    className="px-4 py-3 text-left font-medium text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
                     {t("transactions.type", lang)}
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  <th
+                    className="px-4 py-3 text-left font-medium text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
                     {t("transactions.category", lang)}
                   </th>
-                  <th className="px-4 py-3 text-right font-medium text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  <th
+                    className="px-4 py-3 text-right font-medium text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
                     {t("transactions.amount", lang)}
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-xs hidden sm:table-cell" style={{ color: "var(--color-text-muted)" }}>
+                  <th
+                    className="px-4 py-3 text-left font-medium text-xs hidden sm:table-cell"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
                     {t("transactions.note", lang)}
                   </th>
-                  <th className="px-4 py-3 text-right font-medium text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  <th
+                    className="px-4 py-3 text-right font-medium text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
                     {t("transactions.actions", lang)}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {pagedRows.map((tx, idx) => (
+                {pagedRows.map((tx) => (
                   <tr
                     key={tx.id}
-                    className="group transition-colors"
+                    className="row-hover group transition-colors"
                     style={{
-                      background: "var(--color-surface)",
                       borderTop: "1px solid var(--color-border)",
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface-2)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface)"; }}
                   >
                     <td
-                      className="px-4 py-3 whitespace-nowrap text-sm"
+                      className="px-4 py-3.5 whitespace-nowrap text-sm"
                       style={{ color: "var(--color-text-secondary)" }}
                     >
                       {formatDate(tx.occurredAt, lang)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                       <span
                         className="text-xs font-medium"
                         style={{
-                          color: tx.type === "income"
-                            ? "var(--color-income)"
-                            : "var(--color-expense)",
+                          color:
+                            tx.type === "income"
+                              ? "var(--color-income)"
+                              : "var(--color-expense)",
                         }}
                       >
                         {t(`form.type.${tx.type}`, lang)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                    <td
+                      className="px-4 py-3.5 text-sm"
+                      style={{ color: "var(--color-text-secondary)" }}
+                    >
                       {tx.categoryEmoji ? `${tx.categoryEmoji} ` : ""}
                       {tx.categoryName ?? "—"}
                     </td>
                     <td
-                      className="px-4 py-3 text-right font-semibold tabular whitespace-nowrap"
-                      style={{ color: tx.type === "income" ? "var(--color-income)" : "var(--color-expense)" }}
+                      className="px-4 py-3.5 text-right font-semibold tabular whitespace-nowrap"
+                      style={{
+                        color:
+                          tx.type === "income"
+                            ? "var(--color-income)"
+                            : "var(--color-expense)",
+                      }}
                     >
-                      {tx.type === "income" ? "+" : "−"}{formatMoney(tx.amountUzs)} so'm
+                      {tx.type === "income" ? "+" : "−"}
+                      {formatMoney(tx.amountUzs)} so&apos;m
                     </td>
                     <td
-                      className="px-4 py-3 text-xs hidden sm:table-cell"
+                      className="px-4 py-3.5 text-xs hidden sm:table-cell"
                       style={{ color: "var(--color-text-muted)" }}
                     >
                       {tx.note ?? "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                       <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openEdit(tx)}
-                          className="p-1.5 rounded-lg transition-all min-h-[36px] min-w-[36px] flex items-center justify-center"
+                          className="p-1.5 rounded-[10px] transition-all min-h-[36px] min-w-[36px] flex items-center justify-center"
                           style={{ color: "var(--color-brand)" }}
                           title={t("common.edit", lang)}
                           aria-label={t("common.edit", lang)}
                         >
                           <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
                         </button>
                         <button
                           onClick={() => handleDelete(tx.id)}
                           disabled={deletingId === tx.id}
-                          className="p-1.5 rounded-lg transition-all min-h-[36px] min-w-[36px] flex items-center justify-center disabled:opacity-40"
+                          className="p-1.5 rounded-[10px] transition-all min-h-[36px] min-w-[36px] flex items-center justify-center disabled:opacity-40"
                           style={{ color: "var(--color-expense)" }}
                           title={t("common.delete", lang)}
                           aria-label={t("common.delete", lang)}
                         >
                           <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/>
+                            <path
+                              fillRule="evenodd"
+                              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -443,16 +588,22 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all min-h-[36px] disabled:opacity-40"
-                style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] disabled:opacity-40"
+                style={{
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-text-secondary)",
+                }}
               >
                 {t("common.prev", lang)}
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all min-h-[36px] disabled:opacity-40"
-                style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] disabled:opacity-40"
+                style={{
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-text-secondary)",
+                }}
               >
                 {t("common.next", lang)}
               </button>
@@ -461,15 +612,17 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         )}
       </div>
 
-      {/* Edit modal */}
+      {/* ── Edit modal ── */}
       {editing && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(15,23,42,0.5)" }}
-          onClick={(e) => { if (e.target === e.currentTarget) setEditing(null); }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditing(null);
+          }}
         >
           <div
-            className="w-full max-w-md rounded-[10px] p-6 space-y-4"
+            className="w-full max-w-md rounded-[12px] p-6 space-y-4"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
           >
             <div className="flex items-center justify-between">
@@ -487,7 +640,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
 
             {editError && (
               <div
-                className="text-sm px-3 py-2 rounded-lg"
+                className="text-sm px-3 py-2 rounded-[12px]"
                 style={{ background: "var(--color-expense-bg)", color: "var(--color-expense)" }}
               >
                 {editError}
@@ -500,8 +653,10 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                 <button
                   key={opt}
                   type="button"
-                  onClick={() => setEditing((s) => s ? { ...s, type: opt, categoryId: "" } : s)}
-                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all"
+                  onClick={() =>
+                    setEditing((s) => (s ? { ...s, type: opt, categoryId: "" } : s))
+                  }
+                  className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all"
                   style={
                     editing.type === opt
                       ? opt === "income"
@@ -517,64 +672,89 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
 
             {/* Amount */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--color-text-secondary)" }}>
+              <label
+                className="block text-xs font-medium mb-1.5"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
                 {t("form.amount", lang)}
               </label>
               <input
                 type="text"
                 inputMode="numeric"
                 value={formatMoney(editing.amountUzs)}
-                onChange={(e) => setEditing((s) => s ? { ...s, amountUzs: e.target.value.replace(/\s/g, "") } : s)}
-                className="w-full rounded-lg px-3 py-2.5 text-sm tabular"
-                style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}
+                onChange={(e) =>
+                  setEditing((s) =>
+                    s ? { ...s, amountUzs: e.target.value.replace(/\s/g, "") } : s
+                  )
+                }
+                className="w-full rounded-[12px] px-3 py-2.5 text-sm tabular"
+                style={inputStyle}
               />
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--color-text-secondary)" }}>
+              <label
+                className="block text-xs font-medium mb-1.5"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
                 {t("form.category", lang)}
               </label>
               <select
                 value={editing.categoryId}
-                onChange={(e) => setEditing((s) => s ? { ...s, categoryId: e.target.value } : s)}
-                className="w-full rounded-lg px-3 py-2.5 text-sm"
-                style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}
+                onChange={(e) =>
+                  setEditing((s) => (s ? { ...s, categoryId: e.target.value } : s))
+                }
+                className="w-full rounded-[12px] px-3 py-2.5 text-sm"
+                style={inputStyle}
               >
                 <option value="">{t("form.category_none", lang)}</option>
-                {categories.filter((c) => c.type === editing.type).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.emoji ? `${c.emoji} ` : ""}{c.name}
-                  </option>
-                ))}
+                {categories
+                  .filter((c) => c.type === editing.type)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.emoji ? `${c.emoji} ` : ""}
+                      {c.name}
+                    </option>
+                  ))}
               </select>
             </div>
 
             {/* Date */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--color-text-secondary)" }}>
+              <label
+                className="block text-xs font-medium mb-1.5"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
                 {t("form.date", lang)}
               </label>
               <input
                 type="date"
                 value={editing.occurredAt}
-                onChange={(e) => setEditing((s) => s ? { ...s, occurredAt: e.target.value } : s)}
-                className="w-full rounded-lg px-3 py-2.5 text-sm"
-                style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}
+                onChange={(e) =>
+                  setEditing((s) => (s ? { ...s, occurredAt: e.target.value } : s))
+                }
+                className="w-full rounded-[12px] px-3 py-2.5 text-sm"
+                style={inputStyle}
               />
             </div>
 
             {/* Note */}
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--color-text-secondary)" }}>
+              <label
+                className="block text-xs font-medium mb-1.5"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
                 {t("form.note", lang)}
               </label>
               <input
                 type="text"
                 value={editing.note}
-                onChange={(e) => setEditing((s) => s ? { ...s, note: e.target.value } : s)}
-                className="w-full rounded-lg px-3 py-2.5 text-sm"
-                style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}
+                onChange={(e) =>
+                  setEditing((s) => (s ? { ...s, note: e.target.value } : s))
+                }
+                className="w-full rounded-[12px] px-3 py-2.5 text-sm"
+                style={inputStyle}
               />
             </div>
 
@@ -582,15 +762,18 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setEditing(null)}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all"
-                style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
+                className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all"
+                style={{
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-text-secondary)",
+                }}
               >
                 {t("common.cancel", lang)}
               </button>
               <button
                 onClick={handleEditSave}
                 disabled={editLoading}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all disabled:opacity-60"
                 style={{ background: "var(--color-brand)", color: "#fff" }}
               >
                 {editLoading ? t("form.submitting", lang) : t("common.save", lang)}
