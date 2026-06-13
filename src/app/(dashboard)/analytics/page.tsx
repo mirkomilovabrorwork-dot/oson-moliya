@@ -77,11 +77,11 @@ export default async function AnalyticsPage() {
     }));
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 pb-24 sm:pb-8 space-y-8">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
           {t("analytics.title", lang)}
         </h1>
         <AnalyticsClient

@@ -26,7 +26,7 @@ export function LangSwitcher({ currentLang }: LangSwitcherProps) {
   return (
     <div
       className="flex rounded-lg overflow-hidden text-xs font-semibold"
-      style={{ border: "1px solid var(--color-border)" }}
+      style={{ border: "1px solid var(--border)" }}
       role="group"
       aria-label="Language"
     >
@@ -38,19 +38,19 @@ export function LangSwitcher({ currentLang }: LangSwitcherProps) {
           style={
             currentLang === code
               ? {
-                  background: "var(--color-brand)",
-                  color: "#fff",
+                  background: "var(--accent)",
+                  color: "var(--accent-fg)",
                   borderRight:
                     i < LANGS.length - 1
-                      ? "1px solid var(--color-brand-hover)"
+                      ? "1px solid var(--accent-hover)"
                       : undefined,
                 }
               : {
-                  background: "var(--color-surface)",
-                  color: "var(--color-text-secondary)",
+                  background: "var(--surface)",
+                  color: "var(--fg-muted)",
                   borderRight:
                     i < LANGS.length - 1
-                      ? "1px solid var(--color-border)"
+                      ? "1px solid var(--border)"
                       : undefined,
                 }
           }

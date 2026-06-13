@@ -169,9 +169,9 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
   const visibleCats = cats.filter((c) => c.type === activeTab);
 
   const inputStyle = {
-    border: "1px solid var(--color-border)",
-    background: "var(--color-surface)",
-    color: "var(--color-text-primary)",
+    border: "1px solid var(--border-strong)",
+    background: "transparent",
+    color: "var(--fg)",
   };
   const inputCls =
     "w-full rounded-[12px] px-3 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 min-h-[44px]";
@@ -191,10 +191,10 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
         >
           <div
             className="w-full max-w-sm rounded-[12px] p-6 space-y-4"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-base" style={{ color: "var(--color-text-primary)" }}>
+              <h3 className="font-bold text-base" style={{ color: "var(--fg)" }}>
                 {activeTab === "income"
                   ? t("categories.add.income", lang)
                   : t("categories.add.expense", lang)}
@@ -202,7 +202,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
               <button
                 onClick={() => setShowAddForm(false)}
                 className="p-1.5 rounded-lg"
-                style={{ color: "var(--color-text-muted)" }}
+                style={{ color: "var(--fg-subtle)" }}
               >
                 ✕
               </button>
@@ -211,7 +211,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
             {addError && (
               <div
                 className="text-sm px-3 py-2 rounded-[12px]"
-                style={{ background: "var(--color-expense-bg)", color: "var(--color-expense)" }}
+                style={{ background: "var(--expense-wash)", color: "var(--expense)" }}
               >
                 {addError}
               </div>
@@ -220,7 +220,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
             <div>
               <label
                 className="block text-xs font-medium mb-1.5"
-                style={{ color: "var(--color-text-secondary)" }}
+                style={{ color: "var(--fg-muted)" }}
               >
                 {t("categories.name", lang)}
               </label>
@@ -238,7 +238,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
             <div>
               <label
                 className="block text-xs font-medium mb-1.5"
-                style={{ color: "var(--color-text-secondary)" }}
+                style={{ color: "var(--fg-muted)" }}
               >
                 {t("categories.emoji", lang)}
               </label>
@@ -257,7 +257,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
               <button
                 onClick={() => setShowAddForm(false)}
                 className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold"
-                style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
+                style={{ border: "1px solid var(--border)", color: "var(--fg-muted)" }}
               >
                 {t("common.cancel", lang)}
               </button>
@@ -265,7 +265,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                 onClick={handleAdd}
                 disabled={addLoading || !addName.trim()}
                 className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold disabled:opacity-60"
-                style={{ background: "var(--color-brand)", color: "#fff" }}
+                style={{ background: "var(--accent)", color: "#fff" }}
               >
                 {addLoading ? t("form.submitting", lang) : t("common.save", lang)}
               </button>
@@ -277,7 +277,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
       {/* Segmented toggle: Xarajat / Daromad */}
       <div
         className="flex rounded-[12px] p-1 gap-1"
-        style={{ background: "var(--color-surface-2)", display: "inline-flex" }}
+        style={{ background: "var(--surface-sunken)", display: "inline-flex" }}
       >
         {(["expense", "income"] as const).map((tab) => (
           <button
@@ -287,14 +287,14 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
             style={
               activeTab === tab
                 ? {
-                    background: "var(--color-surface)",
+                    background: "var(--surface)",
                     color:
                       tab === "expense"
-                        ? "var(--color-expense)"
-                        : "var(--color-income)",
+                        ? "var(--expense)"
+                        : "var(--income)",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                   }
-                : { color: "var(--color-text-muted)" }
+                : { color: "var(--fg-subtle)" }
             }
           >
             {tab === "expense"
@@ -307,20 +307,20 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
       {/* Category list */}
       <div
         className="rounded-[12px] overflow-hidden"
-        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
       >
         {/* Add-row at top */}
         <button
           onClick={() => setShowAddForm(true)}
           className="w-full flex items-center gap-4 px-5 py-4 border-b transition-colors"
           style={{
-            borderColor: "var(--color-border)",
-            color: "var(--color-brand)",
+            borderColor: "var(--border)",
+            color: "var(--accent)",
           }}
         >
           <span
             className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-lg font-bold"
-            style={{ background: "var(--color-brand-light)", color: "var(--color-brand)" }}
+            style={{ background: "var(--accent-wash)", color: "var(--accent)" }}
           >
             +
           </span>
@@ -330,10 +330,10 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
         {visibleCats.length === 0 ? (
           <div className="px-5 py-12 text-center space-y-2">
             <div className="text-4xl mb-3">📂</div>
-            <p className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
+            <p className="text-sm font-medium" style={{ color: "var(--fg-muted)" }}>
               {t("categories.empty", lang)}
             </p>
-            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
               {t("categories.empty_hint", lang)}
             </p>
           </div>
@@ -344,21 +344,16 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                 key={cat.id}
                 className="row-hover px-5 py-4 transition-colors"
                 style={{
-                  borderTop: idx === 0 ? undefined : `1px solid var(--color-border)`,
+                  borderTop: idx === 0 ? undefined : `1px solid var(--border)`,
                 }}
               >
                 <div className="flex items-center gap-4">
-                  {/* Icon tile */}
+                  {/* Icon tile — v3: NEUTRAL bg (muted wash 12%), muted glyph; never colored tiles */}
                   <span
-                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-xl"
-                    style={{
-                      background:
-                        cat.type === "income"
-                          ? "var(--color-income-bg)"
-                          : "var(--color-expense-bg)",
-                    }}
+                    className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 text-lg"
+                    style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
                   >
-                    {cat.emoji ?? (cat.type === "income" ? "↗" : "↘")}
+                    {cat.emoji ?? (cat.type === "income" ? "↑" : "↓")}
                   </span>
 
                   {/* Name + meta */}
@@ -387,7 +382,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                           onClick={() => handleRename(cat.id)}
                           disabled={renameLoading}
                           className="px-3 py-2 rounded-[10px] text-xs font-semibold disabled:opacity-60"
-                          style={{ background: "var(--color-brand)", color: "#fff" }}
+                          style={{ background: "var(--accent)", color: "#fff" }}
                         >
                           {t("common.save", lang)}
                         </button>
@@ -395,8 +390,8 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                           onClick={() => setRenamingId(null)}
                           className="px-3 py-2 rounded-[10px] text-xs font-medium"
                           style={{
-                            border: "1px solid var(--color-border)",
-                            color: "var(--color-text-secondary)",
+                            border: "1px solid var(--border)",
+                            color: "var(--fg-muted)",
                           }}
                         >
                           {t("common.cancel", lang)}
@@ -407,7 +402,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                         <div className="flex items-center gap-2 flex-wrap">
                           <p
                             className="font-medium text-sm"
-                            style={{ color: "var(--color-text-primary)" }}
+                            style={{ color: "var(--fg)" }}
                           >
                             {cat.name}
                           </p>
@@ -415,15 +410,15 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                             <span
                               className="text-xs px-2 py-0.5 rounded-full font-medium"
                               style={{
-                                background: "var(--color-surface-2)",
-                                color: "var(--color-text-muted)",
+                                background: "var(--surface-sunken)",
+                                color: "var(--fg-subtle)",
                               }}
                             >
                               {t("categories.default_badge", lang)}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
                           {cat.txCount} {t("categories.tx_count", lang)}
                           {cat.type === "expense" && cat.budgetLimit
                             ? ` · ${formatMoney(cat.budgetLimit)} so'm ${t("categories.budget_progress", lang)}`
@@ -446,11 +441,11 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                           className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all"
                           style={{
                             background: cat.budgetLimit
-                              ? "var(--color-expense-bg)"
-                              : "var(--color-surface-2)",
+                              ? "var(--expense-wash)"
+                              : "var(--surface-sunken)",
                             color: cat.budgetLimit
-                              ? "var(--color-expense)"
-                              : "var(--color-text-muted)",
+                              ? "var(--expense)"
+                              : "var(--fg-subtle)",
                           }}
                         >
                           <svg
@@ -477,7 +472,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                           setRenameEmoji(cat.emoji ?? "");
                         }}
                         className="p-2 rounded-[10px] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
-                        style={{ color: "var(--color-brand)" }}
+                        style={{ color: "var(--accent)" }}
                         title={t("categories.rename", lang)}
                       >
                         <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
@@ -487,7 +482,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                       <button
                         onClick={() => handleDelete(cat.id)}
                         className="p-2 rounded-[10px] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
-                        style={{ color: "var(--color-expense)" }}
+                        style={{ color: "var(--expense)" }}
                         title={t("categories.delete", lang)}
                       >
                         <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
@@ -515,14 +510,14 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                       className="rounded-[10px] px-3 py-2 text-sm tabular w-40"
                       style={inputStyle}
                     />
-                    <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                    <span className="text-xs" style={{ color: "var(--fg-subtle)" }}>
                       so&apos;m
                     </span>
                     <button
                       onClick={() => handleBudgetSave(cat.id)}
                       disabled={budgetLoading}
                       className="px-3 py-2 rounded-[10px] text-xs font-semibold disabled:opacity-60"
-                      style={{ background: "var(--color-brand)", color: "#fff" }}
+                      style={{ background: "var(--accent)", color: "#fff" }}
                     >
                       {t("common.save", lang)}
                     </button>
@@ -530,8 +525,8 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                       onClick={() => setEditBudgetId(null)}
                       className="px-3 py-2 rounded-[10px] text-xs"
                       style={{
-                        border: "1px solid var(--color-border)",
-                        color: "var(--color-text-secondary)",
+                        border: "1px solid var(--border)",
+                        color: "var(--fg-muted)",
                       }}
                     >
                       {t("common.cancel", lang)}

@@ -223,9 +223,9 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
   };
 
   const inputStyle = {
-    border: "1px solid var(--color-border)",
-    background: "var(--color-surface)",
-    color: "var(--color-text-primary)",
+    border: "1px solid var(--border-strong)",
+    background: "transparent",
+    color: "var(--fg)",
   };
 
   const hasFilters = typeFilter || catFilter || searchQuery || dateFrom || dateTo;
@@ -246,7 +246,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
       <div className="relative">
         <span
           className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ color: "var(--color-text-muted)" }}
+          style={{ color: "var(--fg-subtle)" }}
         >
           <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
             <path
@@ -265,24 +265,24 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
           style={{
             ...inputStyle,
             borderRadius: "12px",
-            background: "var(--color-surface-2)",
-            border: "1px solid var(--color-border)",
+            background: "var(--surface-sunken)",
+            border: "1px solid var(--border)",
           }}
         />
       </div>
 
       {/* ── Chip filters ── */}
       <div className="flex flex-wrap gap-2 items-center">
-        {/* Type chips */}
+        {/* Type chips — v3: selected = accent-wash bg + accent border + accent text */}
         {(["", "income", "expense"] as const).map((v) => (
           <button
             key={v || "all"}
             onClick={() => { setTypeFilter(v); setPage(1); }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all min-h-[36px]"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all min-h-[36px]"
             style={
               typeFilter === v
-                ? { background: "var(--color-brand)", color: "#fff" }
-                : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)", border: "1px solid var(--color-border)" }
+                ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
+                : { background: "transparent", color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }
             }
           >
             {v === "" ? t("transactions.filter.all", lang) : t(`transactions.filter.${v}`, lang)}
@@ -294,11 +294,11 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
           <select
             value={catFilter}
             onChange={(e) => { setCatFilter(e.target.value); setPage(1); }}
-            className="appearance-none pl-3.5 pr-8 py-2 rounded-full text-xs font-semibold min-h-[36px] transition-all cursor-pointer focus:outline-none"
+            className="appearance-none pl-3.5 pr-8 py-2 rounded-full text-xs font-medium min-h-[36px] transition-all cursor-pointer"
             style={
               catFilter
-                ? { background: "var(--color-brand)", color: "#fff", border: "none" }
-                : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)", border: "1px solid var(--color-border)" }
+                ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
+                : { background: "transparent", color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }
             }
           >
             <option value="">{t("transactions.filter.category", lang)}</option>
@@ -310,7 +310,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
           </select>
           <span
             className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
-            style={{ color: catFilter ? "#fff" : "var(--color-text-muted)" }}
+            style={{ color: catFilter ? "var(--accent)" : "var(--fg-subtle)" }}
           >
             <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
@@ -321,11 +321,11 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         {/* Date chip with caret */}
         <button
           onClick={() => setShowDatePanel((v) => !v)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all min-h-[36px]"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all min-h-[36px]"
           style={
             hasDateFilter
-              ? { background: "var(--color-brand)", color: "#fff" }
-              : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)", border: "1px solid var(--color-border)" }
+              ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
+              : { background: "transparent", color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }
           }
         >
           {hasDateFilter
@@ -341,7 +341,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
           <button
             onClick={resetFilters}
             className="flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-semibold transition-all min-h-[36px]"
-            style={{ background: "var(--color-expense-bg)", color: "var(--color-expense)" }}
+            style={{ background: "var(--expense-wash)", color: "var(--expense)" }}
           >
             ✕ {t("transactions.filter.reset", lang)}
           </button>
@@ -352,9 +352,9 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
       {showDatePanel && (
         <div
           className="flex flex-wrap gap-3 items-center px-4 py-3 rounded-[12px]"
-          style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)" }}
+          style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
         >
-          <label className="text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>
+          <label className="text-xs font-medium" style={{ color: "var(--fg-subtle)" }}>
             {t("transactions.filter.from", lang)}
           </label>
           <input
@@ -364,7 +364,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             className="rounded-[10px] px-3 py-2 text-sm min-h-[40px] focus:outline-none"
             style={inputStyle}
           />
-          <label className="text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>
+          <label className="text-xs font-medium" style={{ color: "var(--fg-subtle)" }}>
             {t("transactions.filter.to", lang)}
           </label>
           <input
@@ -377,40 +377,40 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         </div>
       )}
 
-      {/* ── Summary cards ── */}
+      {/* ── Summary cards — v3: neutral bg, colored NUMBER only ── */}
       <div className="grid grid-cols-2 gap-3">
         <div
-          className="rounded-[12px] px-4 py-4 space-y-1"
-          style={{ background: "var(--color-income-bg)", border: "1px solid transparent" }}
+          className="rounded-md px-4 py-4 space-y-1"
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           <p
-            className="text-xs font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-income)" }}
+            className="text-xs font-medium uppercase tracking-wide"
+            style={{ color: "var(--fg-subtle)" }}
           >
             {t("transactions.summary.income", lang)}
           </p>
           <p
-            className="text-lg font-bold tabular"
-            style={{ color: "var(--color-income)" }}
+            className="text-lg font-semibold tabular"
+            style={{ color: "var(--income)" }}
           >
-            +{formatMoney(String(summaryIncome))} <span className="text-xs font-medium opacity-70">so&apos;m</span>
+            +{formatMoney(String(summaryIncome))} <span className="text-xs font-normal opacity-70">so&apos;m</span>
           </p>
         </div>
         <div
-          className="rounded-[12px] px-4 py-4 space-y-1"
-          style={{ background: "var(--color-expense-bg)", border: "1px solid transparent" }}
+          className="rounded-md px-4 py-4 space-y-1"
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           <p
-            className="text-xs font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-expense)" }}
+            className="text-xs font-medium uppercase tracking-wide"
+            style={{ color: "var(--fg-subtle)" }}
           >
             {t("transactions.summary.expense", lang)}
           </p>
           <p
-            className="text-lg font-bold tabular"
-            style={{ color: "var(--color-expense)" }}
+            className="text-lg font-semibold tabular"
+            style={{ color: "var(--expense)" }}
           >
-            −{formatMoney(String(summaryExpense))} <span className="text-xs font-medium opacity-70">so&apos;m</span>
+            −{formatMoney(String(summaryExpense))} <span className="text-xs font-normal opacity-70">so&apos;m</span>
           </p>
         </div>
       </div>
@@ -418,19 +418,19 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
       {/* ── Transaction list ── */}
       <div
         className="rounded-[12px] overflow-hidden"
-        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
       >
         {filtered.length === 0 ? (
           <div className="py-16 text-center space-y-3">
             <div className="text-4xl">🔍</div>
-            <p className="font-medium" style={{ color: "var(--color-text-secondary)" }}>
+            <p className="font-medium" style={{ color: "var(--fg-muted)" }}>
               {t("transactions.no_results", lang)}
             </p>
             {hasFilters && (
               <button
                 onClick={resetFilters}
                 className="text-xs px-4 py-2 rounded-full font-medium transition-all"
-                style={{ background: "var(--color-surface-2)", color: "var(--color-text-secondary)" }}
+                style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
               >
                 {t("transactions.filter.reset", lang)}
               </button>
@@ -441,44 +441,44 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             <table className="w-full text-sm">
               <thead
                 style={{
-                  background: "var(--color-surface-2)",
-                  borderBottom: "1px solid var(--color-border)",
+                  background: "var(--surface-sunken)",
+                  borderBottom: "1px solid var(--border)",
                 }}
               >
                 <tr>
                   <th
                     className="px-4 py-3 text-left font-medium text-xs"
-                    style={{ color: "var(--color-text-muted)" }}
+                    style={{ color: "var(--fg-subtle)" }}
                   >
                     {t("transactions.date", lang)}
                   </th>
                   <th
                     className="px-4 py-3 text-left font-medium text-xs"
-                    style={{ color: "var(--color-text-muted)" }}
+                    style={{ color: "var(--fg-subtle)" }}
                   >
                     {t("transactions.type", lang)}
                   </th>
                   <th
                     className="px-4 py-3 text-left font-medium text-xs"
-                    style={{ color: "var(--color-text-muted)" }}
+                    style={{ color: "var(--fg-subtle)" }}
                   >
                     {t("transactions.category", lang)}
                   </th>
                   <th
                     className="px-4 py-3 text-right font-medium text-xs"
-                    style={{ color: "var(--color-text-muted)" }}
+                    style={{ color: "var(--fg-subtle)" }}
                   >
                     {t("transactions.amount", lang)}
                   </th>
                   <th
                     className="px-4 py-3 text-left font-medium text-xs hidden sm:table-cell"
-                    style={{ color: "var(--color-text-muted)" }}
+                    style={{ color: "var(--fg-subtle)" }}
                   >
                     {t("transactions.note", lang)}
                   </th>
                   <th
                     className="px-4 py-3 text-right font-medium text-xs"
-                    style={{ color: "var(--color-text-muted)" }}
+                    style={{ color: "var(--fg-subtle)" }}
                   >
                     {t("transactions.actions", lang)}
                   </th>
@@ -490,12 +490,12 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                     key={tx.id}
                     className="row-hover group transition-colors"
                     style={{
-                      borderTop: "1px solid var(--color-border)",
+                      borderTop: "1px solid var(--border)",
                     }}
                   >
                     <td
                       className="px-4 py-3.5 whitespace-nowrap text-sm"
-                      style={{ color: "var(--color-text-secondary)" }}
+                      style={{ color: "var(--fg-muted)" }}
                     >
                       {formatDate(tx.occurredAt, lang)}
                     </td>
@@ -505,8 +505,8 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                         style={{
                           color:
                             tx.type === "income"
-                              ? "var(--color-income)"
-                              : "var(--color-expense)",
+                              ? "var(--income)"
+                              : "var(--expense)",
                         }}
                       >
                         {t(`form.type.${tx.type}`, lang)}
@@ -514,7 +514,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                     </td>
                     <td
                       className="px-4 py-3.5 text-sm"
-                      style={{ color: "var(--color-text-secondary)" }}
+                      style={{ color: "var(--fg-muted)" }}
                     >
                       {tx.categoryEmoji ? `${tx.categoryEmoji} ` : ""}
                       {tx.categoryName ?? "—"}
@@ -524,8 +524,8 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                       style={{
                         color:
                           tx.type === "income"
-                            ? "var(--color-income)"
-                            : "var(--color-expense)",
+                            ? "var(--income)"
+                            : "var(--expense)",
                       }}
                     >
                       {tx.type === "income" ? "+" : "−"}
@@ -533,7 +533,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                     </td>
                     <td
                       className="px-4 py-3.5 text-xs hidden sm:table-cell"
-                      style={{ color: "var(--color-text-muted)" }}
+                      style={{ color: "var(--fg-subtle)" }}
                     >
                       {tx.note ?? "—"}
                     </td>
@@ -542,7 +542,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                         <button
                           onClick={() => openEdit(tx)}
                           className="p-1.5 rounded-[10px] transition-all min-h-[36px] min-w-[36px] flex items-center justify-center"
-                          style={{ color: "var(--color-brand)" }}
+                          style={{ color: "var(--accent)" }}
                           title={t("common.edit", lang)}
                           aria-label={t("common.edit", lang)}
                         >
@@ -554,7 +554,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                           onClick={() => handleDelete(tx.id)}
                           disabled={deletingId === tx.id}
                           className="p-1.5 rounded-[10px] transition-all min-h-[36px] min-w-[36px] flex items-center justify-center disabled:opacity-40"
-                          style={{ color: "var(--color-expense)" }}
+                          style={{ color: "var(--expense)" }}
                           title={t("common.delete", lang)}
                           aria-label={t("common.delete", lang)}
                         >
@@ -579,9 +579,9 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         {totalPages > 1 && (
           <div
             className="flex items-center justify-between px-4 py-3 border-t"
-            style={{ borderColor: "var(--color-border)" }}
+            style={{ borderColor: "var(--border)" }}
           >
-            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
               {t("transactions.page", lang)} {page} {t("transactions.of", lang)} {totalPages}
             </p>
             <div className="flex gap-2">
@@ -590,8 +590,8 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                 onClick={() => setPage((p) => p - 1)}
                 className="px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] disabled:opacity-40"
                 style={{
-                  border: "1px solid var(--color-border)",
-                  color: "var(--color-text-secondary)",
+                  border: "1px solid var(--border)",
+                  color: "var(--fg-muted)",
                 }}
               >
                 {t("common.prev", lang)}
@@ -601,8 +601,8 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                 onClick={() => setPage((p) => p + 1)}
                 className="px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] disabled:opacity-40"
                 style={{
-                  border: "1px solid var(--color-border)",
-                  color: "var(--color-text-secondary)",
+                  border: "1px solid var(--border)",
+                  color: "var(--fg-muted)",
                 }}
               >
                 {t("common.next", lang)}
@@ -623,16 +623,16 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         >
           <div
             className="w-full max-w-md rounded-[12px] p-6 space-y-4"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-base" style={{ color: "var(--color-text-primary)" }}>
+              <h3 className="font-bold text-base" style={{ color: "var(--fg)" }}>
                 {t("transactions.edit.title", lang)}
               </h3>
               <button
                 onClick={() => setEditing(null)}
                 className="p-1.5 rounded-lg transition-all"
-                style={{ color: "var(--color-text-muted)" }}
+                style={{ color: "var(--fg-subtle)" }}
               >
                 ✕
               </button>
@@ -641,14 +641,17 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             {editError && (
               <div
                 className="text-sm px-3 py-2 rounded-[12px]"
-                style={{ background: "var(--color-expense-bg)", color: "var(--color-expense)" }}
+                style={{ background: "var(--expense-wash)", color: "var(--expense)" }}
               >
                 {editError}
               </div>
             )}
 
-            {/* Type */}
-            <div className="flex gap-2">
+            {/* Type — segmented: active = raised neutral, NOT income/expense fill */}
+            <div
+              className="flex rounded-md p-0.5 gap-0.5"
+              style={{ background: "var(--surface-sunken)" }}
+            >
               {(["income", "expense"] as const).map((opt) => (
                 <button
                   key={opt}
@@ -656,13 +659,15 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                   onClick={() =>
                     setEditing((s) => (s ? { ...s, type: opt, categoryId: "" } : s))
                   }
-                  className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all"
+                  className="flex-1 py-2 rounded-[8px] text-sm font-medium transition-all"
                   style={
                     editing.type === opt
-                      ? opt === "income"
-                        ? { background: "var(--color-income)", color: "#fff" }
-                        : { background: "var(--color-expense)", color: "#fff" }
-                      : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)" }
+                      ? {
+                          background: "var(--surface)",
+                          color: opt === "income" ? "var(--income)" : "var(--expense)",
+                          boxShadow: "var(--shadow-sm)",
+                        }
+                      : { color: "var(--fg-subtle)" }
                   }
                 >
                   {t(`form.type.${opt}`, lang)}
@@ -674,7 +679,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             <div>
               <label
                 className="block text-xs font-medium mb-1.5"
-                style={{ color: "var(--color-text-secondary)" }}
+                style={{ color: "var(--fg-muted)" }}
               >
                 {t("form.amount", lang)}
               </label>
@@ -696,7 +701,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             <div>
               <label
                 className="block text-xs font-medium mb-1.5"
-                style={{ color: "var(--color-text-secondary)" }}
+                style={{ color: "var(--fg-muted)" }}
               >
                 {t("form.category", lang)}
               </label>
@@ -724,7 +729,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             <div>
               <label
                 className="block text-xs font-medium mb-1.5"
-                style={{ color: "var(--color-text-secondary)" }}
+                style={{ color: "var(--fg-muted)" }}
               >
                 {t("form.date", lang)}
               </label>
@@ -743,7 +748,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             <div>
               <label
                 className="block text-xs font-medium mb-1.5"
-                style={{ color: "var(--color-text-secondary)" }}
+                style={{ color: "var(--fg-muted)" }}
               >
                 {t("form.note", lang)}
               </label>
@@ -764,8 +769,8 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                 onClick={() => setEditing(null)}
                 className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all"
                 style={{
-                  border: "1px solid var(--color-border)",
-                  color: "var(--color-text-secondary)",
+                  border: "1px solid var(--border)",
+                  color: "var(--fg-muted)",
                 }}
               >
                 {t("common.cancel", lang)}
@@ -774,7 +779,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                 onClick={handleEditSave}
                 disabled={editLoading}
                 className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all disabled:opacity-60"
-                style={{ background: "var(--color-brand)", color: "#fff" }}
+                style={{ background: "var(--accent)", color: "#fff" }}
               >
                 {editLoading ? t("form.submitting", lang) : t("common.save", lang)}
               </button>

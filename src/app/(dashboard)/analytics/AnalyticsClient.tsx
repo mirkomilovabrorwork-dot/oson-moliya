@@ -158,9 +158,9 @@ export function AnalyticsClient({
   ];
 
   const inputStyle = {
-    border: "1px solid var(--color-border)",
-    background: "var(--color-surface)",
-    color: "var(--color-text-primary)",
+    border: "1px solid var(--border-strong)",
+    background: "transparent",
+    color: "var(--fg)",
     borderRadius: 10,
     padding: "6px 12px",
     fontSize: 13,
@@ -168,7 +168,7 @@ export function AnalyticsClient({
   };
 
   const cardCls = "rounded-[10px] p-6 space-y-4";
-  const cardStyle = { background: "var(--color-surface)", border: "1px solid var(--color-border)" };
+  const cardStyle = { background: "var(--surface)", border: "1px solid var(--border)" };
 
   // expense by category for pie
   const expenseByCategory = byCategory
@@ -177,21 +177,21 @@ export function AnalyticsClient({
 
   return (
     <div className="space-y-6">
-      {/* Period selector */}
+      {/* Period selector — segmented: active = raised surface (NOT accent fill) */}
       <div className="flex flex-wrap gap-2 items-center">
         <div
-          className="flex rounded-lg overflow-hidden"
-          style={{ border: "1px solid var(--color-border)" }}
+          className="flex rounded-md p-0.5 gap-0.5"
+          style={{ background: "var(--surface-sunken)" }}
         >
           {periods.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => handlePeriod(key)}
-              className="px-3 py-1.5 text-xs font-semibold transition-all min-h-[36px]"
+              className="px-3 py-1.5 text-xs font-medium transition-all min-h-[32px] rounded-[8px]"
               style={
                 period === key
-                  ? { background: "var(--color-brand)", color: "#fff" }
-                  : { background: "transparent", color: "var(--color-text-secondary)" }
+                  ? { background: "var(--surface)", color: "var(--fg)", boxShadow: "var(--shadow-sm)" }
+                  : { color: "var(--fg-subtle)" }
               }
             >
               {label}
@@ -200,7 +200,7 @@ export function AnalyticsClient({
         </div>
         {period === "custom" && (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            <span className="text-xs" style={{ color: "var(--fg-subtle)" }}>
               {t("analytics.from", lang)}
             </span>
             <input
@@ -209,7 +209,7 @@ export function AnalyticsClient({
               onChange={(e) => setCustomFrom(e.target.value)}
               style={inputStyle}
             />
-            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            <span className="text-xs" style={{ color: "var(--fg-subtle)" }}>
               {t("analytics.to", lang)}
             </span>
             <input
@@ -221,14 +221,14 @@ export function AnalyticsClient({
             <button
               onClick={handleCustomApply}
               className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-              style={{ background: "var(--color-brand)", color: "#fff", minHeight: 36 }}
+              style={{ background: "var(--accent)", color: "#fff", minHeight: 36 }}
             >
               {t("common.filter", lang)}
             </button>
           </div>
         )}
         {loading && (
-          <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+          <span className="text-xs" style={{ color: "var(--fg-subtle)" }}>
             {t("common.loading", lang)}
           </span>
         )}
@@ -237,25 +237,25 @@ export function AnalyticsClient({
       {error && (
         <div
           className="text-sm px-4 py-3 rounded-xl"
-          style={{ background: "var(--color-expense-bg)", color: "var(--color-expense)", border: "1px solid var(--color-expense)" }}
+          style={{ background: "var(--expense-wash)", color: "var(--expense)", border: "1px solid var(--expense)" }}
         >
           {error}
         </div>
       )}
 
-      {/* KPI row */}
-      <div className="grid grid-cols-3 gap-6">
+      {/* KPI row — label above, metric dominates, left-aligned */}
+      <div className="grid grid-cols-3 gap-4">
         {[
-          { label: t("analytics.total_income", lang), val: income, color: "var(--color-income)" },
-          { label: t("analytics.total_expense", lang), val: expense, color: "var(--color-expense)" },
-          { label: t("analytics.net", lang), val: net, color: net >= 0 ? "var(--color-income)" : "var(--color-expense)" },
+          { label: t("analytics.total_income", lang), val: income, color: "var(--income)" },
+          { label: t("analytics.total_expense", lang), val: expense, color: "var(--expense)" },
+          { label: t("analytics.net", lang), val: net, color: net >= 0 ? "var(--income)" : "var(--expense)" },
         ].map(({ label, val, color }) => (
           <div
             key={label}
-            className="rounded-[10px] p-5 text-center"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+            className="rounded-md p-4"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
-            <p className="text-xs mb-1 uppercase tracking-wide" style={{ color: "var(--color-text-muted)" }}>{label}</p>
+            <p className="text-[11px] font-medium uppercase tracking-widest mb-2" style={{ color: "var(--fg-subtle)" }}>{label}</p>
             <p className="text-xl font-semibold tabular" style={{ color }}>
               {formatMoney(val)}
             </p>
@@ -267,7 +267,7 @@ export function AnalyticsClient({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Income vs Expense bar */}
         <div className={cardCls} style={cardStyle}>
-          <h2 className="font-semibold text-sm" style={{ color: "var(--color-text-primary)" }}>
+          <h2 className="font-semibold text-sm" style={{ color: "var(--fg)" }}>
             {t("analytics.income_vs_expense", lang)}
           </h2>
           <IncomeExpenseChart income={income} expense={expense} lang={lang} />
@@ -275,7 +275,7 @@ export function AnalyticsClient({
 
         {/* Category pie */}
         <div className={cardCls} style={cardStyle}>
-          <h2 className="font-semibold text-sm" style={{ color: "var(--color-text-primary)" }}>
+          <h2 className="font-semibold text-sm" style={{ color: "var(--fg)" }}>
             {t("analytics.by_category", lang)}
           </h2>
           <CategoryPie data={expenseByCategory} lang={lang} />
@@ -284,7 +284,7 @@ export function AnalyticsClient({
 
       {/* Trend line */}
       <div className={cardCls} style={cardStyle}>
-        <h2 className="font-semibold text-sm" style={{ color: "var(--color-text-primary)" }}>
+        <h2 className="font-semibold text-sm" style={{ color: "var(--fg)" }}>
           {t("analytics.trend", lang)}
         </h2>
         <TrendLine data={trend} lang={lang} />

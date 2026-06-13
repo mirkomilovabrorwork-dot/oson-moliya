@@ -98,16 +98,16 @@ export default async function OverviewPage() {
   const isEmpty = recent.length === 0;
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
 
       <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 pb-24 sm:pb-8 space-y-8">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
             {t("overview.title", lang)}
           </h1>
-          <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+          <span className="text-sm" style={{ color: "var(--fg-subtle)" }}>
             {t("overview.this_month", lang)}
           </span>
         </div>
@@ -141,19 +141,19 @@ export default async function OverviewPage() {
             {/* Recent transactions */}
             <div
               className="rounded-[10px] overflow-hidden"
-              style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
               <div
                 className="flex items-center justify-between px-5 py-4 border-b"
-                style={{ borderColor: "var(--color-border)" }}
+                style={{ borderColor: "var(--border)" }}
               >
-                <h2 className="font-semibold text-sm" style={{ color: "var(--color-text-primary)" }}>
+                <h2 className="font-semibold text-sm" style={{ color: "var(--fg)" }}>
                   {t("overview.recent", lang)}
                 </h2>
                 <Link
                   href="/transactions"
                   className="text-xs font-medium"
-                  style={{ color: "var(--color-brand)" }}
+                  style={{ color: "var(--accent)" }}
                 >
                   {t("overview.view_all", lang)} &rarr;
                 </Link>
@@ -161,19 +161,29 @@ export default async function OverviewPage() {
 
               {isEmpty ? (
                 <div className="px-5 py-12 text-center space-y-3">
-                  <div className="text-4xl">📊</div>
-                  <p className="font-medium" style={{ color: "var(--color-text-secondary)" }}>
+                  {/* Empty state icon — muted, neutral, no emoji */}
+                  <div
+                    className="mx-auto w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ background: "var(--surface-sunken)" }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)" }}>
+                      <rect x="2" y="7" width="20" height="14" rx="2"/>
+                      <path d="M16 7V5a2 2 0 0 0-4 0v2"/>
+                      <path d="M8 7V5a2 2 0 0 0-4 0v2"/>
+                    </svg>
+                  </div>
+                  <p className="font-medium" style={{ color: "var(--fg-muted)" }}>
                     {t("empty.overview", lang)}
                   </p>
-                  <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+                  <p className="text-sm" style={{ color: "var(--fg-subtle)" }}>
                     {t("empty.overview.hint", lang)}
                   </p>
                   <a
                     href="https://t.me/oson_moliya_bot"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-                    style={{ background: "var(--color-brand)", color: "#fff" }}
+                    className="inline-block mt-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
                   >
                     {t("onboarding.open_bot", lang)}
                   </a>
@@ -184,20 +194,24 @@ export default async function OverviewPage() {
                     <div
                       key={tx.id}
                       className="row-hover flex items-center justify-between px-5 py-3.5 border-b transition-colors"
-                      style={{ borderColor: "var(--color-border)" }}
+                      style={{ borderColor: "var(--border)" }}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-lg shrink-0">
-                          {tx.category?.emoji ?? (tx.type === "income" ? "💰" : "📤")}
+                        {/* Neutral icon tile — v3: muted-ink wash, muted glyph or user emoji */}
+                        <span
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm"
+                          style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
+                        >
+                          {tx.category?.emoji ?? (tx.type === "income" ? "↑" : "↓")}
                         </span>
                         <div className="min-w-0">
                           <p
                             className="text-sm font-medium truncate"
-                            style={{ color: "var(--color-text-primary)" }}
+                            style={{ color: "var(--fg)" }}
                           >
                             {tx.category?.name ?? "—"}
                           </p>
-                          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                          <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
                             {formatDate(tx.occurredAt, lang)}
                             {tx.note ? ` · ${tx.note}` : ""}
                           </p>
@@ -208,8 +222,8 @@ export default async function OverviewPage() {
                         style={{
                           color:
                             tx.type === "income"
-                              ? "var(--color-income)"
-                              : "var(--color-expense)",
+                              ? "var(--income)"
+                              : "var(--expense)",
                         }}
                       >
                         {tx.type === "income" ? "+" : "−"}
@@ -226,21 +240,21 @@ export default async function OverviewPage() {
               <div
                 className="rounded-[10px] p-6 space-y-4"
                 style={{
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-border)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <div className="flex items-center justify-between">
                   <h2
                     className="font-semibold text-sm"
-                    style={{ color: "var(--color-text-primary)" }}
+                    style={{ color: "var(--fg)" }}
                   >
                     {t("overview.budget_alerts", lang)}
                   </h2>
                   <Link
                     href="/categories"
                     className="text-xs font-medium"
-                    style={{ color: "var(--color-brand)" }}
+                    style={{ color: "var(--accent)" }}
                   >
                     {t("common.edit", lang)} &rarr;
                   </Link>

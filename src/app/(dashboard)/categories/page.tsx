@@ -53,11 +53,11 @@ export default async function CategoriesPage() {
   }));
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 pb-24 sm:pb-8 space-y-6">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
           {t("categories.title", lang)}
         </h1>
         <CategoriesClient categories={cats} lang={lang} />

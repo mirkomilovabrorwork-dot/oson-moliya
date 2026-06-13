@@ -24,10 +24,10 @@ export function Toast({ message, type = "info", onDone, duration = 3000 }: Toast
 
   const style =
     type === "success"
-      ? { background: "var(--color-income-bg)", color: "var(--color-income)", border: "1px solid var(--color-income)" }
+      ? { background: "var(--income-wash)", color: "var(--income)", border: "1px solid var(--income)" }
       : type === "error"
-      ? { background: "var(--color-expense-bg)", color: "var(--color-expense)", border: "1px solid var(--color-expense)" }
-      : { background: "var(--color-brand-light)", color: "var(--color-brand)", border: "1px solid var(--color-brand)" };
+      ? { background: "var(--expense-wash)", color: "var(--expense)", border: "1px solid var(--expense)" }
+      : { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" };
 
   return (
     <div

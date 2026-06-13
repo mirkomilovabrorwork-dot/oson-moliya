@@ -66,11 +66,11 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
   };
 
   const inputCls =
-    "w-full rounded-lg px-3 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 min-h-[44px]";
+    "w-full rounded-lg px-3 py-2.5 text-sm transition-all min-h-[44px]";
   const inputStyle = {
-    border: "1px solid var(--color-border)",
-    background: "var(--color-surface)",
-    color: "var(--color-text-primary)",
+    border: "1px solid var(--border-strong)",
+    background: "transparent",
+    color: "var(--fg)",
   };
 
   return (
@@ -78,13 +78,13 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
       onSubmit={handleSubmit}
       className="rounded-[10px] p-6 space-y-4"
       style={{
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
       }}
     >
       <h3
         className="font-semibold text-sm"
-        style={{ color: "var(--color-text-primary)" }}
+        style={{ color: "var(--fg)" }}
       >
         {t("overview.quick_add", lang)}
       </h3>
@@ -93,8 +93,8 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
         <div
           className="text-sm px-3 py-2.5 rounded-lg"
           style={{
-            background: "var(--color-expense-bg)",
-            color: "var(--color-expense)",
+            background: "var(--expense-wash)",
+            color: "var(--expense)",
           }}
           role="alert"
         >
@@ -105,8 +105,8 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
         <div
           className="text-sm px-3 py-2.5 rounded-lg"
           style={{
-            background: "var(--color-income-bg)",
-            color: "var(--color-income)",
+            background: "var(--income-wash)",
+            color: "var(--income)",
           }}
           role="status"
         >
@@ -114,8 +114,11 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
         </div>
       )}
 
-      {/* Type toggle */}
-      <div className="flex gap-2">
+      {/* Type toggle — segmented control: active = raised neutral surface, NOT accent fill */}
+      <div
+        className="flex rounded-md p-0.5 gap-0.5"
+        style={{ background: "var(--surface-sunken)" }}
+      >
         {(["income", "expense"] as const).map((opt) => (
           <button
             key={opt}
@@ -124,13 +127,15 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
               setType(opt);
               setCategoryId("");
             }}
-            className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all min-h-[44px]"
+            className="flex-1 py-2 rounded-[8px] text-sm font-medium transition-all min-h-[36px]"
             style={
               type === opt
-                ? opt === "income"
-                  ? { background: "var(--color-income)", color: "#fff" }
-                  : { background: "var(--color-expense)", color: "#fff" }
-                : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)" }
+                ? {
+                    background: "var(--surface)",
+                    color: opt === "income" ? "var(--income)" : "var(--expense)",
+                    boxShadow: "var(--shadow-sm)",
+                  }
+                : { color: "var(--fg-subtle)" }
             }
           >
             {t(`form.type.${opt}`, lang)}
@@ -142,7 +147,7 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
       <div>
         <label
           className="block text-xs font-medium mb-1.5"
-          style={{ color: "var(--color-text-secondary)" }}
+          style={{ color: "var(--fg-muted)" }}
         >
           {t("form.amount", lang)}
         </label>
@@ -162,7 +167,7 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
       <div>
         <label
           className="block text-xs font-medium mb-1.5"
-          style={{ color: "var(--color-text-secondary)" }}
+          style={{ color: "var(--fg-muted)" }}
         >
           {t("form.category", lang)}
         </label>
@@ -186,7 +191,7 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
       <div>
         <label
           className="block text-xs font-medium mb-1.5"
-          style={{ color: "var(--color-text-secondary)" }}
+          style={{ color: "var(--fg-muted)" }}
         >
           {t("form.date", lang)}
         </label>
@@ -203,7 +208,7 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
       <div>
         <label
           className="block text-xs font-medium mb-1.5"
-          style={{ color: "var(--color-text-secondary)" }}
+          style={{ color: "var(--fg-muted)" }}
         >
           {t("form.note", lang)}
         </label>
@@ -220,7 +225,7 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
         type="submit"
         disabled={loading}
         className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all min-h-[44px] disabled:opacity-60"
-        style={{ background: "var(--color-brand)", color: "#fff" }}
+        style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
       >
         {loading ? t("form.submitting", lang) : t("form.submit", lang)}
       </button>

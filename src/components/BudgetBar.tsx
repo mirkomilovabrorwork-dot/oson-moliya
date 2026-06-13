@@ -27,24 +27,24 @@ export function BudgetBar({ budget, lang, compact = false }: BudgetBarProps) {
   const warn = budget.percent >= 70;
 
   const barColor = over
-    ? "var(--color-budget-over)"
+    ? "var(--expense)"
     : warn
-    ? "var(--color-budget-warn)"
-    : "var(--color-budget-ok)";
+    ? "var(--chart-3)"
+    : "var(--income)";
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2">
         <span
           className="text-xs font-medium truncate"
-          style={{ color: "var(--color-text-secondary)", maxWidth: compact ? 120 : undefined }}
+          style={{ color: "var(--fg-muted)", maxWidth: compact ? 120 : undefined }}
           title={budget.categoryName}
         >
           {budget.categoryName}
         </span>
         <span
           className="text-xs tabular shrink-0"
-          style={{ color: over ? "var(--color-expense)" : "var(--color-text-secondary)" }}
+          style={{ color: over ? "var(--expense)" : "var(--fg-muted)" }}
         >
           {formatMoney(budget.spentUzs)} / {formatMoney(budget.limitUzs)} so'm
           {over && <span className="ml-1 font-semibold">⚠</span>}
@@ -52,7 +52,7 @@ export function BudgetBar({ budget, lang, compact = false }: BudgetBarProps) {
       </div>
       <div
         className="h-1.5 rounded-full overflow-hidden"
-        style={{ background: "var(--color-surface-2)" }}
+        style={{ background: "var(--surface-sunken)" }}
         role="progressbar"
         aria-valuenow={budget.percent}
         aria-valuemin={0}
@@ -64,7 +64,7 @@ export function BudgetBar({ budget, lang, compact = false }: BudgetBarProps) {
         />
       </div>
       {!compact && (
-        <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+        <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
           {over
             ? t("budget.over", lang)
             : `${budget.percent}% ${t("budget.spent", lang)}`}

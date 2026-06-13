@@ -25,7 +25,7 @@ function fmt(n: number): string {
   return String(n);
 }
 
-/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income/#3f7d5a --expense/#b5453b tokens) */
+/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income:#3f7d5a --expense:#b5453b tokens) */
 function formatMoney(n: number): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));
@@ -48,7 +48,7 @@ const CustomTooltip = ({
   return (
     <div
       className="text-xs rounded-[10px] p-3 space-y-1"
-      style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2">
@@ -56,10 +56,10 @@ const CustomTooltip = ({
             className="w-2.5 h-2.5 rounded-full"
             style={{ background: entry.fill }}
           />
-          <span style={{ color: "var(--color-text-secondary)" }}>{entry.name}:</span>
+          <span style={{ color: "var(--fg-muted)" }}>{entry.name}:</span>
           <span
             className="font-semibold tabular"
-            style={{ color: "var(--color-text-primary)" }}
+            style={{ color: "var(--fg)" }}
           >
             {formatMoney(entry.value)}
           </span>
@@ -81,7 +81,7 @@ export function IncomeExpenseChart({ income, expense, lang }: Props) {
     );
   }
 
-  // Colors mirror CSS tokens: --color-income:#3f7d5a  --color-expense:#b5453b
+  // Colors mirror CSS tokens: --income:#3f7d5a  --expense:#b5453b
   const data = [
     {
       name: t("analytics.total_income", lang),
@@ -100,7 +100,7 @@ export function IncomeExpenseChart({ income, expense, lang }: Props) {
       <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }} barSize={40}>
         <CartesianGrid
           strokeDasharray="3 3"
-          stroke="var(--color-border)"
+          stroke="var(--border)"
           vertical={false}
         />
         <XAxis

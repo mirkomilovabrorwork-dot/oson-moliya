@@ -31,7 +31,7 @@ function fmt(n: number): string {
   return String(n);
 }
 
-/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --color-income/#3f7d5a --color-expense/#b5453b tokens) */
+/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income:#3f7d5a --expense:#b5453b tokens) */
 function formatMoney(n: number): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));
@@ -56,14 +56,14 @@ const CustomTooltip = ({
   return (
     <div
       className="text-xs rounded-[10px] p-3 space-y-1"
-      style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
-      <p className="font-semibold mb-2" style={{ color: "var(--color-text-primary)" }}>{label}</p>
+      <p className="font-semibold mb-2" style={{ color: "var(--fg)" }}>{label}</p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: entry.color }} />
-          <span style={{ color: "var(--color-text-secondary)" }}>{entry.name}:</span>
-          <span className="font-semibold tabular" style={{ color: "var(--color-text-primary)" }}>
+          <span style={{ color: "var(--fg-muted)" }}>{entry.name}:</span>
+          <span className="font-semibold tabular" style={{ color: "var(--fg)" }}>
             {formatMoney(entry.value)}
           </span>
         </div>
@@ -90,7 +90,7 @@ export function TrendLine({ data, lang }: Props) {
   return (
     <ResponsiveContainer width="100%" height={220}>
       <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
         <XAxis
           dataKey="bucket"
           tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
@@ -110,10 +110,10 @@ export function TrendLine({ data, lang }: Props) {
           iconSize={8}
           wrapperStyle={{ fontSize: 11 }}
           formatter={(value: string) => (
-            <span style={{ color: "var(--color-text-secondary)" }}>{value}</span>
+            <span style={{ color: "var(--fg-muted)" }}>{value}</span>
           )}
         />
-        {/* Colors mirror CSS tokens: --color-income:#3f7d5a  --color-expense:#b5453b */}
+        {/* Colors mirror CSS tokens: --income:#3f7d5a  --expense:#b5453b */}
         <Line
           type="monotone"
           dataKey="income"

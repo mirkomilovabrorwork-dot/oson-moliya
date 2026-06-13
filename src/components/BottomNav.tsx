@@ -68,8 +68,8 @@ export function BottomNav({ lang }: BottomNavProps) {
     <nav
       className="sm:hidden fixed bottom-0 inset-x-0 z-40 flex items-stretch"
       style={{
-        background: "var(--color-surface)",
-        borderTop: "1px solid var(--color-border)",
+        background: "var(--surface)",
+        borderTop: "1px solid var(--border)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
       aria-label="bottom-nav"
@@ -82,13 +82,13 @@ export function BottomNav({ lang }: BottomNavProps) {
             href={href}
             className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors"
             style={{
-              color: active ? "var(--color-brand)" : "var(--color-text-muted)",
+              color: active ? "var(--accent)" : "var(--fg-subtle)",
               minHeight: 56,
             }}
           >
             <span
               className="flex items-center justify-center w-7 h-7 rounded-xl transition-colors"
-              style={active ? { background: "var(--color-brand-light)" } : {}}
+              style={active ? { background: "var(--accent-wash)" } : {}}
             >
               <Icon />
             </span>

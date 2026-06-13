@@ -22,15 +22,15 @@ interface Props {
   lang: LangCode;
 }
 
-// Calm, warm palette — anchored to design-token hues, no neon
+// v3 chart palette — mirrors --chart-1..5 tokens (light values), then cycles warm
 const COLORS = [
-  "#b5453b", "#c8893f", "#3f7d5a",
-  "#7b6fa0", "#4e7ea6", "#8c6c3e",
-  "#5a7d6f", "#9c5b3c", "#4a6fa5",
-  "#7a4e6e",
+  "#c15f3c", "#4a7c8c", "#b08a3e",
+  "#6b5b8a", "#8a8780", "#b5453b",
+  "#3f7d5a", "#c8893f", "#4e7ea6",
+  "#7b6fa0",
 ];
 
-/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --color-expense/#b5453b token) */
+/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --expense:#b5453b token) */
 function formatMoney(n: number): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));
@@ -87,20 +87,20 @@ const CustomTooltip = ({
   return (
     <div
       className="text-xs rounded-[10px] p-3"
-      style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
       <div className="flex items-center gap-2">
         <span
           className="w-2.5 h-2.5 rounded-full"
           style={{ background: entry.payload.fill }}
         />
-        <span className="font-medium" style={{ color: "var(--color-text-primary)" }}>
+        <span className="font-medium" style={{ color: "var(--fg)" }}>
           {entry.name}
         </span>
       </div>
       <p
         className="mt-1 font-semibold tabular"
-        style={{ color: "var(--color-text-secondary)" }}
+        style={{ color: "var(--fg-muted)" }}
       >
         {formatMoney(entry.value)}
       </p>
@@ -150,9 +150,9 @@ export function CategoryPie({ data, lang }: Props) {
         <Legend
           iconType="circle"
           iconSize={8}
-          wrapperStyle={{ fontSize: 11, color: "var(--color-text-secondary)" }}
+          wrapperStyle={{ fontSize: 11, color: "var(--fg-muted)" }}
           formatter={(value: string) => (
-            <span style={{ color: "var(--color-text-secondary)" }}>{value}</span>
+            <span style={{ color: "var(--fg-muted)" }}>{value}</span>
           )}
         />
       </PieChart>

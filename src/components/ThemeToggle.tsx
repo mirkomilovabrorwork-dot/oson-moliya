@@ -64,7 +64,7 @@ export function ThemeToggle({ lang }: ThemeToggleProps) {
   return (
     <div
       className="flex rounded-lg overflow-hidden text-xs font-semibold"
-      style={{ border: "1px solid var(--color-border)" }}
+      style={{ border: "1px solid var(--border)" }}
       role="group"
       aria-label={t("nav.theme", lang)}
     >
@@ -76,19 +76,20 @@ export function ThemeToggle({ lang }: ThemeToggleProps) {
           style={
             pref === value
               ? {
-                  background: "var(--color-brand)",
-                  color: "#fff",
+                  background: "var(--surface-sunken)",
+                  color: "var(--fg)",
                   borderRight:
                     i < OPTIONS.length - 1
-                      ? "1px solid var(--color-brand-hover)"
+                      ? "1px solid var(--border-strong)"
                       : undefined,
+                  boxShadow: "var(--shadow-sm)",
                 }
               : {
-                  background: "var(--color-surface)",
-                  color: "var(--color-text-secondary)",
+                  background: "var(--surface)",
+                  color: "var(--fg-muted)",
                   borderRight:
                     i < OPTIONS.length - 1
-                      ? "1px solid var(--color-border)"
+                      ? "1px solid var(--border)"
                       : undefined,
                 }
           }

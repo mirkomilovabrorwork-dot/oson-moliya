@@ -42,14 +42,14 @@ export function StatCard({
 
   const amountColor =
     type === "income"
-      ? "var(--color-income)"
+      ? "var(--income)"
       : type === "expense"
-        ? "var(--color-expense)"
+        ? "var(--expense)"
         : type === "net"
           ? current >= 0n
-            ? "var(--color-income)"
-            : "var(--color-expense)"
-          : "var(--color-text-primary)";
+            ? "var(--income)"
+            : "var(--expense)"
+          : "var(--fg)";
 
   const icon =
     type === "income" ? "↑" : type === "expense" ? "↓" : "≈";
@@ -58,13 +58,13 @@ export function StatCard({
     <div
       className="rounded-[10px] p-6 flex flex-col gap-1"
       style={{
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
       }}
     >
       <p
         className="text-xs font-medium uppercase tracking-wide"
-        style={{ color: "var(--color-text-muted)" }}
+        style={{ color: "var(--fg-subtle)" }}
       >
         {label}
       </p>
@@ -79,13 +79,13 @@ export function StatCard({
           className="text-xs font-medium flex items-center gap-1 mt-0.5"
           style={{
             color: delta.positive
-              ? "var(--color-income)"
-              : "var(--color-expense)",
+              ? "var(--income)"
+              : "var(--expense)",
           }}
         >
           {delta.positive ? "▲" : "▼"} {delta.text}
           <span
-            style={{ color: "var(--color-text-muted)", fontWeight: 400 }}
+            style={{ color: "var(--fg-muted)", fontWeight: 400 }}
           >
             {comparisonLabel}
           </span>

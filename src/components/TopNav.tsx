@@ -27,8 +27,8 @@ export function TopNav({ lang }: TopNavProps) {
     <header
       className="sticky top-0 z-30"
       style={{
-        background: "var(--color-surface)",
-        borderBottom: "1px solid var(--color-border)",
+        background: "var(--surface)",
+        borderBottom: "1px solid var(--border)",
       }}
     >
       <div className="max-w-5xl mx-auto px-5 sm:px-8">
@@ -38,7 +38,7 @@ export function TopNav({ lang }: TopNavProps) {
             <Link
               href="/"
               className="font-semibold text-base"
-              style={{ color: "var(--color-text-primary)" }}
+              style={{ color: "var(--fg)" }}
             >
               Oson Moliya
             </Link>
@@ -50,8 +50,8 @@ export function TopNav({ lang }: TopNavProps) {
                   className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
                   style={
                     isActive(href)
-                      ? { color: "var(--color-brand)", background: "var(--color-brand-light)" }
-                      : { color: "var(--color-text-secondary)" }
+                      ? { color: "var(--accent)", background: "var(--accent-wash)" }
+                      : { color: "var(--fg-muted)" }
                   }
                 >
                   {label}
@@ -70,7 +70,7 @@ export function TopNav({ lang }: TopNavProps) {
                 location.href = "/login";
               }}
               className="hidden sm:block text-sm transition-colors"
-              style={{ color: "var(--color-text-muted)" }}
+              style={{ color: "var(--fg-subtle)" }}
             >
               {t("nav.logout", lang)}
             </button>
