@@ -4,7 +4,7 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-13, Opus)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-13, Sonnet — task 010 done)
 - **Loyiha:** PulTrack — IELTS emas! data365 vibecoder imtihoni, Task 01 (Business Finance Manager).
   Telegram bot (matn+ovoz) + ko'p sahifali veb-dashboard, bitta Neon Postgres bazasi. Muddat ~20 soat.
 - **Stack:** Next.js 16 (App Router) + TS + Tailwind v4 + Recharts · Prisma 6 + Neon Postgres ·
@@ -34,8 +34,12 @@
   links from a stray @PulTrackBot → **@oson_moliya_bot** (real bot, token verified); (e) brain now defaults to
   Uzbek for ambiguous input + no longer leaks the internal brand name in replies; (f) added bot `/login`+`/dashboard`
   commands (the login page hints `/login`); (g) magic-link TTL 10→30min. Commits 540759a→6364b84→1e80104.
-- **Active:** App functionally complete + live (local: dev server + bot polling, Groq voice on). Read-only QA
-  audit agent running (correctness/security/UX). NEXT = Phase 4 deploy (`docs/DEPLOY.md` runbook ready) — user-gated.
+- **Task 010 DONE (2026-06-13, commit 2393ac3):** Kissa-clean UI polish: BottomNav (mobile bottom-tab, 4 tabs,
+  brand active, safe-area), TopNav mobile-only cleanup, --radius 12px, CategoriesClient icon-tile rows +
+  segmented Xarajat/Daromad toggle, TransactionsClient rounded search + chip filters + DAROMAD/XARAJAT
+  summary cards. Gates green: typecheck 0 · test 59/59 · build OK.
+- **Active:** App functionally complete + live (local: dev server + bot polling, Groq voice on).
+  NEXT = Phase 4 deploy (`docs/DEPLOY.md` runbook ready) — user-gated, OR tasks 008/009 (Debts/Accounts).
 - **Bot identity:** @oson_moliya_bot (name "Moliyachi"), brand shown to users = "Oson Moliya". Demo data seed:
   `scripts/_seed.ts` (telegramId 999000001) → prints a magic-link to view a populated dashboard.
 - **Phase 2 hardening notes (Opus found in review):** (1) bot.ts clarify-loop hardcodes draft intent
