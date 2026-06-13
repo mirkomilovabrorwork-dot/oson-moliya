@@ -4,7 +4,16 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-13, Sonnet — task 010 done)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-13, Opus — WebApp button "Moliyachi" deployed)
+- **HOZIRGI:** LIVE & WORKING. Bot @oson_moliya_bot + dashboard https://oson-moliya.vercel.app.
+  Eng so'nggi ishlar (hammasi prod'da, deployed): (a) **Kissa-uslubidagi v5 dark-first dizayn**
+  (charcoal + sky-blue, light toggle), (b) **native Telegram WebApp** — `web_app` tugma +
+  `initData` HMAC auth (`/api/auth/telegram`, magic-link emas), (c) **WebApp tugmasi "Moliyachi"**
+  (inline + menu button + /dashboard matni; commit 430dfad). **Deploy usuli:** Vercel CLI LOGGED IN
+  (`npx vercel --prod --yes` `C:\Users\localhost\Desktop\pultrack`'dan; token kerak emas; GitHub
+  auto-deploy YO'Q). Telegram menu button API orqali o'rnatiladi (setChatMenuButton, deploysiz darhol).
+- **KEYINGI (user tasdiqladi: "Avval struktura, keyin modullar"):** Kissa IA — bottom nav
+  (Bosh/Harakatlar/Qarzlar/Yana) + FAB + Home-summary + Yana sahifa; KEYIN Debts(008) + Accounts(009).
 - **Loyiha:** PulTrack — IELTS emas! data365 vibecoder imtihoni, Task 01 (Business Finance Manager).
   Telegram bot (matn+ovoz) + ko'p sahifali veb-dashboard, bitta Neon Postgres bazasi. Muddat ~20 soat.
 - **Stack:** Next.js 16 (App Router) + TS + Tailwind v4 + Recharts · Prisma 6 + Neon Postgres ·
