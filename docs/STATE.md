@@ -47,7 +47,14 @@
   (2) user records the screen demo. EXTRA scope (user-added, Kissa-parity, NOT required by Task 01): theme+v3 DONE;
   Debts(008)/Accounts+More(009)/bot-reply(011) NOT built. **Recommendation: DEPLOY first (lock a working
   submission), then add extras if time.**
-- **Active:** Awaiting user decision — deploy-first vs build Debts/Accounts first. App live locally.
+- **DEPLOYED & LIVE (2026-06-13):** Vercel project `moliyachi/oson-moliya`. Dashboard live at
+  **https://oson-moliya.vercel.app**; bot **@oson_moliya_bot** via prod webhook (set + last_error empty).
+  GitHub repo **github.com/mirkomilovabrorwork-dot/oson-moliya** (private, main). Fixes during deploy:
+  disabled Vercel deployment-protection (was SSO-walling the public); set project `framework=nextjs`
+  (was empty → all routes NOT_FOUND); set all env vars + APP_URL=prod. `/login` renders v3; webhook clean.
+  Deploy via Vercel CLI + token (gh/vercel not installed; sandbox non-interactive). README live-demo filled.
+- **Active:** SUBMISSION LIVE. Task-01 required items DONE except the user's screen recording (`docs/demo-script.md`).
+  Optional extras still available: Debts(008)/Accounts+More(009)/bot-reply(011). On any code change → `git push` (Vercel auto-redeploys via GitHub once connected, or `vercel deploy --prod --token`).
 - **Bot identity:** @oson_moliya_bot (name "Moliyachi"), brand shown to users = "Oson Moliya". Demo data seed:
   `scripts/_seed.ts` (telegramId 999000001) → prints a magic-link to view a populated dashboard.
 - **Phase 2 hardening notes (Opus found in review):** (1) bot.ts clarify-loop hardcodes draft intent

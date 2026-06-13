@@ -85,7 +85,7 @@ npm install
 ### 2. Configure environment
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 # Fill in the values — see Environment Variables below
 ```
 
@@ -128,7 +128,7 @@ This uses grammY long-polling — no public HTTPS URL needed for local testing.
 
 ### Register the Telegram webhook
 
-After your first Vercel deploy, run once (locally, with `.env.local` pointing at prod values):
+After your first Vercel deploy, run once (locally, with `.env` pointing at prod values):
 
 ```bash
 npm run set-webhook
@@ -161,8 +161,8 @@ This calls `setWebhook` on Telegram pointing to `${APP_URL}/api/telegram` with t
 
 | | |
 |---|---|
-| **Telegram bot** | TODO: `@<your-bot-username>` (fill after deploy) |
-| **Dashboard URL** | TODO: `https://<your-project>.vercel.app` (fill after deploy) |
+| **Telegram bot** | [@oson_moliya_bot](https://t.me/oson_moliya_bot) |
+| **Dashboard URL** | [oson-moliya.vercel.app](https://oson-moliya.vercel.app) |
 
 ---
 
