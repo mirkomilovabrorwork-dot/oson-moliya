@@ -38,8 +38,16 @@
   brand active, safe-area), TopNav mobile-only cleanup, --radius 12px, CategoriesClient icon-tile rows +
   segmented Xarajat/Daromad toggle, TransactionsClient rounded search + chip filters + DAROMAD/XARAJAT
   summary cards. Gates green: typecheck 0 · test 59/59 · build OK.
-- **Active:** App functionally complete + live (local: dev server + bot polling, Groq voice on).
-  NEXT = Phase 4 deploy (`docs/DEPLOY.md` runbook ready) — user-gated, OR tasks 008/009 (Debts/Accounts).
+- **DESIGN v3 DONE (2026-06-13, commits 95b7d04+ba44adb):** research-synthesized professional anti-AI-slop
+  system (`docs/DESIGN.md` v3): rationed terracotta accent, warm neutral ramp + token pairs, re-tuned dark,
+  shared focus ring, borders-over-shadows, Inter 440/540/620, tabular money. Migrated all components off old
+  `--color-*` tokens. Gates green; Opus smoke-tested all 4 pages → 200 (no 500).
+- **PROGRESS:** **Task 01 (assessment) core = ~100% built + working locally + gates green + live-tested.**
+  Remaining REQUIRED for submission: (1) DEPLOY — push to GitHub + Vercel + register webhook (`docs/DEPLOY.md`),
+  (2) user records the screen demo. EXTRA scope (user-added, Kissa-parity, NOT required by Task 01): theme+v3 DONE;
+  Debts(008)/Accounts+More(009)/bot-reply(011) NOT built. **Recommendation: DEPLOY first (lock a working
+  submission), then add extras if time.**
+- **Active:** Awaiting user decision — deploy-first vs build Debts/Accounts first. App live locally.
 - **Bot identity:** @oson_moliya_bot (name "Moliyachi"), brand shown to users = "Oson Moliya". Demo data seed:
   `scripts/_seed.ts` (telegramId 999000001) → prints a magic-link to view a populated dashboard.
 - **Phase 2 hardening notes (Opus found in review):** (1) bot.ts clarify-loop hardcodes draft intent
