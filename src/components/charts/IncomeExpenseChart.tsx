@@ -72,9 +72,18 @@ const CustomTooltip = ({
 export function IncomeExpenseChart({ income, expense, lang }: Props) {
   if (income === 0 && expense === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-2">
-        <div className="text-3xl">📊</div>
-        <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+      <div className="flex flex-col items-center justify-center py-12 space-y-3">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center"
+          style={{ background: "var(--surface-sunken)" }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)" }}>
+            <rect x="3" y="12" width="4" height="9" rx="1"/>
+            <rect x="10" y="7" width="4" height="14" rx="1"/>
+            <rect x="17" y="3" width="4" height="18" rx="1"/>
+          </svg>
+        </div>
+        <p className="text-sm" style={{ color: "var(--fg-subtle)" }}>
           {t("analytics.empty", lang)}
         </p>
       </div>
@@ -105,13 +114,13 @@ export function IncomeExpenseChart({ income, expense, lang }: Props) {
         />
         <XAxis
           dataKey="name"
-          tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
+          tick={{ fontSize: 11, fill: "var(--fg-subtle)" }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           tickFormatter={fmt}
-          tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
+          tick={{ fontSize: 11, fill: "var(--fg-subtle)" }}
           axisLine={false}
           tickLine={false}
         />

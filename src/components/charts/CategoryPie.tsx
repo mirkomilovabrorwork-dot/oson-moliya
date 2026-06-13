@@ -111,9 +111,17 @@ const CustomTooltip = ({
 export function CategoryPie({ data, lang }: Props) {
   if (!data.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-2">
-        <div className="text-3xl">🥧</div>
-        <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+      <div className="flex flex-col items-center justify-center py-12 space-y-3">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center"
+          style={{ background: "var(--surface-sunken)" }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)" }}>
+            <path d="M12 2v10l4.24 4.24"/>
+            <circle cx="12" cy="12" r="10"/>
+          </svg>
+        </div>
+        <p className="text-sm" style={{ color: "var(--fg-subtle)" }}>
           {t("analytics.empty", lang)}
         </p>
       </div>

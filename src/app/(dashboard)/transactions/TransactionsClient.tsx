@@ -422,7 +422,15 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
       >
         {filtered.length === 0 ? (
           <div className="py-16 text-center space-y-3">
-            <div className="text-4xl">🔍</div>
+            <div
+              className="mx-auto w-12 h-12 rounded-xl flex items-center justify-center mb-2"
+              style={{ background: "var(--surface-sunken)" }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)" }}>
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
             <p className="font-medium" style={{ color: "var(--fg-muted)" }}>
               {t("transactions.no_results", lang)}
             </p>

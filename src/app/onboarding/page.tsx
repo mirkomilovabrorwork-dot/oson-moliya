@@ -39,7 +39,17 @@ export default async function OnboardingPage() {
       >
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="text-5xl mb-4">💼</div>
+          <div
+            className="mx-auto w-14 h-14 rounded-xl flex items-center justify-center mb-4"
+            style={{ background: "var(--surface-sunken)" }}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-muted)" }}>
+              <rect x="2" y="7" width="20" height="14" rx="2"/>
+              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+              <line x1="12" y1="12" x2="12" y2="16"/>
+              <line x1="10" y1="14" x2="14" y2="14"/>
+            </svg>
+          </div>
           <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
             {t("onboarding.title", lang)}
           </h1>
@@ -70,20 +80,26 @@ export default async function OnboardingPage() {
           </div>
 
           <div
-            className="flex items-start gap-3 rounded-[10px] p-4"
-            style={{ background: "var(--income-wash)", border: "1px solid var(--border)" }}
+            className="flex items-start gap-3 rounded-md p-4"
+            style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
           >
-            <span className="text-xl mt-0.5">✅</span>
-            <p className="text-sm" style={{ color: "var(--income)" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" style={{ color: "var(--income)" }}>
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <p className="text-sm" style={{ color: "var(--fg-muted)" }}>
               {t("onboarding.step3", lang)}
             </p>
           </div>
 
           <div
-            className="flex items-start gap-3 rounded-[10px] p-4"
+            className="flex items-start gap-3 rounded-md p-4"
             style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
           >
-            <span className="text-xl mt-0.5">📊</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" style={{ color: "var(--fg-subtle)" }}>
+              <rect x="3" y="12" width="4" height="9" rx="1"/>
+              <rect x="10" y="7" width="4" height="14" rx="1"/>
+              <rect x="17" y="3" width="4" height="18" rx="1"/>
+            </svg>
             <p className="text-sm" style={{ color: "var(--fg-muted)" }}>
               {t("onboarding.hint", lang)}
             </p>

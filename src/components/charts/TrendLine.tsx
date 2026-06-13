@@ -75,9 +75,17 @@ const CustomTooltip = ({
 export function TrendLine({ data, lang }: Props) {
   if (!data.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-2">
-        <div className="text-3xl">📈</div>
-        <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+      <div className="flex flex-col items-center justify-center py-12 space-y-3">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center"
+          style={{ background: "var(--surface-sunken)" }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)" }}>
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+            <polyline points="16 7 22 7 22 13"/>
+          </svg>
+        </div>
+        <p className="text-sm" style={{ color: "var(--fg-subtle)" }}>
           {t("analytics.empty", lang)}
         </p>
       </div>
@@ -93,14 +101,14 @@ export function TrendLine({ data, lang }: Props) {
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
         <XAxis
           dataKey="bucket"
-          tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
+          tick={{ fontSize: 11, fill: "var(--fg-subtle)" }}
           axisLine={false}
           tickLine={false}
           tickFormatter={(v: string) => v.length > 7 ? v.slice(5) : v}
         />
         <YAxis
           tickFormatter={fmt}
-          tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
+          tick={{ fontSize: 11, fill: "var(--fg-subtle)" }}
           axisLine={false}
           tickLine={false}
         />

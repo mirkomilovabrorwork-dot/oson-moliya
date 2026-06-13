@@ -329,7 +329,14 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
 
         {visibleCats.length === 0 ? (
           <div className="px-5 py-12 text-center space-y-2">
-            <div className="text-4xl mb-3">📂</div>
+            <div
+              className="mx-auto w-12 h-12 rounded-xl flex items-center justify-center mb-3"
+              style={{ background: "var(--surface-sunken)" }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)" }}>
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
             <p className="text-sm font-medium" style={{ color: "var(--fg-muted)" }}>
               {t("categories.empty", lang)}
             </p>
