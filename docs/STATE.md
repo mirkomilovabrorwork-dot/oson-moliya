@@ -20,7 +20,24 @@
   hack); deleted duplicate-`/` notFound hack; set-webhook dotenv dep (installed dotenv, single `.env`);
   added scripts/bot-dev.ts (local polling); build now `prisma generate && next build` + postinstall.
   Migration `init` applied to Neon. `.env` has real ANTHROPIC/TELEGRAM/Neon keys (gitignored).
-- **Active:** Phase 1 committed → next is Phase 2 (`docs/tasks/002`): voice+query+report+correction+custom cats.
+- **Phase 2+3+integration DONE (2026-06-13, parallel Sonnet agents + Opus integration):** P2 backend
+  (voice STT Groq, finance_query+report, correct/delete, custom cats; clarify-loop type bug FIXED, dead code removed),
+  P3 UI (Analytics+3 charts, Categories, Budgets+bars, Onboarding, full uz/ru/en, DESIGN.md), + Opus added the
+  missing API routes (analytics/categories/budgets — UI called them, didn't exist). Gates re-run green:
+  typecheck 0, test 59/59, build OK (all routes present). Commits 8fc9b58→d5ec4cd→f3e6425→c280757.
+  ⚠️ The "worktree isolation" did NOT apply to this external repo — both agents edited master directly
+  (disjoint files, so the merge was effectively the working tree; integrated fine).
+- **Live-test fixes (Opus, after real Telegram + browser testing):** (a) Telegram rejects http://localhost
+  inline-button URLs → `dashboardReplyOptions` sends the link as TEXT locally, button in prod; (b) added
+  `bot.catch` (one error no longer crashes the bot); (c) rebranded web + bot to **"Oson Moliya"** (PulTrack
+  was a stray; the only remaining "PulTrack" is the internal project/repo name); (d) fixed dashboard "open bot"
+  links from a stray @PulTrackBot → **@oson_moliya_bot** (real bot, token verified); (e) brain now defaults to
+  Uzbek for ambiguous input + no longer leaks the internal brand name in replies; (f) added bot `/login`+`/dashboard`
+  commands (the login page hints `/login`); (g) magic-link TTL 10→30min. Commits 540759a→6364b84→1e80104.
+- **Active:** App functionally complete + live (local: dev server + bot polling, Groq voice on). Read-only QA
+  audit agent running (correctness/security/UX). NEXT = Phase 4 deploy (`docs/DEPLOY.md` runbook ready) — user-gated.
+- **Bot identity:** @oson_moliya_bot (name "Moliyachi"), brand shown to users = "Oson Moliya". Demo data seed:
+  `scripts/_seed.ts` (telegramId 999000001) → prints a magic-link to view a populated dashboard.
 - **Phase 2 hardening notes (Opus found in review):** (1) bot.ts clarify-loop hardcodes draft intent
   `log_income` + derives txType from the new message, not the draft → a clarified EXPENSE could log as
   INCOME; preserve draft intent/type on resume. (2) Dead code `getTashkentDateString` unused in bot.ts.
