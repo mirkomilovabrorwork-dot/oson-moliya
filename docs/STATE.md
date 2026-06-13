@@ -4,14 +4,22 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-13, Opus — WebApp button "Moliyachi" deployed)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-13, Opus — task-014 budget alert deployed)
 - **HOZIRGI:** LIVE & WORKING. Bot @oson_moliya_bot + dashboard https://oson-moliya.vercel.app.
+  **Assessment full-audit (3 Explore agent + Opus) = barcha talab bajarilgan:** bot 9/9, dashboard
+  6/6, topshirish hujjatlari to'liq. Yagona ochiq qolgan kamchilik — proactive budget alert — **HOZIR
+  TUZATILDI (task-014, commit 49e867a, deployed).**
   Eng so'nggi ishlar (hammasi prod'da, deployed): (a) **Kissa-uslubidagi v5 dark-first dizayn**
   (charcoal + sky-blue, light toggle), (b) **native Telegram WebApp** — `web_app` tugma +
   `initData` HMAC auth (`/api/auth/telegram`, magic-link emas), (c) **WebApp tugmasi "Moliyachi"**
-  (inline + menu button + /dashboard matni; commit 430dfad). **Deploy usuli:** Vercel CLI LOGGED IN
+  (inline + menu button + /dashboard matni; commit 430dfad), (d) **task-014: proactive budget alert** —
+  bot chiqim yozгach kategoriya limitidan oshsa o'sha javobda ogohlantiradi (uz/ru/en, oyiga 1 marta,
+  `lastAlertedYm` guard); `src/lib/services/budgets.ts` (yangi) + `reply.ts:formatBudgetAlert` +
+  `bot.ts` try/catch; test endi haqiqiy `checkBreach`ni import qiladi (67/67). README+brief "Oson Moliya"ga
+  rebrand qilindi (PulTrack = ichki kod-nomi). **Deploy usuli:** Vercel CLI LOGGED IN
   (`npx vercel --prod --yes` `C:\Users\localhost\Desktop\pultrack`'dan; token kerak emas; GitHub
   auto-deploy YO'Q). Telegram menu button API orqali o'rnatiladi (setChatMenuButton, deploysiz darhol).
+- **Topshirishga qolgan yagona narsa:** user demo videoni yozadi (skript `docs/demo-script.md`).
 - **KEYINGI (user tasdiqladi: "Avval struktura, keyin modullar"):** Kissa IA — bottom nav
   (Bosh/Harakatlar/Qarzlar/Yana) + FAB + Home-summary + Yana sahifa; KEYIN Debts(008) + Accounts(009).
 - **Loyiha:** PulTrack — IELTS emas! data365 vibecoder imtihoni, Task 01 (Business Finance Manager).
