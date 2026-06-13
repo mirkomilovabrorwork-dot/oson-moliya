@@ -13,20 +13,34 @@ export function formatAmount(amount: bigint): string {
   return (amount < 0n ? "−" : "") + parts.join(" ") + " so'm";
 }
 
+type InlineKeyboardButton =
+  | { text: string; url: string }
+  | { text: string; web_app: { url: string } };
+
 /**
- * Build the Dashboard magic-link reply options.
- * Telegram rejects `http://localhost` URLs in inline buttons, so in local/dev we
- * send the link as plain text; in production (https APP_URL) we use the nice button.
+ * Build the Dashboard reply options.
+ *
+ * - In production (https APP_URL): uses a web_app button so the dashboard opens
+ *   as a native Telegram Mini App (authenticated via initData, no magic-link needed).
+ * - On localhost (http): sends the magic-link as plain text (Telegram rejects http URLs
+ *   in inline buttons and doesn't allow web_app on non-https).
  */
 export async function dashboardReplyOptions(
   userId: string
-): Promise<{ extraText: string; reply_markup?: { inline_keyboard: { text: string; url: string }[][] } }> {
+): Promise<{ extraText: string; reply_markup?: { inline_keyboard: InlineKeyboardButton[][] } }> {
   const env = getEnv();
+  if (env.APP_URL.startsWith("https://")) {
+    // web_app button: opens Mini App in-Telegram; auth happens via initData
+    return {
+      extraText: "",
+      reply_markup: {
+        inline_keyboard: [[{ text: "📊 Dashboard", web_app: { url: env.APP_URL } }]],
+      },
+    };
+  }
+  // Localhost fallback: magic-link as plain text
   const raw = await issueMagicToken(userId);
   const url = `${env.APP_URL}/api/auth/verify?token=${raw}`;
-  if (env.APP_URL.startsWith("https://")) {
-    return { extraText: "", reply_markup: { inline_keyboard: [[{ text: "📊 Dashboard", url }]] } };
-  }
   return { extraText: `\n\n📊 Dashboard: ${url}` };
 }
 

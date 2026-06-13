@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { t, type LangCode } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/LangSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TelegramBootstrap } from "@/components/TelegramBootstrap";
 
 export default async function LoginPage() {
   let lang: LangCode = "uz";
@@ -18,6 +19,9 @@ export default async function LoginPage() {
       className="min-h-screen flex items-center justify-center p-4"
       style={{ background: "var(--bg)" }}
     >
+      {/* Telegram Mini App auto-auth: if inside Telegram, authenticates and redirects.
+          If not in Telegram, renders nothing and the normal UI below is shown. */}
+      <TelegramBootstrap />
       {/* Lang + Theme switchers */}
       <div className="fixed top-4 right-4 flex items-center gap-2">
         <ThemeToggle lang={lang} />

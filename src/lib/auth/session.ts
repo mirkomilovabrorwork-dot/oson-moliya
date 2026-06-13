@@ -24,10 +24,17 @@ export async function createSession(userId: string): Promise<void> {
   await prisma.session.create({ data: { userId, tokenHash, expiresAt } });
 
   const cookieStore = await cookies();
+  // Inside Telegram's in-app WebView the cookie is sent cross-context (the WebView
+  // is embedded in the Telegram app, not a top-level browser frame). SameSite=Lax
+  // blocks those requests, so we switch to SameSite=None; Secure in production.
+  // On localhost (http) SameSite=None is invalid without Secure, so we keep Lax.
+  const isHttps =
+    process.env.NODE_ENV === "production" ||
+    (process.env.APP_URL ?? "").startsWith("https://");
   cookieStore.set(COOKIE_NAME, raw, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isHttps,
+    sameSite: isHttps ? "none" : "lax",
     path: "/",
     expires: expiresAt,
   });

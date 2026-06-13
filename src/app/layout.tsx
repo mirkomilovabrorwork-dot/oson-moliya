@@ -30,6 +30,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        {/* Telegram Mini App SDK — no-op outside Telegram; must load before hydration */}
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
         {/* No-flash theme: runs before hydration so data-theme is set pre-paint.
             Resolution: localStorage('pultrack_theme') → system prefers-color-scheme → light */}
         <Script id="theme-init" strategy="beforeInteractive">
