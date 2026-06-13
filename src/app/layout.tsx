@@ -36,9 +36,9 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
         {/* No-flash theme: runs before hydration so data-theme is set pre-paint.
-            Resolution: localStorage('pultrack_theme') → system prefers-color-scheme → light */}
+            Resolution: localStorage('pultrack_theme') → 'system' follows OS → DEFAULT dark (Kissa-style). */}
         <Script id="theme-init" strategy="beforeInteractive">
-          {`(function(){try{var s=localStorage.getItem('pultrack_theme');if(s==='dark'||s==='light'){document.documentElement.dataset.theme=s;}else{var mq=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');if(mq&&mq.matches){document.documentElement.dataset.theme='dark';}}}catch(e){}})();`}
+          {`(function(){try{var s=localStorage.getItem('pultrack_theme');var t;if(s==='light'||s==='dark'){t=s;}else if(s==='system'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';}else{t='dark';}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='dark';}})();`}
         </Script>
         {children}
       </body>

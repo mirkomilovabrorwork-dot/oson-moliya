@@ -31,7 +31,7 @@ const OPTIONS: { value: ThemePref; labelKey: string }[] = [
 ];
 
 export function ThemeToggle({ lang }: ThemeToggleProps) {
-  const [pref, setPref] = useState<ThemePref>("system");
+  const [pref, setPref] = useState<ThemePref>("dark");
 
   // On mount, read saved pref
   useEffect(() => {
@@ -40,7 +40,7 @@ export function ThemeToggle({ lang }: ThemeToggleProps) {
       if (saved === "light" || saved === "dark" || saved === "system") {
         setPref(saved);
       } else {
-        setPref("system");
+        setPref("dark"); // default = dark (Kissa-style), matches the no-flash script
       }
     } catch {
       // SSR safety
@@ -50,11 +50,8 @@ export function ThemeToggle({ lang }: ThemeToggleProps) {
   const handleChange = (next: ThemePref) => {
     setPref(next);
     try {
-      if (next === "system") {
-        localStorage.removeItem(THEME_KEY);
-      } else {
-        localStorage.setItem(THEME_KEY, next);
-      }
+      // Persist all prefs (incl. "system") so the no-flash script can resolve them on reload.
+      localStorage.setItem(THEME_KEY, next);
       applyTheme(next);
     } catch {
       // ignore

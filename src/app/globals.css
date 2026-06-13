@@ -1,13 +1,12 @@
 @import "tailwindcss";
 
 /*
- * Oson Moliya — DESIGN v4 tokens (professional, cool slate + rationed BLUE accent).
- * Per the design playbook: blue = primary action/trust (right for finance), slate neutrals,
- * green = income/success, red = expense/danger, amber = warning. Color is a signal, not decoration.
- * Single source of truth. Components use these var() names. See docs/DESIGN.md.
+ * Oson Moliya — DESIGN v5 (Kissa-inspired): DARK-first, bright sky-blue accent,
+ * soft rounded dark cards. Light theme kept as a toggle. Color = signal (blue=action,
+ * green=income, red=expense). Single source of truth; components use these var() names.
  */
 
-/* ── Light (default) ── */
+/* ── Light (toggle) ── */
 :root {
   --bg: #f8fafc;
   --surface: #ffffff;
@@ -43,9 +42,9 @@
   --chart-5: #64748b;
   --chart-grid: #e2e8f0;
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
   --radius-full: 9999px;
 
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, .05);
@@ -59,31 +58,30 @@
   --ease-out: cubic-bezier(.16, 1, .30, 1);
   --ease-in-out: cubic-bezier(.4, 0, .2, 1);
 
-  /* Next.js scaffold compatibility — alias to token names */
   --background: var(--bg);
   --foreground: var(--fg);
 }
 
-/* ── Dark — slate-based, separate tokens (NOT a flat inversion) ── */
+/* ── Dark (DEFAULT) — Kissa-style neutral charcoal + bright sky-blue ── */
 [data-theme="dark"] {
-  --bg: #020617;
-  --surface: #0f172a;
-  --surface-sunken: #0b1220;
-  --surface-hover: #1e293b;
+  --bg: #0e0e11;
+  --surface: #1c1c21;
+  --surface-sunken: #141418;
+  --surface-hover: #26262d;
 
-  --fg: #e5e7eb;
-  --fg-muted: #94a3b8;
-  --fg-subtle: #64748b;
-  --fg-on-accent: #0f172a;
+  --fg: #f2f2f5;
+  --fg-muted: #9a9aa3;
+  --fg-subtle: #6b6b73;
+  --fg-on-accent: #ffffff;
 
-  --border: #334155;
-  --border-strong: #475569;
+  --border: #2c2c34;
+  --border-strong: #3a3a44;
 
-  --accent: #60a5fa;
-  --accent-hover: #3b82f6;
-  --accent-fg: #0f172a;
-  --accent-ring: rgba(96, 165, 250, .40);
-  --accent-wash: rgba(96, 165, 250, .14);
+  --accent: #2d9cdb;
+  --accent-hover: #2387c1;
+  --accent-fg: #ffffff;
+  --accent-ring: rgba(45, 156, 219, .40);
+  --accent-wash: rgba(45, 156, 219, .16);
 
   --income: #34d399;
   --income-fg: #052e16;
@@ -93,49 +91,44 @@
   --expense-fg: #450a0a;
   --expense-wash: rgba(248, 113, 113, .16);
 
-  --chart-1: #60a5fa;
+  --chart-1: #2d9cdb;
   --chart-2: #34d399;
   --chart-3: #fbbf24;
   --chart-4: #a78bfa;
-  --chart-5: #94a3b8;
-  --chart-grid: rgba(255, 255, 255, .08);
+  --chart-5: #9a9aa3;
+  --chart-grid: rgba(255, 255, 255, .07);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .35);
-  --shadow-lg: 0 14px 36px rgba(0, 0, 0, .55);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, .6);
 
   --background: var(--bg);
   --foreground: var(--fg);
 }
 
-/* ── Tailwind v4 @theme inline — bg-surface text-fg border-border etc. resolve ── */
+/* ── Tailwind v4 @theme inline ── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Surface tokens */
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-hover: var(--surface-hover);
 
-  /* Text / fg tokens */
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
   --color-fg-subtle: var(--fg-subtle);
   --color-fg-on-accent: var(--fg-on-accent);
 
-  /* Border tokens */
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
 
-  /* Accent tokens */
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-fg: var(--accent-fg);
   --color-accent-wash: var(--accent-wash);
 
-  /* Semantic tokens */
   --color-income: var(--income);
   --color-income-fg: var(--income-fg);
   --color-income-wash: var(--income-wash);
@@ -143,7 +136,6 @@
   --color-expense-fg: var(--expense-fg);
   --color-expense-wash: var(--expense-wash);
 
-  /* Chart tokens */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -163,7 +155,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Shared focus-visible ring — never removed, no per-component variants ── */
+/* ── Shared focus-visible ring ── */
 :where(button, a, input, textarea, select, [role="tab"], [tabindex]):focus-visible {
   outline: none;
   border-color: var(--accent);
@@ -183,12 +175,12 @@ body {
   }
 }
 
-/* ── Tabular figures for aligned money columns ── */
+/* ── Tabular figures ── */
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Row hover (CSS — server components don't need JS event handlers) ── */
+/* ── Row hover ── */
 .row-hover:hover {
   background: var(--surface-hover);
 }
