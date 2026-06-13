@@ -474,6 +474,27 @@ export function createBot(): Bot {
     );
   });
 
+  // /dashboard and /login — issue a fresh dashboard magic-link
+  bot.command(["dashboard", "login"], async (ctx) => {
+    const from = ctx.from;
+    if (!from) return;
+    const user = await prisma.user.upsert({
+      where: { telegramId: BigInt(from.id) },
+      create: {
+        telegramId: BigInt(from.id),
+        firstName: from.first_name ?? null,
+        username: from.username ?? null,
+        language: "uz",
+      },
+      update: {},
+    });
+    const dash = await dashboardReplyOptions(user.id);
+    const lead = dash.reply_markup
+      ? "📊 Dashboard'ni ochish uchun pastdagi tugmani bosing:"
+      : "📊 Dashboard'ni ochish uchun havolani bosing:";
+    await ctx.reply(lead + dash.extraText, { reply_markup: dash.reply_markup });
+  });
+
   // Text message handler
   bot.on("message:text", async (ctx) => {
     if (!ctx.from) return;
