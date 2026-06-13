@@ -19,21 +19,42 @@ export function LangSwitcher({ currentLang }: LangSwitcherProps) {
   const router = useRouter();
 
   const handleChange = (lang: LangCode) => {
-    document.cookie = `${LANG_COOKIE}=${lang};path=/;max-age=${60 * 60 * 24 * 365}`;
+    document.cookie = `${LANG_COOKIE}=${lang};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
     router.refresh();
   };
 
   return (
-    <div className="flex gap-1 text-sm">
-      {LANGS.map(({ code, label }) => (
+    <div
+      className="flex rounded-lg overflow-hidden text-xs font-semibold"
+      style={{ border: "1px solid var(--color-border)" }}
+      role="group"
+      aria-label="Language"
+    >
+      {LANGS.map(({ code, label }, i) => (
         <button
           key={code}
           onClick={() => handleChange(code)}
-          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+          className="px-2.5 py-1 transition-all focus-visible:outline-none focus-visible:ring-2"
+          style={
             currentLang === code
-              ? "bg-blue-600 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
+              ? {
+                  background: "var(--color-brand)",
+                  color: "#fff",
+                  borderRight:
+                    i < LANGS.length - 1
+                      ? "1px solid var(--color-brand-hover)"
+                      : undefined,
+                }
+              : {
+                  background: "var(--color-surface)",
+                  color: "var(--color-text-secondary)",
+                  borderRight:
+                    i < LANGS.length - 1
+                      ? "1px solid var(--color-border)"
+                      : undefined,
+                }
+          }
+          aria-pressed={currentLang === code}
         >
           {label}
         </button>
