@@ -162,7 +162,7 @@ export default async function OverviewPage() {
                     {t("empty.overview.hint", lang)}
                   </p>
                   <a
-                    href="https://t.me/PulTrackBot"
+                    href="https://t.me/oson_moliya_bot"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-block mt-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"

@@ -6,16 +6,21 @@ export function formatAmount(amount: bigint): string {
   return amount.toLocaleString("uz-UZ") + " so'm";
 }
 
-/** Build the Dashboard inline keyboard button (issues a magic-link) */
-export async function buildDashboardButton(userId: string) {
+/**
+ * Build the Dashboard magic-link reply options.
+ * Telegram rejects `http://localhost` URLs in inline buttons, so in local/dev we
+ * send the link as plain text; in production (https APP_URL) we use the nice button.
+ */
+export async function dashboardReplyOptions(
+  userId: string
+): Promise<{ extraText: string; reply_markup?: { inline_keyboard: { text: string; url: string }[][] } }> {
   const env = getEnv();
   const raw = await issueMagicToken(userId);
   const url = `${env.APP_URL}/api/auth/verify?token=${raw}`;
-  return {
-    inline_keyboard: [
-      [{ text: "📊 Dashboard", url }],
-    ],
-  };
+  if (env.APP_URL.startsWith("https://")) {
+    return { extraText: "", reply_markup: { inline_keyboard: [[{ text: "📊 Dashboard", url }]] } };
+  }
+  return { extraText: `\n\n📊 Dashboard: ${url}` };
 }
 
 /** Format a localized confirmation string after logging a transaction */

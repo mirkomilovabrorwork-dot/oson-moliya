@@ -13,7 +13,7 @@ import {
   upsertPendingAction,
   clearPendingAction,
 } from "../services/pending";
-import { buildDashboardButton, formatConfirmation } from "./reply";
+import { dashboardReplyOptions, formatConfirmation } from "./reply";
 import { getSttProvider } from "../stt";
 import { downloadTelegramFile } from "./download";
 import { runAggregation } from "../services/analytics";
@@ -200,8 +200,9 @@ async function handleMessage(
       language: lang,
     });
 
-    await ctx.reply(confirmation, {
-      reply_markup: await buildDashboardButton(user.id),
+    const dashConfirm = await dashboardReplyOptions(user.id);
+    await ctx.reply(confirmation + dashConfirm.extraText, {
+      reply_markup: dashConfirm.reply_markup,
     });
     return;
   }
@@ -466,9 +467,10 @@ export function createBot(): Bot {
     await ensureDefaultCategories(user.id);
 
     const name = from.first_name ?? "Do'stim";
+    const dashStart = await dashboardReplyOptions(user.id);
     await ctx.reply(
-      `Salom, ${name}! 👋\n\nPulTrack — biznesingiz moliyasini kuzatish uchun bot.\n\nXarajat yoki daromad haqida yozing, men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"`,
-      { reply_markup: await buildDashboardButton(user.id) }
+      `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\nXarajat yoki daromad haqida yozing, men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"` + dashStart.extraText,
+      { reply_markup: dashStart.reply_markup }
     );
   });
 

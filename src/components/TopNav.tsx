@@ -39,7 +39,7 @@ export function TopNav({ lang }: TopNavProps) {
               className="font-bold text-lg"
               style={{ color: "var(--color-brand)" }}
             >
-              PulTrack
+              Oson Moliya
             </Link>
             <nav className="hidden sm:flex items-center gap-1" aria-label="main-nav">
               {navLinks.map(({ href, label }) => (

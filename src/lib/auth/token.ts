@@ -13,7 +13,7 @@ export async function issueMagicToken(userId: string): Promise<string> {
   const prisma = db as import("@prisma/client").PrismaClient;
   const raw = randomBytes(32).toString("hex");
   const tokenHash = sha256(raw);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // +10 minutes
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // +30 minutes
 
   await prisma.magicToken.create({ data: { userId, tokenHash, expiresAt } });
   return raw;

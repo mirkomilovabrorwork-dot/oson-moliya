@@ -57,7 +57,7 @@ export default async function LoginPage() {
 
         {/* CTA */}
         <a
-          href="https://t.me/PulTrackBot"
+          href="https://t.me/oson_moliya_bot"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold transition-all"

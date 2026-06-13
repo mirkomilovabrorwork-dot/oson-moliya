@@ -104,7 +104,7 @@ const uz: Dictionary = {
   "budget.no_limit": "Chegara belgilanmagan",
   "budget.set_limit": "Chegara belgilash",
   // ── Onboarding
-  "onboarding.title": "PulTrack'ka xush kelibsiz!",
+  "onboarding.title": "Oson Moliya'ga xush kelibsiz!",
   "onboarding.subtitle": "Biznesingiz moliyasini Telegram orqali kuzating",
   "onboarding.step1": "Botga xarajat yuboring:",
   "onboarding.step2": "Daromad qo'shing:",
@@ -123,7 +123,7 @@ const uz: Dictionary = {
   "empty.categories": "Kategoriyalar mavjud emas",
   "empty.budgets": "Byudjet belgilanmagan",
   // ── Auth / login
-  "login.title": "PulTrack",
+  "login.title": "Oson Moliya",
   "login.description": "Biznesingiz moliyasini kuzating",
   "login.instruction": "Kirish uchun Telegram botidan foydalaning",
   "login.open_bot": "Telegram botni ochish",
@@ -258,7 +258,7 @@ const ru: Dictionary = {
   "budget.no_limit": "Без лимита",
   "budget.set_limit": "Установить лимит",
   // ── Onboarding
-  "onboarding.title": "Добро пожаловать в PulTrack!",
+  "onboarding.title": "Добро пожаловать в Oson Moliya!",
   "onboarding.subtitle": "Следите за финансами бизнеса через Telegram",
   "onboarding.step1": "Отправьте расход боту:",
   "onboarding.step2": "Добавьте доход:",
@@ -277,7 +277,7 @@ const ru: Dictionary = {
   "empty.categories": "Категорий нет",
   "empty.budgets": "Бюджеты не заданы",
   // ── Auth / login
-  "login.title": "PulTrack",
+  "login.title": "Oson Moliya",
   "login.description": "Отслеживайте финансы бизнеса",
   "login.instruction": "Используйте Telegram-бот для входа",
   "login.open_bot": "Открыть Telegram-бот",
@@ -412,7 +412,7 @@ const en: Dictionary = {
   "budget.no_limit": "No limit set",
   "budget.set_limit": "Set limit",
   // ── Onboarding
-  "onboarding.title": "Welcome to PulTrack!",
+  "onboarding.title": "Welcome to Oson Moliya!",
   "onboarding.subtitle": "Track your business finances via Telegram",
   "onboarding.step1": "Send an expense to the bot:",
   "onboarding.step2": "Add income:",
@@ -431,7 +431,7 @@ const en: Dictionary = {
   "empty.categories": "No categories",
   "empty.budgets": "No budgets set",
   // ── Auth / login
-  "login.title": "PulTrack",
+  "login.title": "Oson Moliya",
   "login.description": "Track your business finances",
   "login.instruction": "Use the Telegram bot to log in",
   "login.open_bot": "Open Telegram Bot",
