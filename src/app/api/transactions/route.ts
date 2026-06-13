@@ -9,6 +9,18 @@ import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
+const AmountUzsSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") return value.replace(/\s/g, "");
+    if (typeof value === "number" && Number.isInteger(value)) return String(value);
+    return value;
+  },
+  z
+    .string()
+    .regex(/^[1-9]\d*$/)
+    .transform((value) => BigInt(value))
+);
+
 export async function GET(request: NextRequest): Promise<Response> {
   const user = await getSessionUser();
   if (!user) {
@@ -89,7 +101,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
 const CreateTransactionSchema = z.object({
   type: z.enum(["income", "expense"]),
-  amountUzs: z.union([z.string(), z.number()]).transform((v) => BigInt(v)),
+  amountUzs: AmountUzsSchema,
   categoryId: z.string().optional().nullable(),
   categoryName: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
@@ -119,9 +131,20 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const data = parsed.data;
   const txType = data.type === "income" ? TxType.income : TxType.expense;
+  const prisma = db as import("@prisma/client").PrismaClient;
 
   let categoryId: string | null = data.categoryId ?? null;
-  if (!categoryId && data.categoryName) {
+  if (categoryId) {
+    const category = await prisma.category.findFirst({
+      where: { id: categoryId, userId: user.id, type: txType },
+    });
+    if (!category) {
+      return Response.json(
+        { error: "Category not found for this transaction type" },
+        { status: 422 }
+      );
+    }
+  } else if (data.categoryName) {
     categoryId = await resolveOrCreateCategory(user.id, data.categoryName, txType);
   }
 

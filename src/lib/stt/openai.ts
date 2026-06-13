@@ -1,5 +1,5 @@
 import type { SttProvider } from "./types";
-import { getEnv } from "../env";
+import { audioBufferToBlob } from "./blob";
 
 /**
  * OpenAI Transcription stub — thin implementation using gpt-4o-transcribe.
@@ -11,7 +11,6 @@ export class OpenAiTranscribe implements SttProvider {
     filename: string,
     opts?: { language?: string }
   ): Promise<string> {
-    const env = getEnv();
     // OpenAI API key is not a required env var in this project; read directly.
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -19,7 +18,7 @@ export class OpenAiTranscribe implements SttProvider {
     }
 
     const form = new FormData();
-    const blob = new Blob([audio.buffer as ArrayBuffer], { type: "audio/ogg" });
+    const blob = audioBufferToBlob(audio);
     form.append("file", blob, filename);
     form.append("model", "gpt-4o-transcribe");
     form.append("response_format", "json");

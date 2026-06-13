@@ -22,15 +22,15 @@ interface Props {
   lang: LangCode;
 }
 
-// v3 chart palette — mirrors --chart-1..5 tokens (light values), then cycles warm
+// Chart palette — cool/professional, mirrors --chart-1..5 tokens then extends
 const COLORS = [
-  "#c15f3c", "#4a7c8c", "#b08a3e",
-  "#6b5b8a", "#8a8780", "#b5453b",
-  "#3f7d5a", "#c8893f", "#4e7ea6",
-  "#7b6fa0",
+  "#2563eb", "#059669", "#f59e0b",
+  "#7c3aed", "#0891b2", "#dc2626",
+  "#db2777", "#64748b", "#ca8a04",
+  "#0d9488",
 ];
 
-/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --expense:#b5453b token) */
+/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --expense:#dc2626 token) */
 function formatMoney(n: number): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));

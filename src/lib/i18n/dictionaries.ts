@@ -99,6 +99,8 @@ const uz: Dictionary = {
   "categories.delete": "O'chirish",
   "categories.delete.confirm":
     "Kategoriyani o'chirishni tasdiqlaysizmi? Ushbu kategoriyaga tegishli harakatlar kategoriyasiz qoladi.",
+  "categories.delete.budget_confirm":
+    "Bu kategoriyada byudjet bor. O'chirsangiz byudjet ham o'chadi. Davom etasizmi?",
   "categories.deleted": "Kategoriya o'chirildi",
   "categories.saved": "Kategoriya saqlandi",
   "categories.budget_saved": "Byudjet saqlandi",
@@ -136,7 +138,8 @@ const uz: Dictionary = {
   // ── Auth / login
   "login.title": "Oson Moliya",
   "login.description": "Biznesingiz moliyasini kuzating",
-  "login.instruction": "Kirish uchun Telegram botidan foydalaning",
+  "login.instruction": "Telegram bot sizga xavfsiz kirish havolasini yuboradi",
+  "login.steps": "Bot ochilgach Start yoki /login ni bosing. Keyin bot yuborgan Dashboard tugmasini bosing.",
   "login.open_bot": "Telegram botni ochish",
   // ── Lang switcher
   "lang.uz": "O'zbekcha",
@@ -148,6 +151,11 @@ const uz: Dictionary = {
   "error.not_found": "Topilmadi",
   "error.retry": "Qayta urinish",
   // ── Common
+  "delete.typed.title": "O'chirishni tasdiqlang",
+  "delete.typed.warning": "Ogohlantirish: bu amalni qaytarib bo'lmaydi.",
+  "delete.typed.input_label": "Tasdiqlash so'zi",
+  "delete.typed.instruction": "Davom etish uchun {word} deb yozing.",
+  "delete.typed.word": "o'chirish",
   "common.loading": "Yuklanmoqda...",
   "common.save": "Saqlash",
   "common.cancel": "Bekor qilish",
@@ -264,6 +272,8 @@ const ru: Dictionary = {
   "categories.rename": "Переименовать",
   "categories.delete": "Удалить",
   "categories.delete.confirm": "Удалить категорию? Связанные операции останутся без категории.",
+  "categories.delete.budget_confirm":
+    "У этой категории есть бюджет. Если удалить категорию, бюджет тоже удалится. Продолжить?",
   "categories.deleted": "Категория удалена",
   "categories.saved": "Категория сохранена",
   "categories.budget_saved": "Бюджет сохранён",
@@ -301,7 +311,8 @@ const ru: Dictionary = {
   // ── Auth / login
   "login.title": "Oson Moliya",
   "login.description": "Отслеживайте финансы бизнеса",
-  "login.instruction": "Используйте Telegram-бот для входа",
+  "login.instruction": "Telegram-бот отправит безопасную ссылку для входа",
+  "login.steps": "Когда бот откроется, нажмите Start или отправьте /login. Затем нажмите кнопку Dashboard от бота.",
   "login.open_bot": "Открыть Telegram-бот",
   // ── Lang switcher
   "lang.uz": "O'zbekcha",
@@ -313,6 +324,11 @@ const ru: Dictionary = {
   "error.not_found": "Не найдено",
   "error.retry": "Повторить",
   // ── Common
+  "delete.typed.title": "Подтвердите удаление",
+  "delete.typed.warning": "Предупреждение: это действие нельзя отменить.",
+  "delete.typed.input_label": "Слово подтверждения",
+  "delete.typed.instruction": "Чтобы продолжить, введите {word}.",
+  "delete.typed.word": "удалить",
   "common.loading": "Загрузка...",
   "common.save": "Сохранить",
   "common.cancel": "Отмена",
@@ -429,6 +445,8 @@ const en: Dictionary = {
   "categories.rename": "Rename",
   "categories.delete": "Delete",
   "categories.delete.confirm": "Delete category? Linked transactions will lose their category.",
+  "categories.delete.budget_confirm":
+    "This category has a budget. Deleting it will also remove the budget. Continue?",
   "categories.deleted": "Category deleted",
   "categories.saved": "Category saved",
   "categories.budget_saved": "Budget saved",
@@ -466,7 +484,8 @@ const en: Dictionary = {
   // ── Auth / login
   "login.title": "Oson Moliya",
   "login.description": "Track your business finances",
-  "login.instruction": "Use the Telegram bot to log in",
+  "login.instruction": "The Telegram bot will send you a secure login link",
+  "login.steps": "When the bot opens, tap Start or send /login. Then tap the Dashboard button from the bot.",
   "login.open_bot": "Open Telegram Bot",
   // ── Lang switcher
   "lang.uz": "O'zbekcha",
@@ -478,6 +497,11 @@ const en: Dictionary = {
   "error.not_found": "Not found",
   "error.retry": "Retry",
   // ── Common
+  "delete.typed.title": "Confirm deletion",
+  "delete.typed.warning": "Warning: this action cannot be undone.",
+  "delete.typed.input_label": "Confirmation word",
+  "delete.typed.instruction": "To continue, type {word}.",
+  "delete.typed.word": "delete",
   "common.loading": "Loading...",
   "common.save": "Save",
   "common.cancel": "Cancel",

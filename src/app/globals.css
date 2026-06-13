@@ -1,54 +1,56 @@
 @import "tailwindcss";
 
 /*
- * Oson Moliya — DESIGN v3 tokens (warm-minimal, rationed terracotta accent).
+ * Oson Moliya — DESIGN v4 tokens (professional, cool slate + rationed BLUE accent).
+ * Per the design playbook: blue = primary action/trust (right for finance), slate neutrals,
+ * green = income/success, red = expense/danger, amber = warning. Color is a signal, not decoration.
  * Single source of truth. Components use these var() names. See docs/DESIGN.md.
  */
 
 /* ── Light (default) ── */
 :root {
-  --bg: #faf9f6;
+  --bg: #f8fafc;
   --surface: #ffffff;
-  --surface-sunken: #f2f0ea;
-  --surface-hover: #f4f2ec;
+  --surface-sunken: #f1f5f9;
+  --surface-hover: #f1f5f9;
 
-  --fg: #1c1a17;
-  --fg-muted: #6b6760;
-  --fg-subtle: #9b958c;
+  --fg: #0f172a;
+  --fg-muted: #475569;
+  --fg-subtle: #94a3b8;
   --fg-on-accent: #ffffff;
 
-  --border: #ece8e1;
-  --border-strong: #ddd8cf;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
 
-  --accent: #c15f3c;
-  --accent-hover: #ad5435;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
   --accent-fg: #ffffff;
-  --accent-ring: rgba(193, 95, 60, .35);
-  --accent-wash: #f7ece6;
+  --accent-ring: rgba(37, 99, 235, .35);
+  --accent-wash: #eff6ff;
 
-  --income: #3f7d5a;
+  --income: #059669;
   --income-fg: #ffffff;
-  --income-wash: #ebf2ee;
+  --income-wash: #ecfdf5;
 
-  --expense: #b5453b;
+  --expense: #dc2626;
   --expense-fg: #ffffff;
-  --expense-wash: #f7eae8;
+  --expense-wash: #fef2f2;
 
-  --chart-1: #c15f3c;
-  --chart-2: #4a7c8c;
-  --chart-3: #b08a3e;
-  --chart-4: #6b5b8a;
-  --chart-5: #8a8780;
-  --chart-grid: #ece8e1;
+  --chart-1: #2563eb;
+  --chart-2: #059669;
+  --chart-3: #f59e0b;
+  --chart-4: #7c3aed;
+  --chart-5: #64748b;
+  --chart-grid: #e2e8f0;
 
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 1px 2px rgba(28, 26, 23, .05);
-  --shadow-md: 0 4px 12px rgba(28, 26, 23, .08), 0 1px 3px rgba(28, 26, 23, .05);
-  --shadow-lg: 0 12px 32px rgba(28, 26, 23, .14);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, .05);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, .08), 0 1px 3px rgba(15, 23, 42, .05);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, .14);
 
   /* Motion */
   --dur-fast: 120ms;
@@ -57,46 +59,46 @@
   --ease-out: cubic-bezier(.16, 1, .30, 1);
   --ease-in-out: cubic-bezier(.4, 0, .2, 1);
 
-  /* Next.js scaffold compatibility — alias to v3 names */
+  /* Next.js scaffold compatibility — alias to token names */
   --background: var(--bg);
   --foreground: var(--fg);
 }
 
-/* ── Dark — re-tuned, NOT inverted ── */
+/* ── Dark — slate-based, separate tokens (NOT a flat inversion) ── */
 [data-theme="dark"] {
-  --bg: #16140f;
-  --surface: #211e18;
-  --surface-sunken: #100e0a;
-  --surface-hover: #2a261f;
+  --bg: #020617;
+  --surface: #0f172a;
+  --surface-sunken: #0b1220;
+  --surface-hover: #1e293b;
 
-  --fg: #f3f0ea;
-  --fg-muted: #a8a299;
-  --fg-subtle: #6f6a61;
-  --fg-on-accent: #ffffff;
+  --fg: #e5e7eb;
+  --fg-muted: #94a3b8;
+  --fg-subtle: #64748b;
+  --fg-on-accent: #0f172a;
 
-  --border: rgba(255, 250, 240, .10);
-  --border-strong: rgba(255, 250, 240, .16);
+  --border: #334155;
+  --border-strong: #475569;
 
-  --accent: #d27450;
-  --accent-hover: #c0653f;
-  --accent-fg: #1c1610;
-  --accent-ring: rgba(210, 116, 80, .40);
-  --accent-wash: rgba(210, 116, 80, .14);
+  --accent: #60a5fa;
+  --accent-hover: #3b82f6;
+  --accent-fg: #0f172a;
+  --accent-ring: rgba(96, 165, 250, .40);
+  --accent-wash: rgba(96, 165, 250, .14);
 
-  --income: #5fa37d;
-  --income-fg: #0f1712;
-  --income-wash: rgba(95, 163, 125, .16);
+  --income: #34d399;
+  --income-fg: #052e16;
+  --income-wash: rgba(52, 211, 153, .16);
 
-  --expense: #d2675c;
-  --expense-fg: #1a0f0d;
-  --expense-wash: rgba(210, 103, 92, .16);
+  --expense: #f87171;
+  --expense-fg: #450a0a;
+  --expense-wash: rgba(248, 113, 113, .16);
 
-  --chart-1: #d27450;
-  --chart-2: #6ba0b0;
-  --chart-3: #cda75a;
-  --chart-4: #9385b5;
-  --chart-5: #a39e95;
-  --chart-grid: rgba(255, 250, 240, .08);
+  --chart-1: #60a5fa;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #94a3b8;
+  --chart-grid: rgba(255, 255, 255, .08);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .35);
@@ -161,7 +163,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Shared focus-visible ring (§6) — never removed, no per-component variants ── */
+/* ── Shared focus-visible ring — never removed, no per-component variants ── */
 :where(button, a, input, textarea, select, [role="tab"], [tabindex]):focus-visible {
   outline: none;
   border-color: var(--accent);

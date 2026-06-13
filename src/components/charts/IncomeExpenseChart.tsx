@@ -25,7 +25,7 @@ function fmt(n: number): string {
   return String(n);
 }
 
-/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income:#3f7d5a --expense:#b5453b tokens) */
+/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income:#059669 --expense:#dc2626 tokens) */
 function formatMoney(n: number): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));
@@ -90,17 +90,17 @@ export function IncomeExpenseChart({ income, expense, lang }: Props) {
     );
   }
 
-  // Colors mirror CSS tokens: --income:#3f7d5a  --expense:#b5453b
+  // Colors mirror CSS tokens: --income:#059669  --expense:#dc2626
   const data = [
     {
       name: t("analytics.total_income", lang),
       value: income,
-      fill: "#3f7d5a",
+      fill: "#059669",
     },
     {
       name: t("analytics.total_expense", lang),
       value: expense,
-      fill: "#b5453b",
+      fill: "#dc2626",
     },
   ];
 

@@ -1,5 +1,6 @@
 import type { SttProvider } from "./types";
 import { getEnv } from "../env";
+import { audioBufferToBlob } from "./blob";
 
 /**
  * Groq Whisper STT provider.
@@ -19,7 +20,7 @@ export class GroqWhisperProvider implements SttProvider {
 
     // Build multipart/form-data with native FormData + Blob (Node 18+)
     const form = new FormData();
-    const blob = new Blob([audio.buffer as ArrayBuffer], { type: "audio/ogg" });
+    const blob = audioBufferToBlob(audio);
     form.append("file", blob, filename);
     form.append("model", "whisper-large-v3");
     form.append("response_format", "json");

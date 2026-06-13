@@ -61,13 +61,13 @@ export default async function LoginPage() {
             </p>
           </div>
           <p className="text-xs pl-6" style={{ color: "var(--fg-muted)" }}>
-            /login
+            {t("login.steps", lang)}
           </p>
         </div>
 
         {/* CTA */}
         <a
-          href="https://t.me/oson_moliya_bot"
+          href="https://t.me/oson_moliya_bot?start=login"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-medium transition-all"

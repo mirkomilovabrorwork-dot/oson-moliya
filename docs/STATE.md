@@ -55,6 +55,88 @@
   Deploy via Vercel CLI + token (gh/vercel not installed; sandbox non-interactive). README live-demo filled.
 - **Active:** SUBMISSION LIVE. Task-01 required items DONE except the user's screen recording (`docs/demo-script.md`).
   Optional extras still available: Debts(008)/Accounts+More(009)/bot-reply(011). On any code change → `git push` (Vercel auto-redeploys via GitHub once connected, or `vercel deploy --prod --token`).
+- **CODEX FULL-REVIEW FIXES (2026-06-13, local only; NOT pushed/deployed):** User asked for full review + fixes and
+  Claude handoff. Fixed visible money signs: Overview KPI cards now show income `+`, expense `-`, net `+/-`; expense
+  deltas now treat higher expense as bad/red and lower expense as good/green. Bot finance answers now sign income,
+  expense, net, expense breakdown/report lines consistently (`+1 000 000`, `-500 000`). Hardened transaction APIs:
+  create/edit reject zero/negative/invalid amounts and reject category IDs that do not belong to the user or do not
+  match transaction type; changing tx type clears incompatible existing category. Hardened budgets/categories: budgets
+  can only be set on expense categories; deleting a category with a budget now needs explicit second confirmation in UI
+  and `confirmBudget=1` server-side. Added i18n copy for the budget-delete confirmation and analytics signed-format
+  regression tests. Gates: `npm run typecheck` PASS, `npm test` PASS 60/60, `npm run build` PASS. Browser smoke:
+  local `http://localhost:3001/login` renders Oson Moliya + correct bot link; protected `/transactions` redirects to
+  `/login`. Existing unrelated dirty files left untouched: `.gitignore`, `build.log`, `test.log`, `typecheck.log`.
+- **CODEX LOCAL-SITE FIX (2026-06-13):** User reported local site did not work in the in-app browser. Root cause:
+  dev server on port 3001 had been stopped after smoke testing, then after restart Next dev overlay showed a React
+  hydration mismatch because the no-flash theme script adds `data-theme` to `<html>` before hydration. Fixed by adding
+  `suppressHydrationWarning` to the root `<html>` in `src/app/layout.tsx` (matches React/Next guidance for unavoidable
+  server/client attribute differences). Re-ran gates: `npm run typecheck` PASS, `npm test` PASS 60/60, `npm run build`
+  PASS. Local server is running on `http://localhost:3001/login`; page renders Oson Moliya, correct bot link, no visible
+  dev overlay.
+- **CODEX LOGIN-FLOW UX FIX (2026-06-13, local only; NOT pushed/deployed):** User asked why the site says "open the
+  Telegram bot" but does not auto-message the bot or auto-login after returning. Root cause/constraint: Telegram does
+  not allow a website to send a bot message on the user's behalf; the app can only deep-link to the bot. Also auth is
+  domain-cookie based, so a magic link for prod/APP_URL does not log the user into a different localhost port. Improved
+  `/login`: CTA now opens `https://t.me/oson_moliya_bot?start=login`; instruction copy now says the bot sends a secure
+  login link and tells the user to tap Start or send `/login`, then tap the bot's Dashboard button. Verified local DOM:
+  href includes `?start=login`, no visible dev overlay. Gates after change: `npm run typecheck` PASS, `npm test` PASS
+  60/60, `npm run build` PASS.
+- **CODEX HANDOFF FOR CLAUDE (2026-06-13, local only; NOT pushed/deployed):** User asked to stop because limits are
+  running out. Important unfinished/active issues for Claude:
+  1. **Safer data deletion:** user wants dashboard deletes to be hard to do accidentally. Codex partially implemented a
+     reusable typed confirmation modal in `src/components/TypedDeleteDialog.tsx` and wired it into
+     `src/app/(dashboard)/transactions/TransactionsClient.tsx` and
+     `src/app/(dashboard)/categories/CategoriesClient.tsx`. Required words by language were added in
+     `src/lib/i18n/dictionaries.ts`: Uzbek `o'chirish`, Russian `удалить`, English `delete`. Next: run gates, visually
+     smoke `/transactions` and `/categories` with an authenticated session, and polish copy if needed.
+  2. **Bot voice messages not reliable:** user expects Telegram voice -> STT text -> Claude intent parse -> logged
+     transaction/query/correction, with a user-visible transcript, immediate clarification if unclear, and ability to
+     edit/delete the last logged transaction. Suspected root cause found: STT providers used `new Blob([audio.buffer])`,
+     which can upload extra bytes from the Buffer pool and corrupt Telegram audio. Codex added
+     `src/lib/stt/blob.ts` and switched Groq/OpenAI STT providers to `audioBufferToBlob(audio)`. Next: add a regression
+     test for sliced Buffers, run gates, and live-test voice carefully without creating local polling conflicts with the
+     production webhook/BOT_TOKEN.
+  3. **Bot WebApp integration missing:** user asked why the bot is not connected as a Telegram WebApp. Current bot uses
+     dashboard magic-link URL buttons/text from `src/lib/telegram/reply.ts`. Telegram WebApp requires an HTTPS URL and
+     a `web_app` button; localhost will not work as a real WebApp. Next: when `APP_URL` starts with `https://`, change
+     dashboard reply markup to use Telegram `web_app: { url }` where grammY/Telegram typings allow it, keep plain text
+     fallback for localhost, then test on prod bot. Do not deploy/change webhook without explicit user approval.
+  4. **Voice UX improvement needed:** after transcript, bot should say what it heard and what it did, e.g. "Eshitdim:
+     ... / Yozildi: ...". For unclear audio, ask the missing field immediately. For logged transactions, reply should
+     clearly say user can write "tuzat ..." or "o'chir" for last transaction; consider inline callback buttons only if
+     implemented end-to-end with safe server handlers.
+- **CODEX BIG-PICTURE REVIEW FOR CLAUDE (2026-06-13):** User asked for the biggest project-level weaknesses so Claude
+  can think before continuing. Highest-impact risks:
+  1. **Local fixes are not in prod.** Many Codex fixes are local only and NOT pushed/deployed. The live assessment bot/site
+     may still have old behavior until the branch is checked, gated, committed, pushed, and Vercel redeploys. Do not assume
+     local `http://localhost:3001` equals live `https://oson-moliya.vercel.app`.
+  2. **Telegram WebApp/auth is not a real WebApp flow yet.** Current dashboard access is magic-link auth. A Telegram WebApp
+     should use a `web_app` button and ideally validate Telegram `initData` server-side or intentionally keep magic-link
+     auth as the security model. Decide the product/auth model before patching buttons only.
+  3. **Bot conversation state is too overloaded.** `PendingAction` stores both clarification drafts and lastTransactionId.
+     This is fragile for quick consecutive messages, voice retries, "tuzat/o'chir" after another prompt, and future inline
+     buttons. Consider separating "pending clarification" from "last logged transaction/action history".
+  4. **Voice path may exceed webhook limits and has little observability.** Telegram webhook route has `maxDuration = 30`.
+     Voice download + STT + Claude + DB can time out on Vercel, especially with longer audio. There is no durable job,
+     retry queue, or user-visible "still processing" state. If voice matters for demo, keep messages short or redesign as
+     async processing.
+  5. **AI reliability is under-tested end-to-end.** There are schema/amount tests, but not enough tests for full bot flows:
+     text/voice -> brain result -> DB write -> confirmation -> correction/delete -> dashboard visibility. Add mocked
+     `runBrain`/STT integration tests before trusting changes.
+  6. **No rate limits / abuse controls.** Telegram webhook, magic-token issuing, and Claude/STT calls can be spammed by any
+     Telegram user who finds the bot. For assessment this may be fine, but production needs per-user throttling and clearer
+     error handling to protect API spend.
+  7. **Data safety is still basic.** Transactions are soft-deleted, but categories/budgets can be hard-deleted. There is no
+     undo/restore UI, audit log, export, backup story, or "danger zone" pattern. Typed delete confirm is a good first patch
+     but not a complete data-loss strategy.
+  8. **One Neon DB appears to serve local + prod.** This is acceptable for a quick assessment but risky: local testing can
+     mutate demo/prod data. For safer work, create separate Neon branches or explicit seed/demo users.
+  9. **Finance model is MVP-level.** There are transactions/categories/budgets, but no accounts/cashboxes, debt/receivables,
+     payment methods, counterparties, transfers, roles/team access, import/export, or reconciliation. This may be the biggest
+     product gap if the target is real SMB finance, not just expense tracking.
+  10. **Observability and support are missing.** Errors mostly go to console. There is no Sentry/log drain, bot admin command,
+      health page, webhook status page, or way for a non-dev user to know why voice/login failed. For demo, at least add
+      clear user-facing failure messages and a short troubleshooting note.
 - **Bot identity:** @oson_moliya_bot (name "Moliyachi"), brand shown to users = "Oson Moliya". Demo data seed:
   `scripts/_seed.ts` (telegramId 999000001) → prints a magic-link to view a populated dashboard.
 - **Phase 2 hardening notes (Opus found in review):** (1) bot.ts clarify-loop hardcodes draft intent

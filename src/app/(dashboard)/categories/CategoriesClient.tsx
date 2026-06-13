@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
+import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
 
 interface CategoryRow {
   id: string;
@@ -59,6 +60,10 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
   const [editBudgetId, setEditBudgetId] = useState<string | null>(null);
   const [budgetVal, setBudgetVal] = useState("");
   const [budgetLoading, setBudgetLoading] = useState(false);
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<CategoryRow | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const showToast = (msg: string, type: "success" | "error" = "success") =>
     setToast({ msg, type });
@@ -122,21 +127,28 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
 
   // Delete
   const handleDelete = useCallback(
-    async (id: string) => {
-      const cat = cats.find((c) => c.id === id);
-      if (!cat) return;
-      if (!confirm(t("categories.delete.confirm", lang))) return;
+    async () => {
+      if (!deleteTarget) return;
+      const id = deleteTarget.id;
+      const confirmBudget = Boolean(deleteTarget.budgetLimit);
+      setDeletingId(id);
       try {
-        const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+        const res = await fetch(
+          `/api/categories/${id}${confirmBudget ? "?confirmBudget=1" : ""}`,
+          { method: "DELETE" }
+        );
         if (!res.ok) throw new Error();
         setCats((prev) => prev.filter((c) => c.id !== id));
+        setDeleteTarget(null);
         showToast(t("categories.deleted", lang));
         router.refresh();
       } catch {
         showToast(t("error.generic", lang), "error");
+      } finally {
+        setDeletingId(null);
       }
     },
-    [cats, lang, router]
+    [deleteTarget, lang, router]
   );
 
   // Upsert budget
@@ -179,6 +191,31 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
   return (
     <>
       {toast && <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
+
+      <TypedDeleteDialog
+        open={Boolean(deleteTarget)}
+        title={t("delete.typed.title", lang)}
+        warning={t("delete.typed.warning", lang)}
+        description={t("categories.delete.confirm", lang)}
+        extraWarning={
+          deleteTarget?.budgetLimit ? t("categories.delete.budget_confirm", lang) : undefined
+        }
+        targetLabel={
+          deleteTarget
+            ? `${deleteTarget.emoji ? `${deleteTarget.emoji} ` : ""}${deleteTarget.name}`
+            : undefined
+        }
+        requiredWord={t("delete.typed.word", lang)}
+        inputLabel={t("delete.typed.input_label", lang)}
+        instruction={t("delete.typed.instruction", lang)}
+        confirmLabel={t("common.delete", lang)}
+        cancelLabel={t("common.cancel", lang)}
+        loading={Boolean(deletingId)}
+        onCancel={() => {
+          if (!deletingId) setDeleteTarget(null);
+        }}
+        onConfirm={handleDelete}
+      />
 
       {/* Add category modal */}
       {showAddForm && (
@@ -487,8 +524,9 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleDelete(cat.id)}
-                        className="p-2 rounded-[10px] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+                        onClick={() => setDeleteTarget(cat)}
+                        disabled={deletingId === cat.id}
+                        className="p-2 rounded-[10px] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center disabled:opacity-40"
                         style={{ color: "var(--expense)" }}
                         title={t("categories.delete", lang)}
                       >

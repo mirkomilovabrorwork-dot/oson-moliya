@@ -111,6 +111,12 @@ export async function PUT(request: NextRequest): Promise<Response> {
   if (!cat) {
     return Response.json({ error: "Category not found" }, { status: 404 });
   }
+  if (cat.type !== TxType.expense) {
+    return Response.json(
+      { error: "Budgets can only be set for expense categories" },
+      { status: 422 }
+    );
+  }
 
   // If limitUzs is null/0 → delete the budget record
   if (limitUzs === null || limitUzs === 0n) {

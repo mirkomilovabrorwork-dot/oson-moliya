@@ -142,7 +142,8 @@ function resolvePeriod(
 
 /** Format so'm with thousand separators using spaces, e.g. 1 500 000 so'm */
 function formatSom(amount: bigint): string {
-  const str = amount.toString();
+  const abs = amount < 0n ? -amount : amount;
+  const str = abs.toString();
   const parts: string[] = [];
   let i = str.length;
   while (i > 0) {
@@ -150,6 +151,23 @@ function formatSom(amount: bigint): string {
     i -= 3;
   }
   return parts.join(" ") + " so'm";
+}
+
+function formatSignedSom(
+  amount: bigint,
+  type?: "income" | "expense" | "net"
+): string {
+  const sign =
+    amount === 0n
+      ? ""
+      : type === "income"
+      ? "+"
+      : type === "expense"
+      ? "-"
+      : amount > 0n
+      ? "+"
+      : "-";
+  return sign + formatSom(amount);
 }
 
 // ── Main aggregation function ─────────────────────────────────────────────────
@@ -253,13 +271,11 @@ export async function runAggregation(
       : [];
     const catMap = Object.fromEntries(catRecords.map((c) => [c.id, c.name]));
 
-    // Format report
-    const netLabel = (net as bigint) >= 0n ? "+" : "";
     const topLines = topCats
       .map((c, i) => {
         const catName = c.categoryId ? (catMap[c.categoryId] ?? "boshqa") : "boshqa";
         const amt = c._sum.amountUzs ?? 0n;
-        return `  ${i + 1}. ${catName}: ${formatSom(amt as bigint)}`;
+        return `  ${i + 1}. ${catName}: ${formatSignedSom(amt as bigint, "expense")}`;
       })
       .join("\n");
 
@@ -267,23 +283,23 @@ export async function runAggregation(
     if (language === "ru") {
       text =
         `📊 Отчёт за период:\n` +
-        `💰 Доход: ${formatSom(income as bigint)}\n` +
-        `💸 Расход: ${formatSom(expense as bigint)}\n` +
-        `📈 Итого: ${netLabel}${formatSom((net < 0n ? -net : net) as bigint)}\n` +
+        `💰 Доход: ${formatSignedSom(income as bigint, "income")}\n` +
+        `💸 Расход: ${formatSignedSom(expense as bigint, "expense")}\n` +
+        `📈 Итого: ${formatSignedSom(net as bigint, "net")}\n` +
         (topLines ? `\nТоп расходы:\n${topLines}` : "");
     } else if (language === "en") {
       text =
         `📊 Report for period:\n` +
-        `💰 Income: ${formatSom(income as bigint)}\n` +
-        `💸 Expense: ${formatSom(expense as bigint)}\n` +
-        `📈 Net: ${netLabel}${formatSom((net < 0n ? -net : net) as bigint)}\n` +
+        `💰 Income: ${formatSignedSom(income as bigint, "income")}\n` +
+        `💸 Expense: ${formatSignedSom(expense as bigint, "expense")}\n` +
+        `📈 Net: ${formatSignedSom(net as bigint, "net")}\n` +
         (topLines ? `\nTop expenses:\n${topLines}` : "");
     } else {
       text =
         `📊 Hisobot:\n` +
-        `💰 Kirim: ${formatSom(income as bigint)}\n` +
-        `💸 Chiqim: ${formatSom(expense as bigint)}\n` +
-        `📈 Balans: ${netLabel}${formatSom((net < 0n ? -net : net) as bigint)}\n` +
+        `💰 Kirim: ${formatSignedSom(income as bigint, "income")}\n` +
+        `💸 Chiqim: ${formatSignedSom(expense as bigint, "expense")}\n` +
+        `📈 Balans: ${formatSignedSom(net as bigint, "net")}\n` +
         (topLines ? `\nEng ko'p chiqimlar:\n${topLines}` : "");
     }
 
@@ -309,12 +325,15 @@ export async function runAggregation(
       _sum: { amountUzs: true },
     });
     const total = (agg._sum.amountUzs ?? 0n) as bigint;
+    const signedTotal = query.type
+      ? formatSignedSom(total, query.type)
+      : formatSom(total);
     const text =
       language === "ru"
-        ? `Итого: ${formatSom(total)}`
+        ? `Итого: ${signedTotal}`
         : language === "en"
-        ? `Total: ${formatSom(total)}`
-        : `Jami: ${formatSom(total)}`;
+        ? `Total: ${signedTotal}`
+        : `Jami: ${signedTotal}`;
     return { text, data: { sum: total.toString() } };
   }
 
@@ -368,14 +387,12 @@ export async function runAggregation(
     const income = (incAgg._sum.amountUzs ?? 0n) as bigint;
     const expense = (expAgg._sum.amountUzs ?? 0n) as bigint;
     const net = income - expense;
-    const sign = net >= 0n ? "+" : "";
-    const absNet = net < 0n ? -net : net;
     const text =
       language === "ru"
-        ? `Доход: ${formatSom(income)}\nРасход: ${formatSom(expense)}\nБаланс: ${sign}${formatSom(absNet)}`
+        ? `Доход: ${formatSignedSom(income, "income")}\nРасход: ${formatSignedSom(expense, "expense")}\nБаланс: ${formatSignedSom(net, "net")}`
         : language === "en"
-        ? `Income: ${formatSom(income)}\nExpense: ${formatSom(expense)}\nNet: ${sign}${formatSom(absNet)}`
-        : `Kirim: ${formatSom(income)}\nChiqim: ${formatSom(expense)}\nBalans: ${sign}${formatSom(absNet)}`;
+        ? `Income: ${formatSignedSom(income, "income")}\nExpense: ${formatSignedSom(expense, "expense")}\nNet: ${formatSignedSom(net, "net")}`
+        : `Kirim: ${formatSignedSom(income, "income")}\nChiqim: ${formatSignedSom(expense, "expense")}\nBalans: ${formatSignedSom(net, "net")}`;
     return {
       text,
       data: {
@@ -406,7 +423,7 @@ export async function runAggregation(
     const lines = grouped.map((g) => {
       const name = g.categoryId ? (catMap[g.categoryId] ?? "boshqa") : "boshqa";
       const amt = (g._sum.amountUzs ?? 0n) as bigint;
-      return `  • ${name}: ${formatSom(amt)}`;
+      return `  • ${name}: ${formatSignedSom(amt, query.type ?? undefined)}`;
     });
 
     const header =

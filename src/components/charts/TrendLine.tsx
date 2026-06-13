@@ -31,7 +31,7 @@ function fmt(n: number): string {
   return String(n);
 }
 
-/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income:#3f7d5a --expense:#b5453b tokens) */
+/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income:#059669 --expense:#dc2626 tokens) */
 function formatMoney(n: number): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));
@@ -121,23 +121,23 @@ export function TrendLine({ data, lang }: Props) {
             <span style={{ color: "var(--fg-muted)" }}>{value}</span>
           )}
         />
-        {/* Colors mirror CSS tokens: --income:#3f7d5a  --expense:#b5453b */}
+        {/* Colors mirror CSS tokens: --income:#059669  --expense:#dc2626 */}
         <Line
           type="monotone"
           dataKey="income"
           name={incomeLabel}
-          stroke="#3f7d5a"
+          stroke="#059669"
           strokeWidth={2}
-          dot={{ r: 3, fill: "#3f7d5a" }}
+          dot={{ r: 3, fill: "#059669" }}
           activeDot={{ r: 5 }}
         />
         <Line
           type="monotone"
           dataKey="expense"
           name={expenseLabel}
-          stroke="#b5453b"
+          stroke="#dc2626"
           strokeWidth={2}
-          dot={{ r: 3, fill: "#b5453b" }}
+          dot={{ r: 3, fill: "#dc2626" }}
           activeDot={{ r: 5 }}
         />
       </LineChart>

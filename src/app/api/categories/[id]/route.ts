@@ -73,7 +73,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
   const user = await getSessionUser();
@@ -89,6 +89,19 @@ export async function DELETE(
   });
   if (!existing) {
     return Response.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const hasBudget = await prisma.budget.findUnique({
+    where: { userId_categoryId: { userId: user.id, categoryId: id } },
+    select: { id: true },
+  });
+  const confirmedBudgetDelete =
+    request.nextUrl.searchParams.get("confirmBudget") === "1";
+  if (hasBudget && !confirmedBudgetDelete) {
+    return Response.json(
+      { error: "Category has a budget. Confirm before deleting." },
+      { status: 409 }
+    );
   }
 
   await prisma.category.delete({ where: { id } });

@@ -117,7 +117,18 @@ describe("runAggregation — sum", () => {
     );
     expect(result.data.sum).toBe("1500000");
     expect(result.text).toContain("so'm");
-    expect(result.text).toContain("1 500 000");
+    expect(result.text).toContain("+1 500 000");
+  });
+
+  it("returns signed sum for expense queries", async () => {
+    mockAggregate.mockResolvedValue({ _sum: { amountUzs: 2_250_000n } });
+    const result = await runAggregation(
+      userId,
+      { metric: "sum", type: "expense", period: "this_month" },
+      "uz"
+    );
+    expect(result.data.sum).toBe("2250000");
+    expect(result.text).toContain("-2 250 000");
   });
 
   it("handles zero sum gracefully", async () => {
@@ -160,6 +171,9 @@ describe("runAggregation — net", () => {
     expect(result.data.net).toBe("1800000");
     expect(result.text).toContain("Kirim");
     expect(result.text).toContain("Chiqim");
+    expect(result.text).toContain("+3 000 000");
+    expect(result.text).toContain("-1 200 000");
+    expect(result.text).toContain("+1 800 000");
   });
 });
 
@@ -222,6 +236,10 @@ describe("runAggregation — report", () => {
     expect(result.text).toContain("Kirim");
     expect(result.text).toContain("Chiqim");
     expect(result.text).toContain("ijara");
+    expect(result.text).toContain("+5 000 000");
+    expect(result.text).toContain("-2 000 000");
+    expect(result.text).toContain("+3 000 000");
+    expect(result.text).toContain("-1 200 000");
   });
 
   it("report in Russian has correct labels", async () => {

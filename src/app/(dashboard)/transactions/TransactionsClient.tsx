@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
+import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
 
 interface TxRow {
   id: string;
@@ -86,6 +87,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
 
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TxRow | null>(null);
 
   // Toast
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
@@ -145,13 +147,15 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
 
   // Delete handler
   const handleDelete = useCallback(
-    async (id: string) => {
-      if (!confirm(t("transactions.delete.confirm", lang))) return;
+    async () => {
+      if (!deleteTarget) return;
+      const id = deleteTarget.id;
       setDeletingId(id);
       try {
         const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error();
         setRows((r) => r.filter((tx) => tx.id !== id));
+        setDeleteTarget(null);
         showToast(t("transactions.deleted", lang));
         router.refresh();
       } catch {
@@ -160,7 +164,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         setDeletingId(null);
       }
     },
-    [lang, router]
+    [deleteTarget, lang, router]
   );
 
   // Open edit modal
@@ -241,6 +245,30 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
       {toast && (
         <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />
       )}
+
+      <TypedDeleteDialog
+        open={Boolean(deleteTarget)}
+        title={t("delete.typed.title", lang)}
+        warning={t("delete.typed.warning", lang)}
+        description={t("transactions.delete.confirm", lang)}
+        targetLabel={
+          deleteTarget
+            ? `${deleteTarget.type === "income" ? "+" : "-"}${formatMoney(deleteTarget.amountUzs)} so'm · ${
+                deleteTarget.categoryName ?? t("form.category_none", lang)
+              }`
+            : undefined
+        }
+        requiredWord={t("delete.typed.word", lang)}
+        inputLabel={t("delete.typed.input_label", lang)}
+        instruction={t("delete.typed.instruction", lang)}
+        confirmLabel={t("common.delete", lang)}
+        cancelLabel={t("common.cancel", lang)}
+        loading={Boolean(deletingId)}
+        onCancel={() => {
+          if (!deletingId) setDeleteTarget(null);
+        }}
+        onConfirm={handleDelete}
+      />
 
       {/* ── Rounded search ── */}
       <div className="relative">
@@ -559,7 +587,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                           </svg>
                         </button>
                         <button
-                          onClick={() => handleDelete(tx.id)}
+                          onClick={() => setDeleteTarget(tx)}
                           disabled={deletingId === tx.id}
                           className="p-1.5 rounded-[10px] transition-all min-h-[36px] min-w-[36px] flex items-center justify-center disabled:opacity-40"
                           style={{ color: "var(--expense)" }}

@@ -6,7 +6,7 @@ interface StatCardProps {
   comparisonLabel: string;
 }
 
-function formatAmount(val: bigint): string {
+function formatAmount(val: bigint, type?: "income" | "expense" | "net"): string {
   const parts: string[] = [];
   let n = val < 0n ? -val : val;
   while (n >= 1000n) {
@@ -14,19 +14,27 @@ function formatAmount(val: bigint): string {
     n = n / 1000n;
   }
   parts.unshift(String(n));
-  return (val < 0n ? "−" : "") + parts.join(" ") + " so'm";
+
+  let sign = "";
+  if (type === "income" && val !== 0n) sign = "+";
+  if (type === "expense" && val !== 0n) sign = "-";
+  if (type === "net" && val !== 0n) sign = val > 0n ? "+" : "-";
+
+  return sign + parts.join(" ") + " so'm";
 }
 
 function formatDelta(
   current: bigint,
-  prev: bigint
-): { text: string; positive: boolean } | null {
+  prev: bigint,
+  type?: "income" | "expense" | "net"
+): { text: string; good: boolean } | null {
   if (prev === 0n) return null;
   const diff = current - prev;
   const base = prev < 0n ? -prev : prev;
   const pct = Math.round(Number((diff * 100n) / base));
   const sign = diff >= 0n ? "+" : "";
-  return { text: `${sign}${pct}%`, positive: diff >= 0n };
+  const good = type === "expense" ? diff <= 0n : diff >= 0n;
+  return { text: `${sign}${pct}%`, good };
 }
 
 export function StatCard({
@@ -38,7 +46,7 @@ export function StatCard({
 }: StatCardProps) {
   const current = BigInt(amount);
   const prev = BigInt(prevAmount);
-  const delta = formatDelta(current, prev);
+  const delta = formatDelta(current, prev, type);
 
   const amountColor =
     type === "income"
@@ -50,9 +58,6 @@ export function StatCard({
             ? "var(--income)"
             : "var(--expense)"
           : "var(--fg)";
-
-  const icon =
-    type === "income" ? "↑" : type === "expense" ? "↓" : "≈";
 
   return (
     <div
@@ -72,18 +77,18 @@ export function StatCard({
         className="text-[28px] font-semibold tabular leading-tight mt-1"
         style={{ color: amountColor }}
       >
-        {formatAmount(current)}
+        {formatAmount(current, type)}
       </p>
       {delta && (
         <p
           className="text-xs font-medium flex items-center gap-1 mt-0.5"
           style={{
-            color: delta.positive
+            color: delta.good
               ? "var(--income)"
               : "var(--expense)",
           }}
         >
-          {delta.positive ? "▲" : "▼"} {delta.text}
+          {delta.good ? "▲" : "▼"} {delta.text}
           <span
             style={{ color: "var(--fg-muted)", fontWeight: 400 }}
           >

@@ -7,12 +7,21 @@ import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
+const AmountUzsSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") return value.replace(/\s/g, "");
+    if (typeof value === "number" && Number.isInteger(value)) return String(value);
+    return value;
+  },
+  z
+    .string()
+    .regex(/^[1-9]\d*$/)
+    .transform((value) => BigInt(value))
+);
+
 const PatchSchema = z.object({
   type: z.enum(["income", "expense"]).optional(),
-  amountUzs: z
-    .union([z.string(), z.number()])
-    .transform((v) => BigInt(v))
-    .optional(),
+  amountUzs: AmountUzsSchema.optional(),
   categoryId: z.string().nullable().optional(),
   note: z.string().nullable().optional(),
   occurredAt: z.string().optional(),
@@ -50,12 +59,37 @@ export async function PATCH(
   }
 
   const data = parsed.data;
+  const nextType = data.type
+    ? data.type === "income"
+      ? TxType.income
+      : TxType.expense
+    : existing.type;
+  let nextCategoryId = data.categoryId;
+  if (data.categoryId) {
+    const category = await prisma.category.findFirst({
+      where: { id: data.categoryId, userId: user.id, type: nextType },
+    });
+    if (!category) {
+      return Response.json(
+        { error: "Category not found for this transaction type" },
+        { status: 422 }
+      );
+    }
+  } else if (data.type && data.categoryId === undefined && existing.categoryId) {
+    const existingCategory = await prisma.category.findFirst({
+      where: { id: existing.categoryId, userId: user.id, type: nextType },
+    });
+    if (!existingCategory) {
+      nextCategoryId = null;
+    }
+  }
+
   const updated = await prisma.transaction.update({
     where: { id },
     data: {
-      type: data.type ? (data.type === "income" ? TxType.income : TxType.expense) : undefined,
+      type: data.type ? nextType : undefined,
       amountUzs: data.amountUzs,
-      categoryId: data.categoryId,
+      categoryId: nextCategoryId,
       note: data.note,
       occurredAt: data.occurredAt ? new Date(data.occurredAt) : undefined,
     },
