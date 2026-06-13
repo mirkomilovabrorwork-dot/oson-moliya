@@ -23,10 +23,12 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const bot = getBot();
     const handler = webhookCallback(bot, "std/http");
-    return handler(request);
+    // AWAIT so any async rejection (e.g. a failed sendMessage when a chat is gone)
+    // is caught here and we still return 200 — Telegram must never see a 500/retry.
+    return await handler(request);
   } catch (err) {
     console.error("Telegram webhook: handler error", err);
-    // Always return 200 so Telegram doesn't keep retrying
+    // Always return 200 so Telegram doesn't keep retrying.
     return new Response("OK", { status: 200 });
   }
 }
