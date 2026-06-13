@@ -490,8 +490,8 @@ export function createBot(): Bot {
     });
     const dash = await dashboardReplyOptions(user.id);
     const lead = dash.reply_markup
-      ? "📊 Dashboard'ni ochish uchun pastdagi tugmani bosing:"
-      : "📊 Dashboard'ni ochish uchun havolani bosing:";
+      ? "📊 Moliyachi'ni ochish uchun pastdagi tugmani bosing:"
+      : "📊 Moliyachi'ni ochish uchun havolani bosing:";
     await ctx.reply(lead + dash.extraText, { reply_markup: dash.reply_markup });
   });
 

@@ -34,14 +34,14 @@ export async function dashboardReplyOptions(
     return {
       extraText: "",
       reply_markup: {
-        inline_keyboard: [[{ text: "📊 Dashboard", web_app: { url: env.APP_URL } }]],
+        inline_keyboard: [[{ text: "📊 Moliyachi", web_app: { url: env.APP_URL } }]],
       },
     };
   }
   // Localhost fallback: magic-link as plain text
   const raw = await issueMagicToken(userId);
   const url = `${env.APP_URL}/api/auth/verify?token=${raw}`;
-  return { extraText: `\n\n📊 Dashboard: ${url}` };
+  return { extraText: `\n\n📊 Moliyachi: ${url}` };
 }
 
 /** Format a localized confirmation string after logging a transaction */
