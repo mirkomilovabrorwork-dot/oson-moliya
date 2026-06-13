@@ -22,12 +22,25 @@ interface Props {
   lang: LangCode;
 }
 
+// Calm, warm palette — anchored to design-token hues, no neon
 const COLORS = [
-  "#E11D48", "#F43F5E", "#FB7185",
-  "#f59e0b", "#F97316", "#EF4444",
-  "#8B5CF6", "#A78BFA", "#7C3AED",
-  "#06B6D4", "#0EA5E9",
+  "#b5453b", "#c8893f", "#3f7d5a",
+  "#7b6fa0", "#4e7ea6", "#8c6c3e",
+  "#5a7d6f", "#9c5b3c", "#4a6fa5",
+  "#7a4e6e",
 ];
+
+/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --color-expense/#b5453b token) */
+function formatMoney(n: number): string {
+  const parts: string[] = [];
+  let rem = Math.abs(Math.round(n));
+  while (rem >= 1000) {
+    parts.unshift(String(rem % 1000).padStart(3, "0"));
+    rem = Math.floor(rem / 1000);
+  }
+  parts.unshift(String(rem));
+  return (n < 0 ? "−" : "") + parts.join(" ") + " so'm";
+}
 
 const RADIAN = Math.PI / 180;
 
@@ -73,7 +86,7 @@ const CustomTooltip = ({
   const entry = payload[0];
   return (
     <div
-      className="text-xs rounded-xl p-3 shadow-md"
+      className="text-xs rounded-[10px] p-3"
       style={{ background: "#fff", border: "1px solid var(--color-border)" }}
     >
       <div className="flex items-center gap-2">
@@ -89,7 +102,7 @@ const CustomTooltip = ({
         className="mt-1 font-semibold tabular"
         style={{ color: "var(--color-text-secondary)" }}
       >
-        {entry.value.toLocaleString()} so&apos;m
+        {formatMoney(entry.value)}
       </p>
     </div>
   );

@@ -31,7 +31,7 @@ export function Toast({ message, type = "info", onDone, duration = 3000 }: Toast
 
   return (
     <div
-      className="fixed bottom-5 right-4 z-50 px-4 py-3 rounded-xl text-sm font-medium shadow-lg max-w-xs"
+      className="fixed bottom-5 right-4 z-50 px-4 py-3 rounded-[10px] text-sm font-medium max-w-xs"
       style={style}
       role="status"
       aria-live="polite"

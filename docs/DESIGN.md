@@ -1,60 +1,60 @@
-# PulTrack — Design system (UI/UX bar)
+# Oson Moliya — Design system v2 (warm-minimal, Claude.ai / Readwise / shadcn-inspired)
 
-The grader explicitly judges whether this feels like a real, trustworthy tool — not a prototype.
-Every screen must look intentional and consistent. Agents building UI MUST follow this. The reviewer
-(Opus) runs the app and screenshots each page against this doc.
+The grader judges whether this feels like a calm, premium, trustworthy product. Target aesthetic:
+**editorial warmth + minimal chrome** — like Claude.ai and Readwise Reader, implemented with shadcn/ui-style
+neutral tokens. Calm over flashy. Borders over shadows. Generous whitespace. Mobile-first.
 
-## Principle
-Calm, professional fintech aesthetic. Clarity over decoration. Money is serious — the UI should feel
-precise and trustworthy, never toy-like. Mobile-first (the dashboard is opened from Telegram, often on a phone).
+References studied: Claude.ai (warm cream bg, terracotta accent, no shadows, thin borders, calm rhythm),
+shadcn/ui theming (paired semantic tokens, neutral palette, ~10px radius, subtle surfaces), Readwise (content-first).
 
-## Color (define as CSS variables / Tailwind theme tokens; no random hex scattered in components)
-- **Brand / primary:** deep indigo `#4F46E5` (indigo-600) for primary actions, active nav, links.
-- **Income / positive:** emerald `#059669` (emerald-600).
-- **Expense / negative:** rose `#E11D48` (rose-600).
-- **Net:** neutral ink; green if positive, rose if negative.
-- **Surfaces:** background `#F8FAFC` (slate-50); cards white `#FFFFFF`; borders `#E2E8F0` (slate-200).
-- **Text:** primary `#0F172A` (slate-900); secondary `#475569` (slate-600); muted `#94A3B8` (slate-400).
-- Budget progress: green <70%, amber 70–99%, red ≥100%.
-- Support a clean look in all three languages; never hardcode width that breaks RU (longer words).
+## Core principles
+- **Minimal chrome:** NO drop shadows (at most a 1px hairline border + maybe a barely-there `shadow-[0_1px_2px_rgba(0,0,0,0.03)]`). Calm, flat, paper-like.
+- **Warmth:** warm off-white/paper background, not cold gray. Cards are clean white on the warm bg.
+- **Whitespace:** generous. Bigger padding, more line-height, fewer dividers. Let it breathe.
+- **Restraint:** one accent (terracotta). Color used sparingly; most of the UI is neutral ink on paper.
+- **Typography first:** clear hierarchy, tabular figures for money, comfortable reading rhythm.
+
+## Color tokens (define in globals.css as CSS variables; NO ad-hoc hex in components)
+Light (only theme for v1):
+- `--bg`: `#FAF9F6`            (warm paper)
+- `--surface`: `#FFFFFF`        (cards)
+- `--surface-2`: `#F4F3EE`      (muted fill: chips, table header, hover)
+- `--border`: `#EAE7DF`         (hairline, warm)
+- `--text`: `#1F1E1B`           (warm near-black)
+- `--text-muted`: `#6B6760`     (secondary)
+- `--text-subtle`: `#9C988D`    (captions, placeholders)
+- `--accent`: `#C15F3C`         (terracotta — primary buttons, active nav, links, focus ring)
+- `--accent-hover`: `#A94F30`
+- `--accent-weak`: `#F3E7E0`    (accent tint: active chip bg, subtle highlight)
+- `--income`: `#3F7D5A`         (muted green — income amounts, chart series, positive net)
+- `--expense`: `#B5453B`        (muted clay-red — expense amounts, chart series, negative net)
+- Budget bar: under 70% `--income`; 70–99% `#C8893F` (amber); ≥100% `--expense`.
+
+## Radius & spacing
+- Radius: `--radius: 10px` (cards/inputs/buttons use it; pills fully rounded). Avoid bubbly over-rounding.
+- Spacing scale: 4/8/12/16/24/32/48. Cards `p-6`. Section gaps `gap-6`/`gap-8`. Page max-width ~`max-w-5xl`, centered, with airy page padding (`px-5 sm:px-8 py-8`).
 
 ## Typography
-- Font: Inter (or the Next/font default geist is acceptable) — one family.
-- Scale: page title 24–28px/600; section title 16–18px/600; body 14px/400; caption 12px/500 muted.
-- **Amounts use tabular figures** (`font-variant-numeric: tabular-nums`) and are formatted with thin/space
-  grouping: `500 000 so'm`. Large KPI numbers 28–32px/700.
+- Font: keep the bundled Geist/Inter sans (clean, modern). One family.
+- Scale: page title 22–24px / 600, tight tracking; section label 13px / 600 uppercase-ish muted OR 16px/600; body 14px/400 with `leading-relaxed`; caption 12–13px muted.
+- **Money:** `font-variant-numeric: tabular-nums`, grouped with spaces (`1 200 000 so'm`). KPI numbers 26–30px/600, near-black; sign color only for the +/- semantics, kept subtle.
 
-## Components & layout
-- Cards: white, `rounded-xl`, `border border-slate-200`, subtle shadow (`shadow-sm`), padding `p-5/p-6`.
-- Spacing scale: 4 / 8 / 12 / 16 / 24 / 32. Consistent gaps; generous whitespace.
-- Stat cards (Overview): label (caption, muted) + big tabular number + small delta vs last month
-  (▲ green / ▼ rose). Icon optional, subtle.
-- Top nav: brand mark + tabs (Overview / Transactions / Analytics / Categories), active tab in brand color;
-  right side: LangSwitcher (UZ·RU·EN segmented) + logout. Sticky. Collapses cleanly on mobile.
-- Tables: zebra-free, row hover, comfortable row height (≥44px touch), right-aligned tabular amounts,
-  type shown as a colored pill (income=emerald, expense=rose). Inline edit/delete icons appear on hover (and always visible on mobile).
-- Forms (quick-add, budgets): clear labels, large 44px inputs, primary button in brand color, disabled/loading states.
-- Charts (Recharts): use the palette above (income emerald, expense rose), light grid, tooltips with
-  formatted amounts, responsive container, empty-state message when no data.
+## Components (re-skin all to these)
+- **Cards:** `bg-[--surface] border border-[--border] rounded-[10px] p-6`, no shadow (or the barely-there one). Card title small + muted; content generous.
+- **TopNav:** paper bg, hairline bottom border, brand "Oson Moliya" in `--text` (not loud), nav links muted → active link in `--accent` (text or a subtle `--accent-weak` pill). LangSwitcher = minimal text segmented (UZ·RU·EN), active in accent. Sticky, mobile hamburger. No shadow.
+- **Buttons:** primary = `bg-[--accent] text-white rounded-[10px] h-11 px-4`, hover `--accent-hover`, no shadow; secondary = `bg-transparent border border-[--border] text-[--text]`. One primary per view. Focus-visible ring in accent.
+- **Stat cards (Overview):** muted caption label + big tabular number + small delta (▲ income-green / ▼ expense-red, subtle). No icons-as-decoration; calm.
+- **Tables:** header row in `--surface-2`, hairline row separators, row hover `--surface-2`, ≥44px rows, right-aligned tabular amounts, type shown as a small text label or tiny dot (income-green / expense-red) — not loud pills.
+- **Inputs:** `h-11 bg-[--surface] border border-[--border] rounded-[10px] px-3`, focus ring accent, placeholder `--text-subtle`.
+- **Charts (Recharts):** muted palette — income `--income`, expense `--expense`, grid `--border` very light, no heavy colors; tooltips formatted money; responsive; calm empty state.
+- **Budget bars:** thin track `--surface-2`, fill per threshold colors above, label tabular.
 
-## Required states (no blank/janky screens)
-- **Empty:** friendly illustration/emoji + one-line explanation + a clear next action (e.g. "Hali yozuv yo'q —
-  Telegram'da botga birinchi xarajatni yuboring"). Applies to Overview, Transactions, Analytics, Categories.
-- **Loading:** skeletons or a subtle spinner — never layout jump.
-- **Error:** human message + retry, never a raw stack trace.
-
-## Interactions / polish
-- Hover/active states on all clickable elements; focus-visible rings (a11y).
-- Subtle transitions (150–200ms) on hover, tab switch, row expand. No flashy animation.
-- Touch targets ≥44px. Buttons have clear primary/secondary hierarchy (one primary per view).
-- Toasts/inline confirmation for save/delete success.
-
-## Onboarding (first-run)
-Warm, guided empty state: what PulTrack is in one line, 2–3 example bot messages the user can copy,
-a "Open the bot" deep link, and a hint that data appears here automatically. Must not look like a 404.
+## Required states (calm, never blank/janky)
+- Empty: a small muted glyph + one warm line + a quiet text/secondary CTA (e.g. "Hali yozuv yo'q — Telegram'da botga birinchi xarajatni yuboring").
+- Loading: subtle skeleton blocks in `--surface-2` (no spinners-as-chrome).
+- Error: a quiet line + retry; never a raw stack trace.
 
 ## Do NOT
-- Ship default unstyled Tailwind / raw HTML look.
-- Mix ad-hoc colors — use the tokens.
-- Leave English-only strings in the UI (all three languages).
-- Let RU/long labels overflow or wrap badly.
+- No drop shadows / glassmorphism / gradients / neon. No cold pure-gray (#fff/#000 only) — keep it warm.
+- No ad-hoc hex — use tokens. No loud colored pills everywhere. No cramped density — keep it airy.
+- Keep all three languages (uz/ru/en); never let RU long labels overflow.

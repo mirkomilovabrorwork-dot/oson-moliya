@@ -33,9 +33,13 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
 
   const systemPrompt = buildSystemPrompt(todayStr, categories);
 
-  // If there's a pending action, prepend context to help Claude understand the conversation
+  // Inject pending context only when waiting for a user answer (clarify_needed).
+  // Do NOT inject for intent:"logged" — it carries an empty question and would
+  // prepend useless context ("user was asked: ''") into every following message.
+  // The lastTransactionId from a "logged" pending is still accessible via getPendingAction()
+  // in bot.ts (correct_transaction / delete_transaction handlers) — not needed here.
   let userMessage = input.text;
-  if (input.pending) {
+  if (input.pending && input.pending.intent === "clarify_needed") {
     userMessage = `[Context: user was previously asked: "${input.pending.question}" — they are now answering it]\n${input.text}`;
   }
 

@@ -32,7 +32,7 @@ export default async function OnboardingPage() {
       </div>
 
       <div
-        className="w-full max-w-md rounded-2xl p-8 shadow-sm space-y-6"
+        className="w-full max-w-md rounded-[10px] p-8 space-y-6"
         style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
       >
         {/* Header */}
@@ -68,18 +68,18 @@ export default async function OnboardingPage() {
           </div>
 
           <div
-            className="flex items-start gap-3 rounded-xl p-4"
-            style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}
+            className="flex items-start gap-3 rounded-[10px] p-4"
+            style={{ background: "var(--color-income-bg)", border: "1px solid var(--color-border)" }}
           >
             <span className="text-xl mt-0.5">✅</span>
-            <p className="text-sm" style={{ color: "#166534" }}>
+            <p className="text-sm" style={{ color: "var(--color-income)" }}>
               {t("onboarding.step3", lang)}
             </p>
           </div>
 
           <div
-            className="flex items-start gap-3 rounded-xl p-4"
-            style={{ background: "#F8FAFC", border: "1px solid var(--color-border)" }}
+            className="flex items-start gap-3 rounded-[10px] p-4"
+            style={{ background: "var(--color-surface-2)", border: "1px solid var(--color-border)" }}
           >
             <span className="text-xl mt-0.5">📊</span>
             <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>

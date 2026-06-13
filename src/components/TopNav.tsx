@@ -27,17 +27,20 @@ export function TopNav({ lang }: TopNavProps) {
 
   return (
     <header
-      className="bg-white border-b sticky top-0 z-30"
-      style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
+      className="sticky top-0 z-30"
+      style={{
+        background: "var(--color-surface)",
+        borderBottom: "1px solid var(--color-border)",
+      }}
     >
-      <div className="max-w-5xl mx-auto px-4">
+      <div className="max-w-5xl mx-auto px-5 sm:px-8">
         <div className="h-14 flex items-center justify-between">
           {/* Brand + desktop nav */}
           <div className="flex items-center gap-6">
             <Link
               href="/"
-              className="font-bold text-lg"
-              style={{ color: "var(--color-brand)" }}
+              className="font-semibold text-base"
+              style={{ color: "var(--color-text-primary)" }}
             >
               Oson Moliya
             </Link>
@@ -62,13 +65,16 @@ export function TopNav({ lang }: TopNavProps) {
           {/* Right side */}
           <div className="flex items-center gap-3">
             <LangSwitcher currentLang={lang} />
-            <Link
-              href="/api/auth/logout"
+            <button
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                location.href = "/login";
+              }}
               className="hidden sm:block text-sm transition-colors"
               style={{ color: "var(--color-text-muted)" }}
             >
               {t("nav.logout", lang)}
-            </Link>
+            </button>
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen((v) => !v)}
@@ -117,13 +123,16 @@ export function TopNav({ lang }: TopNavProps) {
               {label}
             </Link>
           ))}
-          <Link
-            href="/api/auth/logout"
-            className="block px-3 py-2.5 text-sm"
+          <button
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              location.href = "/login";
+            }}
+            className="block w-full text-left px-3 py-2.5 text-sm"
             style={{ color: "var(--color-text-muted)" }}
           >
             {t("nav.logout", lang)}
-          </Link>
+          </button>
         </div>
       )}
     </header>

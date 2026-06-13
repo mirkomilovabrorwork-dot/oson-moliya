@@ -49,7 +49,7 @@ export default async function TransactionsPage() {
   return (
     <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       <TopNav lang={lang} />
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-5">
+      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 space-y-6">
         <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
           {t("transactions.title", lang)}
         </h1>

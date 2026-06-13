@@ -25,6 +25,18 @@ function fmt(n: number): string {
   return String(n);
 }
 
+/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income/#3f7d5a --expense/#b5453b tokens) */
+function formatMoney(n: number): string {
+  const parts: string[] = [];
+  let rem = Math.abs(Math.round(n));
+  while (rem >= 1000) {
+    parts.unshift(String(rem % 1000).padStart(3, "0"));
+    rem = Math.floor(rem / 1000);
+  }
+  parts.unshift(String(rem));
+  return (n < 0 ? "−" : "") + parts.join(" ") + " so'm";
+}
+
 const CustomTooltip = ({
   active,
   payload,
@@ -35,7 +47,7 @@ const CustomTooltip = ({
   if (!active || !payload?.length) return null;
   return (
     <div
-      className="text-xs rounded-xl p-3 shadow-md space-y-1"
+      className="text-xs rounded-[10px] p-3 space-y-1"
       style={{ background: "#fff", border: "1px solid var(--color-border)" }}
     >
       {payload.map((entry) => (
@@ -49,7 +61,7 @@ const CustomTooltip = ({
             className="font-semibold tabular"
             style={{ color: "var(--color-text-primary)" }}
           >
-            {entry.value.toLocaleString()} so&apos;m
+            {formatMoney(entry.value)}
           </span>
         </div>
       ))}
@@ -69,16 +81,17 @@ export function IncomeExpenseChart({ income, expense, lang }: Props) {
     );
   }
 
+  // Colors mirror CSS tokens: --color-income:#3f7d5a  --color-expense:#b5453b
   const data = [
     {
       name: t("analytics.total_income", lang),
       value: income,
-      fill: "#059669",
+      fill: "#3f7d5a",
     },
     {
       name: t("analytics.total_expense", lang),
       value: expense,
-      fill: "#E11D48",
+      fill: "#b5453b",
     },
   ];
 

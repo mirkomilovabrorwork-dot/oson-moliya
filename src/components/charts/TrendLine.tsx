@@ -31,6 +31,18 @@ function fmt(n: number): string {
   return String(n);
 }
 
+/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --color-income/#3f7d5a --color-expense/#b5453b tokens) */
+function formatMoney(n: number): string {
+  const parts: string[] = [];
+  let rem = Math.abs(Math.round(n));
+  while (rem >= 1000) {
+    parts.unshift(String(rem % 1000).padStart(3, "0"));
+    rem = Math.floor(rem / 1000);
+  }
+  parts.unshift(String(rem));
+  return (n < 0 ? "−" : "") + parts.join(" ") + " so'm";
+}
+
 const CustomTooltip = ({
   active,
   payload,
@@ -43,7 +55,7 @@ const CustomTooltip = ({
   if (!active || !payload?.length) return null;
   return (
     <div
-      className="text-xs rounded-xl p-3 shadow-md space-y-1"
+      className="text-xs rounded-[10px] p-3 space-y-1"
       style={{ background: "#fff", border: "1px solid var(--color-border)" }}
     >
       <p className="font-semibold mb-2" style={{ color: "var(--color-text-primary)" }}>{label}</p>
@@ -52,7 +64,7 @@ const CustomTooltip = ({
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: entry.color }} />
           <span style={{ color: "var(--color-text-secondary)" }}>{entry.name}:</span>
           <span className="font-semibold tabular" style={{ color: "var(--color-text-primary)" }}>
-            {entry.value.toLocaleString()} so'm
+            {formatMoney(entry.value)}
           </span>
         </div>
       ))}
@@ -101,22 +113,23 @@ export function TrendLine({ data, lang }: Props) {
             <span style={{ color: "var(--color-text-secondary)" }}>{value}</span>
           )}
         />
+        {/* Colors mirror CSS tokens: --color-income:#3f7d5a  --color-expense:#b5453b */}
         <Line
           type="monotone"
           dataKey="income"
           name={incomeLabel}
-          stroke="#059669"
+          stroke="#3f7d5a"
           strokeWidth={2}
-          dot={{ r: 3, fill: "#059669" }}
+          dot={{ r: 3, fill: "#3f7d5a" }}
           activeDot={{ r: 5 }}
         />
         <Line
           type="monotone"
           dataKey="expense"
           name={expenseLabel}
-          stroke="#E11D48"
+          stroke="#b5453b"
           strokeWidth={2}
-          dot={{ r: 3, fill: "#E11D48" }}
+          dot={{ r: 3, fill: "#b5453b" }}
           activeDot={{ r: 5 }}
         />
       </LineChart>

@@ -51,8 +51,8 @@ export function BudgetBar({ budget, lang, compact = false }: BudgetBarProps) {
         </span>
       </div>
       <div
-        className="h-2 rounded-full overflow-hidden"
-        style={{ background: "var(--color-border)" }}
+        className="h-1.5 rounded-full overflow-hidden"
+        style={{ background: "var(--color-surface-2)" }}
         role="progressbar"
         aria-valuenow={budget.percent}
         aria-valuemin={0}

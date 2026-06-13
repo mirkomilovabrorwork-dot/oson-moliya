@@ -10,7 +10,7 @@ const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1),
   TELEGRAM_WEBHOOK_SECRET: z.string().min(1),
   APP_URL: z.string().default("http://localhost:3000"),
-  AUTH_SECRET: z.string().min(16),
+  AUTH_SECRET: z.string().min(16).optional(),
 });
 
 type Env = z.infer<typeof envSchema>;

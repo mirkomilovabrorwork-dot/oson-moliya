@@ -56,50 +56,27 @@ export function StatCard({
 
   return (
     <div
-      className="rounded-xl p-5 shadow-sm flex flex-col gap-1"
+      className="rounded-[10px] p-6 flex flex-col gap-1"
       style={{
         background: "var(--color-surface)",
         border: "1px solid var(--color-border)",
       }}
     >
-      <div className="flex items-center justify-between">
-        <p
-          className="text-xs font-medium"
-          style={{ color: "var(--color-text-muted)" }}
-        >
-          {label}
-        </p>
-        <span
-          className="text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full"
-          style={
-            type === "income"
-              ? {
-                  background: "var(--color-income-bg)",
-                  color: "var(--color-income)",
-                }
-              : type === "expense"
-                ? {
-                    background: "var(--color-expense-bg)",
-                    color: "var(--color-expense)",
-                  }
-                : {
-                    background: "var(--color-brand-light)",
-                    color: "var(--color-brand)",
-                  }
-          }
-        >
-          {icon}
-        </span>
-      </div>
       <p
-        className="text-2xl font-bold tabular leading-tight"
+        className="text-xs font-medium uppercase tracking-wide"
+        style={{ color: "var(--color-text-muted)" }}
+      >
+        {label}
+      </p>
+      <p
+        className="text-[28px] font-semibold tabular leading-tight mt-1"
         style={{ color: amountColor }}
       >
         {formatAmount(current)}
       </p>
       {delta && (
         <p
-          className="text-xs font-medium flex items-center gap-1"
+          className="text-xs font-medium flex items-center gap-1 mt-0.5"
           style={{
             color: delta.positive
               ? "var(--color-income)"

@@ -23,7 +23,7 @@ export default async function LoginPage() {
       </div>
 
       <div
-        className="w-full max-w-sm rounded-2xl p-8 space-y-6 shadow-sm"
+        className="w-full max-w-sm rounded-[10px] p-8 space-y-6"
         style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
       >
         {/* Brand */}

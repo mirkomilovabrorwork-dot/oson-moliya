@@ -1,9 +1,16 @@
 import { issueMagicToken } from "../auth/token";
 import { getEnv } from "../env";
 
-/** Formats a BigInt so'm amount as a readable string */
+/** Formats a BigInt so'm amount as a readable string (space-grouped, reliable on Vercel/Node) */
 export function formatAmount(amount: bigint): string {
-  return amount.toLocaleString("uz-UZ") + " so'm";
+  const parts: string[] = [];
+  let n = amount < 0n ? -amount : amount;
+  while (n >= 1000n) {
+    parts.unshift(String(n % 1000n).padStart(3, "0"));
+    n = n / 1000n;
+  }
+  parts.unshift(String(n));
+  return (amount < 0n ? "−" : "") + parts.join(" ") + " so'm";
 }
 
 /**

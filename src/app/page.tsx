@@ -64,29 +64,34 @@ export default async function OverviewPage() {
     include: { category: true },
   });
 
-  const budgetDTOs: BudgetDTO[] = await Promise.all(
-    budgets.map(async (b) => {
-      const agg = await prisma.transaction.aggregate({
-        where: {
-          userId: user.id,
-          categoryId: b.categoryId,
-          type: "expense",
-          deletedAt: null,
-          occurredAt: { gte: monthStart, lt: monthEnd },
-        },
-        _sum: { amountUzs: true },
-      });
-      const spent = agg._sum.amountUzs ?? 0n;
-      const pct = b.limitUzs > 0n ? Math.round(Number((spent * 100n) / b.limitUzs)) : 0;
-      return {
-        categoryId: b.categoryId,
-        categoryName: b.category.name,
-        limitUzs: b.limitUzs.toString(),
-        spentUzs: spent.toString(),
-        percent: pct,
-      };
-    })
+  // Single groupBy query replaces N+1 per-budget aggregate calls
+  const spentRows = await prisma.transaction.groupBy({
+    by: ["categoryId"],
+    where: {
+      userId: user.id,
+      type: "expense",
+      deletedAt: null,
+      occurredAt: { gte: monthStart, lt: monthEnd },
+    },
+    _sum: { amountUzs: true },
+  });
+  const spentMap = new Map<string, bigint>(
+    spentRows
+      .filter((r) => r.categoryId !== null)
+      .map((r) => [r.categoryId as string, r._sum.amountUzs ?? 0n])
   );
+
+  const budgetDTOs: BudgetDTO[] = budgets.map((b) => {
+    const spent = spentMap.get(b.categoryId) ?? 0n;
+    const pct = b.limitUzs > 0n ? Math.round(Number((spent * 100n) / b.limitUzs)) : 0;
+    return {
+      categoryId: b.categoryId,
+      categoryName: b.category.name,
+      limitUzs: b.limitUzs.toString(),
+      spentUzs: spent.toString(),
+      percent: pct,
+    };
+  });
 
   const serializedCategories = categories.map((c) => ({ ...c, type: c.type as string }));
   const isEmpty = recent.length === 0;
@@ -95,7 +100,7 @@ export default async function OverviewPage() {
     <div className="min-h-screen" style={{ background: "var(--color-bg)" }}>
       <TopNav lang={lang} />
 
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
             {t("overview.title", lang)}
@@ -105,7 +110,7 @@ export default async function OverviewPage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <StatCard
             label={t("overview.income", lang)}
             amount={overview.income.toString()}
@@ -133,7 +138,7 @@ export default async function OverviewPage() {
           <div className="lg:col-span-3 space-y-6">
             {/* Recent transactions */}
             <div
-              className="rounded-xl shadow-sm overflow-hidden"
+              className="rounded-[10px] overflow-hidden"
               style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
             >
               <div
@@ -176,8 +181,10 @@ export default async function OverviewPage() {
                   {recent.map((tx) => (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between px-5 py-3.5 border-b hover:bg-slate-50 transition-colors"
+                      className="flex items-center justify-between px-5 py-3.5 border-b transition-colors"
                       style={{ borderColor: "var(--color-border)" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface-2)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="text-lg shrink-0">
@@ -217,7 +224,7 @@ export default async function OverviewPage() {
             {/* Budget alerts */}
             {budgetDTOs.length > 0 && (
               <div
-                className="rounded-xl shadow-sm p-5 space-y-4"
+                className="rounded-[10px] p-6 space-y-4"
                 style={{
                   background: "var(--color-surface)",
                   border: "1px solid var(--color-border)",

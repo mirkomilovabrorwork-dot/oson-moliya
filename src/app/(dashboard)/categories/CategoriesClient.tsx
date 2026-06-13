@@ -175,9 +175,9 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
   };
   const inputCls = "w-full rounded-lg px-3 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 min-h-[44px]";
 
-  const renderCatList = (list: CategoryRow[], typeLabel: string) => (
+  const renderCatList = (list: CategoryRow[], typeLabel: string, sectionType: "income" | "expense") => (
     <div
-      className="rounded-xl shadow-sm overflow-hidden"
+      className="rounded-[10px] overflow-hidden"
       style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
     >
       <div
@@ -189,7 +189,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
         </h2>
         <button
           onClick={() => {
-            setAddType(list[0]?.type ?? "expense");
+            setAddType(sectionType);
             setShowAddForm(true);
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
@@ -261,7 +261,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                       {cat.isDefault && (
                         <span
                           className="text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ background: "#F1F5F9", color: "var(--color-text-muted)" }}
+                          style={{ background: "var(--color-surface-2)", color: "var(--color-text-muted)" }}
                         >
                           {t("categories.default_badge", lang)}
                         </span>
@@ -373,8 +373,8 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddForm(false); }}
         >
           <div
-            className="w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl"
-            style={{ background: "var(--color-surface)" }}
+            className="w-full max-w-sm rounded-[10px] p-6 space-y-4"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
           >
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base" style={{ color: "var(--color-text-primary)" }}>
@@ -413,7 +413,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                       ? opt === "income"
                         ? { background: "var(--color-income)", color: "#fff" }
                         : { background: "var(--color-expense)", color: "#fff" }
-                      : { background: "#F1F5F9", color: "var(--color-text-secondary)" }
+                      : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)" }
                   }
                 >
                   {t(`form.type.${opt}`, lang)}
@@ -473,8 +473,8 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
       )}
 
       <div className="space-y-6">
-        {renderCatList(income, t("categories.income", lang))}
-        {renderCatList(expense, t("categories.expense", lang))}
+        {renderCatList(income, t("categories.income", lang), "income")}
+        {renderCatList(expense, t("categories.expense", lang), "expense")}
       </div>
     </>
   );

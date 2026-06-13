@@ -104,8 +104,17 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
           (tx.categoryName ?? "").toLowerCase().includes(q)
       );
     }
-    if (dateFrom) r = r.filter((tx) => tx.occurredAt >= dateFrom);
-    if (dateTo) r = r.filter((tx) => tx.occurredAt <= dateTo + "T23:59:59Z");
+    // Compare on Tashkent date (UTC+5) to avoid day-boundary misclassification
+    if (dateFrom || dateTo) {
+      r = r.filter((tx) => {
+        const tashkentDate = new Date(new Date(tx.occurredAt).getTime() + 5 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10);
+        if (dateFrom && tashkentDate < dateFrom) return false;
+        if (dateTo && tashkentDate > dateTo) return false;
+        return true;
+      });
+    }
     return r;
   }, [rows, typeFilter, catFilter, searchQuery, dateFrom, dateTo]);
 
@@ -202,7 +211,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
   };
 
   const inputCls =
-    "rounded-lg px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 min-h-[40px]";
+    "rounded-[10px] px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 min-h-[44px] h-11";
   const inputStyle = {
     border: "1px solid var(--color-border)",
     background: "var(--color-surface)",
@@ -219,7 +228,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
 
       {/* Filters bar */}
       <div
-        className="rounded-xl p-4 space-y-3"
+        className="rounded-[10px] p-5 space-y-3"
         style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
       >
         {/* Row 1: type + category + search */}
@@ -306,7 +315,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
 
       {/* Table */}
       <div
-        className="rounded-xl shadow-sm overflow-hidden"
+        className="rounded-[10px] overflow-hidden"
         style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
       >
         {filtered.length === 0 ? (
@@ -319,7 +328,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead style={{ background: "#F8FAFC", borderBottom: "1px solid var(--color-border)" }}>
+              <thead style={{ background: "var(--color-surface-2)", borderBottom: "1px solid var(--color-border)" }}>
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-xs" style={{ color: "var(--color-text-muted)" }}>
                     {t("transactions.date", lang)}
@@ -347,9 +356,11 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                     key={tx.id}
                     className="group transition-colors"
                     style={{
-                      background: idx % 2 === 0 ? "var(--color-surface)" : "#FAFAFA",
+                      background: "var(--color-surface)",
                       borderTop: "1px solid var(--color-border)",
                     }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface-2)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface)"; }}
                   >
                     <td
                       className="px-4 py-3 whitespace-nowrap text-sm"
@@ -359,12 +370,12 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold"
-                        style={
-                          tx.type === "income"
-                            ? { background: "var(--color-income-bg)", color: "var(--color-income)" }
-                            : { background: "var(--color-expense-bg)", color: "var(--color-expense)" }
-                        }
+                        className="text-xs font-medium"
+                        style={{
+                          color: tx.type === "income"
+                            ? "var(--color-income)"
+                            : "var(--color-expense)",
+                        }}
                       >
                         {t(`form.type.${tx.type}`, lang)}
                       </span>
@@ -458,8 +469,8 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
           onClick={(e) => { if (e.target === e.currentTarget) setEditing(null); }}
         >
           <div
-            className="w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl"
-            style={{ background: "var(--color-surface)" }}
+            className="w-full max-w-md rounded-[10px] p-6 space-y-4"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
           >
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base" style={{ color: "var(--color-text-primary)" }}>
@@ -496,7 +507,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                       ? opt === "income"
                         ? { background: "var(--color-income)", color: "#fff" }
                         : { background: "var(--color-expense)", color: "#fff" }
-                      : { background: "#F1F5F9", color: "var(--color-text-secondary)" }
+                      : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)" }
                   }
                 >
                   {t(`form.type.${opt}`, lang)}

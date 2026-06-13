@@ -76,7 +76,7 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-xl p-5 shadow-sm space-y-4"
+      className="rounded-[10px] p-6 space-y-4"
       style={{
         background: "var(--color-surface)",
         border: "1px solid var(--color-border)",
@@ -130,7 +130,7 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
                 ? opt === "income"
                   ? { background: "var(--color-income)", color: "#fff" }
                   : { background: "var(--color-expense)", color: "#fff" }
-                : { background: "#F1F5F9", color: "var(--color-text-secondary)" }
+                : { background: "var(--color-surface-2)", color: "var(--color-text-secondary)" }
             }
           >
             {t(`form.type.${opt}`, lang)}

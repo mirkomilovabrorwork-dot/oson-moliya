@@ -58,8 +58,9 @@ function getThisYear() {
   const now = new Date(Date.now() + 5 * 60 * 60 * 1000);
   const year = now.getUTCFullYear();
   const start = new Date(Date.UTC(year, 0, 1) - 5 * 60 * 60 * 1000);
-  const end = new Date(Date.now() + 5 * 60 * 60 * 1000);
-  return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
+  // `to` is treated as EXCLUSIVE by the API — use tomorrow so today is included
+  const tomorrow = new Date(Date.now() + 5 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000);
+  return { from: start.toISOString().slice(0, 10), to: tomorrow.toISOString().slice(0, 10) };
 }
 
 export function AnalyticsClient({
@@ -160,13 +161,13 @@ export function AnalyticsClient({
     border: "1px solid var(--color-border)",
     background: "var(--color-surface)",
     color: "var(--color-text-primary)",
-    borderRadius: 8,
+    borderRadius: 10,
     padding: "6px 12px",
     fontSize: 13,
-    minHeight: 36,
+    height: 44,
   };
 
-  const cardCls = "rounded-xl shadow-sm p-5 space-y-4";
+  const cardCls = "rounded-[10px] p-6 space-y-4";
   const cardStyle = { background: "var(--color-surface)", border: "1px solid var(--color-border)" };
 
   // expense by category for pie
@@ -243,7 +244,7 @@ export function AnalyticsClient({
       )}
 
       {/* KPI row */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-6">
         {[
           { label: t("analytics.total_income", lang), val: income, color: "var(--color-income)" },
           { label: t("analytics.total_expense", lang), val: expense, color: "var(--color-expense)" },
@@ -251,11 +252,11 @@ export function AnalyticsClient({
         ].map(({ label, val, color }) => (
           <div
             key={label}
-            className="rounded-xl p-4 shadow-sm text-center"
+            className="rounded-[10px] p-5 text-center"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
           >
-            <p className="text-xs mb-1" style={{ color: "var(--color-text-muted)" }}>{label}</p>
-            <p className="text-lg font-bold tabular" style={{ color }}>
+            <p className="text-xs mb-1 uppercase tracking-wide" style={{ color: "var(--color-text-muted)" }}>{label}</p>
+            <p className="text-xl font-semibold tabular" style={{ color }}>
               {formatMoney(val)}
             </p>
           </div>
