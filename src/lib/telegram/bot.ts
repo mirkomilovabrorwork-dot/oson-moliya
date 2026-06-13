@@ -13,7 +13,8 @@ import {
   upsertPendingAction,
   clearPendingAction,
 } from "../services/pending";
-import { dashboardReplyOptions, formatConfirmation } from "./reply";
+import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert } from "./reply";
+import { checkExpenseBudgetBreach } from "../services/budgets";
 import { getSttProvider } from "../stt";
 import { downloadTelegramFile } from "./download";
 import { runAggregation } from "../services/analytics";
@@ -200,8 +201,28 @@ async function handleMessage(
       language: lang,
     });
 
+    // Proactive budget alert: append warning inline if this expense breaches the limit
+    let budgetWarning = "";
+    if (txType === "expense" && categoryId) {
+      try {
+        const breach = await checkExpenseBudgetBreach(user.id, categoryId);
+        if (breach) {
+          budgetWarning =
+            "\n\n" +
+            formatBudgetAlert({
+              categoryName: breach.categoryName,
+              spentUzs: breach.spentUzs,
+              limitUzs: breach.limitUzs,
+              language: lang,
+            });
+        }
+      } catch {
+        // Budget check failure must NEVER block logging or the confirmation reply
+      }
+    }
+
     const dashConfirm = await dashboardReplyOptions(user.id);
-    await ctx.reply(confirmation + dashConfirm.extraText, {
+    await ctx.reply(confirmation + budgetWarning + dashConfirm.extraText, {
       reply_markup: dashConfirm.reply_markup,
     });
     return;

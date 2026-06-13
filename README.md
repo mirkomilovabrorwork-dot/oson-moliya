@@ -1,6 +1,9 @@
-# PulTrack — Telegram Finance Manager for Uzbekistan SMBs
+# Oson Moliya — Telegram Finance Manager for Uzbekistan SMBs
 
-PulTrack is a trilingual (Uzbek / Russian / English) finance-tracking tool built for Uzbekistan small businesses. Users log income and expenses by sending text or voice messages to a Telegram bot in Uzbek, Russian, or English; the bot's Claude-powered brain understands natural-language amounts (including shorthands like "500 ming", "2 mln"), detects the category, asks a single clarifying question when needed, and confirms the transaction. A magic-link in the bot's reply opens a multi-page web dashboard — Overview, Transactions, Analytics, and Categories — where the user sees all their data, charts, per-category budget limits, and proactive overspend alerts, all in three languages.
+> Live: bot [@oson_moliya_bot](https://t.me/oson_moliya_bot) · dashboard https://oson-moliya.vercel.app
+> (Internal codename: **PulTrack** — the repo and some docs use it; the shipped product is "Oson Moliya".)
+
+Oson Moliya is a trilingual (Uzbek / Russian / English) finance-tracking tool built for Uzbekistan small businesses. Users log income and expenses by sending text or voice messages to a Telegram bot in Uzbek, Russian, or English; the bot's Claude-powered brain understands natural-language amounts (including shorthands like "500 ming", "2 mln"), detects the category, asks a single clarifying question when needed, and confirms the transaction. The reply carries a button that opens a multi-page web dashboard — Overview, Transactions, Analytics, and Categories — where the user sees all their data, charts, and per-category budget limits with progress bars; the bot itself sends a proactive warning the moment a category's monthly spend crosses its limit — all in three languages.
 
 ---
 

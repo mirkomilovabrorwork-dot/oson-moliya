@@ -44,6 +44,26 @@ export async function dashboardReplyOptions(
   return { extraText: `\n\n📊 Moliyachi: ${url}` };
 }
 
+/** Format a localized budget overspend warning to append to a confirmation reply */
+export function formatBudgetAlert(params: {
+  categoryName: string;
+  spentUzs: bigint;
+  limitUzs: bigint;
+  language: string;
+}): string {
+  const { categoryName, spentUzs, limitUzs, language } = params;
+  const spent = formatAmount(spentUzs);
+  const limit = formatAmount(limitUzs);
+
+  if (language === "ru") {
+    return `⚠️ Внимание: по категории "${categoryName}" в этом месяце потрачено ${spent} — превышен лимит ${limit}.`;
+  } else if (language === "en") {
+    return `⚠️ Heads up: you've spent ${spent} on "${categoryName}" this month — over your ${limit} limit.`;
+  } else {
+    return `⚠️ Eslatma: "${categoryName}" bo'yicha bu oy ${spent} sarfladingiz — ${limit} limitidan oshdi.`;
+  }
+}
+
 /** Format a localized confirmation string after logging a transaction */
 export function formatConfirmation(params: {
   amount: bigint;

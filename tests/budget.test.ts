@@ -9,35 +9,7 @@
  * 4. new month → alerts again
  */
 import { describe, it, expect } from "vitest";
-
-// Pure function extracted from the budget breach logic
-// In real impl this lives in src/lib/services/budgets.ts (backend agent).
-// We test the decision logic here independently.
-
-interface BudgetState {
-  limitUzs: bigint;
-  lastAlertedYm: string | null;
-}
-
-interface CheckResult {
-  shouldAlert: boolean;
-  newLastAlertedYm: string | null;
-}
-
-function checkBreach(
-  spentThisMonth: bigint,
-  budget: BudgetState,
-  currentYm: string // e.g. "2026-06"
-): CheckResult {
-  if (spentThisMonth < budget.limitUzs) {
-    return { shouldAlert: false, newLastAlertedYm: budget.lastAlertedYm };
-  }
-  // At or over limit — alert only if we haven't alerted this month
-  if (budget.lastAlertedYm === currentYm) {
-    return { shouldAlert: false, newLastAlertedYm: budget.lastAlertedYm };
-  }
-  return { shouldAlert: true, newLastAlertedYm: currentYm };
-}
+import { checkBreach } from "@/lib/services/budgets";
 
 describe("checkBreach", () => {
   const LIMIT = 1_000_000n; // 1 mln so'm
