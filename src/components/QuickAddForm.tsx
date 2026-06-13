@@ -8,9 +8,12 @@ interface QuickAddFormProps {
   lang: LangCode;
   categories: Array<{ id: string; name: string; type: string; emoji: string | null }>;
   onSuccess?: () => void;
+  /** When true, renders without the outer card chrome (background/border/rounded/padding)
+   *  and without the inner <h3> title. Use inside AddSheet which already provides a header. */
+  bare?: boolean;
 }
 
-export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps) {
+export function QuickAddForm({ lang, categories, onSuccess, bare = false }: QuickAddFormProps) {
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -73,21 +76,27 @@ export function QuickAddForm({ lang, categories, onSuccess }: QuickAddFormProps)
     color: "var(--fg)",
   };
 
+  const formClass = bare
+    ? "space-y-4"
+    : "rounded-[10px] p-6 space-y-4";
+  const formStyle = bare
+    ? undefined
+    : { background: "var(--surface)", border: "1px solid var(--border)" };
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[10px] p-6 space-y-4"
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-      }}
+      className={formClass}
+      style={formStyle}
     >
-      <h3
-        className="font-semibold text-sm"
-        style={{ color: "var(--fg)" }}
-      >
-        {t("overview.quick_add", lang)}
-      </h3>
+      {!bare && (
+        <h3
+          className="font-semibold text-sm"
+          style={{ color: "var(--fg)" }}
+        >
+          {t("overview.quick_add", lang)}
+        </h3>
+      )}
 
       {error && (
         <div

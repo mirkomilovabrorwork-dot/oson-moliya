@@ -10,6 +10,9 @@ const uz: Dictionary = {
   "nav.categories": "Kategoriyalar",
   "nav.logout": "Chiqish",
   "nav.theme": "Mavzu",
+  "nav.home": "Bosh sahifa",
+  "nav.debts": "Qarzlar",
+  "nav.more": "Yana",
   // ── Theme
   "theme.light": "Yorug'",
   "theme.dark": "Qorong'i",
@@ -150,6 +153,26 @@ const uz: Dictionary = {
   "error.unauthorized": "Kirish talab etiladi",
   "error.not_found": "Topilmadi",
   "error.retry": "Qayta urinish",
+  // ── More page
+  "more.title": "Sozlamalar va asboblar",
+  "more.accounts": "Hisoblar",
+  "more.accounts_sub": "Hisoblarni boshqarish",
+  "more.categories_sub": "Kategoriyalarni boshqarish",
+  "more.currency": "Asosiy valyuta",
+  "more.currency_sub": "Asosiy valyutani tanlash",
+  "more.language": "Til",
+  "more.language_sub": "Tilni tanlash",
+  "more.theme_sub": "Yorug', qorong'i yoki tizim",
+  // ── Common
+  "common.soon": "Tez orada",
+  // ── Home page
+  "home.balance": "Umumiy balans",
+  "home.expense_overview": "Xarajatlar sharhi",
+  "home.total": "Jami",
+  "home.more": "Ko'proq",
+  // ── Debts / Accounts placeholders
+  "debts.soon_desc": "Qarzlar moduli tez orada qo'shiladi.",
+  "accounts.soon_desc": "Hisoblar moduli tez orada qo'shiladi.",
   // ── Common
   "delete.typed.title": "O'chirishni tasdiqlang",
   "delete.typed.warning": "Ogohlantirish: bu amalni qaytarib bo'lmaydi.",
@@ -184,6 +207,9 @@ const ru: Dictionary = {
   "nav.categories": "Категории",
   "nav.logout": "Выйти",
   "nav.theme": "Тема",
+  "nav.home": "Главная",
+  "nav.debts": "Долги",
+  "nav.more": "Ещё",
   // ── Theme
   "theme.light": "Светлая",
   "theme.dark": "Тёмная",
@@ -323,6 +349,26 @@ const ru: Dictionary = {
   "error.unauthorized": "Требуется авторизация",
   "error.not_found": "Не найдено",
   "error.retry": "Повторить",
+  // ── More page
+  "more.title": "Настройки и инструменты",
+  "more.accounts": "Счета",
+  "more.accounts_sub": "Управление счетами",
+  "more.categories_sub": "Управление категориями",
+  "more.currency": "Основная валюта",
+  "more.currency_sub": "Выбор основной валюты",
+  "more.language": "Язык",
+  "more.language_sub": "Выбор языка",
+  "more.theme_sub": "Светлая, тёмная или системная",
+  // ── Common
+  "common.soon": "Скоро",
+  // ── Home page
+  "home.balance": "Общий баланс",
+  "home.expense_overview": "Обзор расходов",
+  "home.total": "Всего",
+  "home.more": "Подробнее",
+  // ── Debts / Accounts placeholders
+  "debts.soon_desc": "Модуль долгов появится скоро.",
+  "accounts.soon_desc": "Модуль счетов появится скоро.",
   // ── Common
   "delete.typed.title": "Подтвердите удаление",
   "delete.typed.warning": "Предупреждение: это действие нельзя отменить.",
@@ -357,6 +403,9 @@ const en: Dictionary = {
   "nav.categories": "Categories",
   "nav.logout": "Logout",
   "nav.theme": "Theme",
+  "nav.home": "Home",
+  "nav.debts": "Debts",
+  "nav.more": "More",
   // ── Theme
   "theme.light": "Light",
   "theme.dark": "Dark",
@@ -496,6 +545,26 @@ const en: Dictionary = {
   "error.unauthorized": "Authentication required",
   "error.not_found": "Not found",
   "error.retry": "Retry",
+  // ── More page
+  "more.title": "Settings & tools",
+  "more.accounts": "Accounts",
+  "more.accounts_sub": "Manage accounts",
+  "more.categories_sub": "Manage categories",
+  "more.currency": "Main currency",
+  "more.currency_sub": "Choose main currency",
+  "more.language": "Language",
+  "more.language_sub": "Choose language",
+  "more.theme_sub": "Light, dark or system",
+  // ── Common
+  "common.soon": "Coming soon",
+  // ── Home page
+  "home.balance": "Total balance",
+  "home.expense_overview": "Expense overview",
+  "home.total": "Total",
+  "home.more": "More",
+  // ── Debts / Accounts placeholders
+  "debts.soon_desc": "The debts module is coming soon.",
+  "accounts.soon_desc": "The accounts module is coming soon.",
   // ── Common
   "delete.typed.title": "Confirm deletion",
   "delete.typed.warning": "Warning: this action cannot be undone.",

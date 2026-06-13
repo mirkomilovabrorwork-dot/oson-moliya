@@ -3,6 +3,7 @@ import { resolveLang, t } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { TopNav } from "@/components/TopNav";
 import { BottomNav } from "@/components/BottomNav";
+import { AddSheet } from "@/components/AddSheet";
 import { AnalyticsClient } from "./AnalyticsClient";
 import { redirect } from "next/navigation";
 
@@ -80,8 +81,12 @@ export default async function AnalyticsPage() {
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
-      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-8 pb-24 sm:pb-8 space-y-8">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
+      <AddSheet lang={lang} />
+      <main className="max-w-2xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
+        <h1
+          className="text-xs font-semibold uppercase tracking-wide pl-1"
+          style={{ color: "var(--fg-subtle)" }}
+        >
           {t("analytics.title", lang)}
         </h1>
         <AnalyticsClient

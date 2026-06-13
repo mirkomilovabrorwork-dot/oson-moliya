@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LangSwitcher } from "@/components/LangSwitcher";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
+
 interface TopNavProps {
   lang: LangCode;
 }
@@ -14,10 +13,10 @@ export function TopNav({ lang }: TopNavProps) {
   const pathname = usePathname();
 
   const navLinks = [
-    { href: "/", label: t("nav.overview", lang) },
+    { href: "/", label: t("nav.home", lang) },
     { href: "/transactions", label: t("nav.transactions", lang) },
-    { href: "/analytics", label: t("nav.analytics", lang) },
-    { href: "/categories", label: t("nav.categories", lang) },
+    { href: "/debts", label: t("nav.debts", lang) },
+    { href: "/more", label: t("nav.more", lang) },
   ];
 
   const isActive = (href: string) =>
@@ -58,23 +57,6 @@ export function TopNav({ lang }: TopNavProps) {
                 </Link>
               ))}
             </nav>
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-3">
-            <ThemeToggle lang={lang} />
-            <LangSwitcher currentLang={lang} />
-            <button
-              onClick={async () => {
-                await fetch("/api/auth/logout", { method: "POST" });
-                location.href = "/login";
-              }}
-              className="hidden sm:block text-sm transition-colors"
-              style={{ color: "var(--fg-subtle)" }}
-            >
-              {t("nav.logout", lang)}
-            </button>
-            {/* Mobile hamburger — hidden on mobile (BottomNav handles nav there) */}
           </div>
         </div>
       </div>

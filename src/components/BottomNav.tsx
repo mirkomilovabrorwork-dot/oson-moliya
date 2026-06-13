@@ -30,32 +30,34 @@ function IconTransactions() {
   );
 }
 
-function IconAnalytics() {
+function IconDebts() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="12" width="4" height="9" rx="1"/>
-      <rect x="10" y="7" width="4" height="14" rx="1"/>
-      <rect x="17" y="3" width="4" height="18" rx="1"/>
+      {/* Hand holding coins */}
+      <path d="M20 12c0 1.1-.9 2-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4z"/>
+      <circle cx="10" cy="10" r="1.5"/>
+      <circle cx="14" cy="10" r="1.5"/>
+      <path d="M4 14c0 2.2 1.8 4 4 4h8c2.2 0 4-1.8 4-4"/>
     </svg>
   );
 }
 
-function IconCategories() {
+function IconMore() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-      <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-      <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-      <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      {/* Three dots horizontal */}
+      <circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/>
     </svg>
   );
 }
 
 const tabs = [
-  { href: "/", labelKey: "nav.overview", Icon: IconHome },
+  { href: "/", labelKey: "nav.home", Icon: IconHome },
   { href: "/transactions", labelKey: "nav.transactions", Icon: IconTransactions },
-  { href: "/analytics", labelKey: "nav.analytics", Icon: IconAnalytics },
-  { href: "/categories", labelKey: "nav.categories", Icon: IconCategories },
+  { href: "/debts", labelKey: "nav.debts", Icon: IconDebts },
+  { href: "/more", labelKey: "nav.more", Icon: IconMore },
 ] as const;
 
 export function BottomNav({ lang }: BottomNavProps) {
