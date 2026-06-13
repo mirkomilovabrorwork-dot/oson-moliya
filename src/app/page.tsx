@@ -181,10 +181,8 @@ export default async function OverviewPage() {
                   {recent.map((tx) => (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between px-5 py-3.5 border-b transition-colors"
+                      className="row-hover flex items-center justify-between px-5 py-3.5 border-b transition-colors"
                       style={{ borderColor: "var(--color-border)" }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface-2)"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="text-lg shrink-0">

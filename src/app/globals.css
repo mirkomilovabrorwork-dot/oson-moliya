@@ -91,3 +91,8 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* Row hover (CSS, so server components don't need JS event handlers). */
+.row-hover:hover {
+  background: var(--color-surface-2);
+}
