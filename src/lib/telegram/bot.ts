@@ -1043,12 +1043,12 @@ export function createBot(): Bot {
         return;
       }
 
-      // ── e:<txId> — open the edit menu for a transaction ───────────────────
+      // ── e:<txId> — open ONE consolidated edit window (one tap to fix) ─────
       if (data.startsWith("e:")) {
         const txId = data.slice(2);
         const tx = await prisma.transaction.findFirst({
           where: { id: txId, userId: user.id, deletedAt: null },
-          select: { id: true },
+          select: { id: true, type: true },
         });
         if (!tx) {
           await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
@@ -1057,24 +1057,34 @@ export function createBot(): Bot {
         }
         await clearPendingAction(user.id);
         await upsertPendingAction(user.id, { intent: "edit_tx", draft: { txId }, question: "" });
+
+        // One window: type toggle + the user's categories + amount/delete — all one tap.
+        const editCats = await prisma.category.findMany({
+          where: { userId: user.id, type: tx.type },
+          select: { id: true, name: true },
+          take: 6,
+        });
+        const rows: InlineKeyboardButton[][] = [];
+        rows.push([
+          { text: labels.incomeBtn, callback_data: "et:income" },
+          { text: labels.expenseBtn, callback_data: "et:expense" },
+        ]);
+        const catBtns: InlineKeyboardButton[] = editCats.map((c) => ({ text: c.name, callback_data: `ec:${c.id}` }));
+        for (let i = 0; i < catBtns.length; i += 2) rows.push(catBtns.slice(i, i + 2));
+        rows.push([
+          { text: lang === "ru" ? "💰 Сумма" : lang === "en" ? "💰 Amount" : "💰 Summa", callback_data: "ef:amt" },
+          { text: labels.deleteBtn, callback_data: `d:${txId}` },
+        ]);
         await ctx.answerCallbackQuery();
         await ctx.reply(
-          lang === "ru" ? "Что изменить?" : lang === "en" ? "What to change?" : "Nimani o'zgartiramiz?",
-          {
-            reply_markup: {
-              inline_keyboard: [[
-                { text: lang === "ru" ? "💰 Сумма" : lang === "en" ? "💰 Amount" : "💰 Summa", callback_data: "ef:amt" },
-                { text: lang === "ru" ? "🏷 Категория" : lang === "en" ? "🏷 Category" : "🏷 Kategoriya", callback_data: "ef:cat" },
-                { text: lang === "ru" ? "🔄 Тип" : lang === "en" ? "🔄 Type" : "🔄 Turi", callback_data: "ef:typ" },
-              ]],
-            },
-          }
+          lang === "ru" ? "Что исправить?" : lang === "en" ? "Fix what?" : "Nimani to'g'irlaymiz?",
+          { reply_markup: { inline_keyboard: rows } }
         );
         return;
       }
 
-      // ── ef:amt / ef:cat / ef:typ — an edit field was chosen ───────────────
-      if (data === "ef:amt" || data === "ef:cat" || data === "ef:typ") {
+      // ── ef:amt — ask for the new amount as a typed reply (covers STT) ─────
+      if (data === "ef:amt") {
         const p = await getPendingAction(user.id);
         if (!p || p.intent !== "edit_tx") {
           await ctx.answerCallbackQuery({ text: labels.expiredMsg });
@@ -1084,6 +1094,7 @@ export function createBot(): Bot {
         const txId = (p.draft as Record<string, unknown>).txId as string;
         const tx = await prisma.transaction.findFirst({
           where: { id: txId, userId: user.id, deletedAt: null },
+          select: { id: true },
         });
         if (!tx) {
           await clearPendingAction(user.id);
@@ -1091,51 +1102,11 @@ export function createBot(): Bot {
           await ctx.reply(labels.notFoundMsg);
           return;
         }
-
-        if (data === "ef:amt") {
-          await upsertPendingAction(user.id, { intent: "edit_tx", draft: { txId, field: "amount" }, question: "" });
-          await ctx.answerCallbackQuery();
-          await ctx.reply(
-            lang === "ru" ? "Напишите новую сумму (напр. 50 000):" : lang === "en" ? "Write the new amount (e.g. 50 000):" : "Yangi summani yozing (masalan 50 000):",
-            { reply_markup: { force_reply: true, input_field_placeholder: lang === "ru" ? "Сумма" : lang === "en" ? "Amount" : "Summa" } }
-          );
-          return;
-        }
-
-        if (data === "ef:typ") {
-          await ctx.answerCallbackQuery();
-          await ctx.reply(
-            lang === "ru" ? "Тип:" : lang === "en" ? "Type:" : "Turi:",
-            {
-              reply_markup: {
-                inline_keyboard: [[
-                  { text: labels.incomeBtn, callback_data: "et:income" },
-                  { text: labels.expenseBtn, callback_data: "et:expense" },
-                ]],
-              },
-            }
-          );
-          return;
-        }
-
-        // ef:cat — show category buttons of the transaction's current type
-        const editCats = await prisma.category.findMany({
-          where: { userId: user.id, type: tx.type },
-          select: { id: true, name: true },
-          take: 8,
-        });
-        if (editCats.length === 0) {
-          await ctx.answerCallbackQuery();
-          await ctx.reply(lang === "ru" ? "Нет категорий." : lang === "en" ? "No categories." : "Kategoriya yo'q.");
-          return;
-        }
-        const editBtns: InlineKeyboardButton[] = editCats.map((c) => ({ text: c.name, callback_data: `ec:${c.id}` }));
-        const editRows: InlineKeyboardButton[][] = [];
-        for (let i = 0; i < editBtns.length; i += 2) editRows.push(editBtns.slice(i, i + 2));
+        await upsertPendingAction(user.id, { intent: "edit_tx", draft: { txId, field: "amount" }, question: "" });
         await ctx.answerCallbackQuery();
         await ctx.reply(
-          lang === "ru" ? "Выберите категорию:" : lang === "en" ? "Choose a category:" : "Kategoriyani tanlang:",
-          { reply_markup: { inline_keyboard: editRows } }
+          lang === "ru" ? "Напишите новую сумму (напр. 50 000):" : lang === "en" ? "Write the new amount (e.g. 50 000):" : "Yangi summani yozing (masalan 50 000):",
+          { reply_markup: { force_reply: true, input_field_placeholder: lang === "ru" ? "Сумма" : lang === "en" ? "Amount" : "Summa" } }
         );
         return;
       }
