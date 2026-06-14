@@ -29,6 +29,9 @@ export function getBotLabels(lang: string): {
   expiredMsg: string;
   notFoundMsg: string;
   cancelledMsg: string;
+  otherCategoryBtn: string;
+  typeCategoryPrompt: string;
+  categoryExpiredMsg: string;
 } {
   if (lang === "ru") {
     return {
@@ -41,6 +44,9 @@ export function getBotLabels(lang: string): {
       expiredMsg: "Время вышло, напишите заново.",
       notFoundMsg: "Не найдено.",
       cancelledMsg: "Отменено.",
+      otherCategoryBtn: "✏️ Другое",
+      typeCategoryPrompt: "Напишите название категории (например: еда)",
+      categoryExpiredMsg: "Время вышло, напишите заново.",
     };
   } else if (lang === "en") {
     return {
@@ -53,6 +59,9 @@ export function getBotLabels(lang: string): {
       expiredMsg: "Expired, please write again.",
       notFoundMsg: "Not found.",
       cancelledMsg: "Cancelled.",
+      otherCategoryBtn: "✏️ Other",
+      typeCategoryPrompt: "Type the category name (e.g. food)",
+      categoryExpiredMsg: "Expired, please write again.",
     };
   } else {
     return {
@@ -65,6 +74,9 @@ export function getBotLabels(lang: string): {
       expiredMsg: "Muddati tugadi, qaytadan yozing.",
       notFoundMsg: "Topilmadi.",
       cancelledMsg: "Bekor qilindi.",
+      otherCategoryBtn: "✏️ Boshqa",
+      typeCategoryPrompt: "Kategoriya nomini yozing (masalan: ovqat)",
+      categoryExpiredMsg: "Muddati tugadi, qaytadan yozing.",
     };
   }
 }

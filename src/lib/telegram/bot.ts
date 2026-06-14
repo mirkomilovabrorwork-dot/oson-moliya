@@ -323,11 +323,18 @@ async function handleMessage(
       question: intent.reply_text,
     });
 
-    // If type is the missing field (amount is known but income/expense is not),
-    // show tappable [🟢 Kirim] [🔴 Chiqim] buttons. Otherwise plain text.
+    // Determine which field is missing to decide the right keyboard type.
     const typeIsUnknown = (draft.amount != null && draft.amount > 0) && !draft.type;
+    const categoryIsUnknown =
+      (draft.amount != null && draft.amount > 0) &&
+      !!draft.type &&
+      !draft.category &&
+      (intent.missing_fields ?? []).includes("category");
+
+    const labels = getBotLabels(lang);
+
     if (typeIsUnknown) {
-      const labels = getBotLabels(lang);
+      // Show [🟢 Kirim] [🔴 Chiqim] buttons
       await ctx.reply(intent.reply_text, {
         reply_markup: {
           inline_keyboard: [[
@@ -336,7 +343,37 @@ async function handleMessage(
           ]],
         },
       });
+    } else if (categoryIsUnknown) {
+      // Load up to 6 existing categories of this type and show as buttons
+      const catTxType =
+        draft.type === "income" ? ("income" as const) : ("expense" as const);
+      const existingCats = await prisma.category.findMany({
+        where: { userId: user.id, type: catTxType as import("@prisma/client").TxType },
+        select: { id: true, name: true },
+        take: 6,
+      });
+
+      // Build inline keyboard: ≤2 buttons per row + "✏️ Boshqa" at the end
+      const catButtons: InlineKeyboardButton[] = existingCats.map((c) => ({
+        text: c.name,
+        callback_data: `c:${c.id}`,
+      }));
+      const otherBtn: InlineKeyboardButton = {
+        text: labels.otherCategoryBtn,
+        callback_data: "c:other",
+      };
+
+      const rows: InlineKeyboardButton[][] = [];
+      for (let i = 0; i < catButtons.length; i += 2) {
+        rows.push(catButtons.slice(i, i + 2));
+      }
+      rows.push([otherBtn]);
+
+      await ctx.reply(intent.reply_text, {
+        reply_markup: { inline_keyboard: rows },
+      });
     } else {
+      // Amount missing or other — plain text
       await ctx.reply(intent.reply_text);
     }
     return;
@@ -794,6 +831,66 @@ export function createBot(): Bot {
       // ── dn — cancel (dismiss) ─────────────────────────────────────────────
       if (data === "dn") {
         await ctx.answerCallbackQuery({ text: labels.cancelledMsg });
+        return;
+      }
+
+      // ── c:other — user wants to type a custom category ───────────────────
+      if (data === "c:other") {
+        const pendingOther = await getPendingAction(user.id);
+        if (!pendingOther || pendingOther.intent !== "clarify_needed") {
+          await ctx.answerCallbackQuery({ text: labels.categoryExpiredMsg });
+          await ctx.reply(labels.categoryExpiredMsg);
+          return;
+        }
+        await ctx.answerCallbackQuery();
+        // Leave pending draft in place so the next text message completes it
+        await ctx.reply(labels.typeCategoryPrompt);
+        return;
+      }
+
+      // ── c:<categoryId> — user tapped an existing category button ─────────
+      if (data.startsWith("c:")) {
+        const categoryId = data.slice(2);
+        const pendingCat = await getPendingAction(user.id);
+        if (!pendingCat || pendingCat.intent !== "clarify_needed") {
+          await ctx.answerCallbackQuery({ text: labels.categoryExpiredMsg });
+          await ctx.reply(labels.categoryExpiredMsg);
+          return;
+        }
+
+        const draft = pendingCat.draft as Record<string, unknown>;
+        const amount = draft.amount as number | undefined;
+        const rawType = draft.type as string | undefined;
+
+        if (!amount || amount <= 0 || !rawType) {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+
+        // Verify the category belongs to this user
+        const catRecord = await prisma.category.findFirst({
+          where: { id: categoryId, userId: user.id },
+          select: { id: true, name: true },
+        });
+        if (!catRecord) {
+          await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
+          await ctx.reply(labels.notFoundMsg);
+          return;
+        }
+
+        const txType: TxType = rawType === "income" ? TxType.income : TxType.expense;
+        const dateStr = (draft.date as string | undefined) ?? "today";
+        const note = draft.note as string | undefined;
+
+        await ctx.answerCallbackQuery();
+        await finalizeLog(
+          { reply: (text, opts) => ctx.reply(text, opts) },
+          user,
+          prisma,
+          { amount, txType, category: catRecord.name, dateStr, note },
+          lang
+        );
         return;
       }
 

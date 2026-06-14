@@ -56,11 +56,24 @@ Expand amounts BEFORE emitting the "amount" field:
 - clarify_needed: intent is log_income/log_expense but required fields (amount or type) cannot be determined, OR non-UZS currency detected
 - unknown: message is unrelated to finance or unclear
 
+## Smarter categorization (secretary rule)
+When assigning a category for log_income or log_expense:
+1. FIRST try to map the item to one of the user's EXISTING categories listed above.
+   Think like a bookkeeper — e.g. "lavash"/"osh"/"choy" → existing "ovqat"; "benzin"/"taksi" → existing "transport"; "аренда" → existing "ijara" (cross-language OK). Always prefer reuse.
+2. If no existing category fits but there is an OBVIOUS common one (e.g. "reklama", "elektr"), use that name (the server auto-creates it).
+3. If the category is GENUINELY AMBIGUOUS — the right category is truly unclear (for example, the item could belong to several categories, or you have no basis to guess confidently) — DO NOT silently guess. Instead:
+   - Set category = null
+   - Set intent = "clarify_needed"
+   - Set missing_fields = ["category"]
+   - Set reply_text = "Qaysi kategoriya?" (uz) / "Какая категория?" (ru) / "Which category?" (en)
+   Only reach step 3 when you genuinely cannot pick a category. When in doubt, step 1 + 2 usually cover it.
+
 ## clarify_needed rules
 Use clarify_needed when:
 - Intent looks like a transaction but amount is missing AND cannot be inferred
 - Non-UZS currency detected (see Currency guard above)
-- Set missing_fields to the list of missing fields (e.g. ["amount"])
+- Category is genuinely ambiguous (see Smarter categorization rule 3 above)
+- Set missing_fields to the list of missing fields (e.g. ["amount"] or ["category"])
 - Set reply_text to a friendly clarifying question in the user's language
 
 ## date field
