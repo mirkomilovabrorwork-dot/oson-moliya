@@ -292,7 +292,17 @@ async function handleMessage(
         draft,
         question,
       });
-      await ctx.reply(question);
+      await ctx.reply(question, {
+        reply_markup: {
+          force_reply: true,
+          input_field_placeholder:
+            lang === "ru"
+              ? "Например: 500 000"
+              : lang === "en"
+              ? "e.g. 500 000"
+              : "Masalan: 500 ming",
+        },
+      });
       return;
     }
 
@@ -383,8 +393,18 @@ async function handleMessage(
         reply_markup: { inline_keyboard: rows },
       });
     } else {
-      // Amount missing or other — plain text
-      await ctx.reply(intent.reply_text);
+      // Amount missing or other — plain text + a reply box so the user can type the answer
+      await ctx.reply(intent.reply_text, {
+        reply_markup: {
+          force_reply: true,
+          input_field_placeholder:
+            lang === "ru"
+              ? "Напишите ответ"
+              : lang === "en"
+              ? "Write your answer"
+              : "Javobni yozing",
+        },
+      });
     }
     return;
   }
