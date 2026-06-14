@@ -13,7 +13,7 @@ import {
   upsertPendingAction,
   clearPendingAction,
 } from "../services/pending";
-import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert } from "./reply";
+import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, getBotLabels, type InlineKeyboardButton } from "./reply";
 import { checkExpenseBudgetBreach } from "../services/budgets";
 import { getSttProvider } from "../stt";
 import { downloadTelegramFile } from "./download";
@@ -57,6 +57,111 @@ function dateStringToUtc(dateStr: string): Date {
   }
   const parsed = new Date(dateStr + "T00:00:00+05:00");
   return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+// ── finalizeLog: shared log-completion helper (text path + callback path) ────
+//
+// Accepts a ctx-like with a reply method, the resolved user, prisma client,
+// the transaction fields, and the language. Behavior is IDENTICAL to the
+// original inline block: creates the tx, stores lastTransactionId, sends
+// confirmation + optional budget alert + dashboard button (with a 🗑 delete
+// button on a second inline row).
+
+interface FinalizeLogParams {
+  amount: number;
+  txType: TxType;
+  category?: string | null;
+  dateStr: string;
+  note?: string | null;
+}
+
+async function finalizeLog(
+  ctx: {
+    reply: (text: string, opts?: Parameters<Bot["api"]["sendMessage"]>[2]) => Promise<unknown>;
+  },
+  user: { id: string },
+  prisma: import("@prisma/client").PrismaClient,
+  params: FinalizeLogParams,
+  lang: string
+): Promise<void> {
+  const { amount, txType, category, dateStr, note } = params;
+
+  let categoryId: string | null = null;
+  if (category) {
+    try {
+      categoryId = await resolveOrCreateCategory(user.id, category, txType);
+    } catch {
+      // ignore
+    }
+  }
+
+  const occurredAt = dateStringToUtc(dateStr);
+
+  const tx = await createTransaction({
+    userId: user.id,
+    categoryId,
+    type: txType,
+    amountUzs: BigInt(amount),
+    note: note ?? null,
+    occurredAt,
+    source: "bot",
+  });
+
+  // Store lastTransactionId so "fix last" and "delete last" still work
+  await clearPendingAction(user.id);
+  await upsertPendingAction(user.id, {
+    intent: "logged",
+    draft: { lastTransactionId: tx.id },
+    question: "",
+    lastTransactionId: tx.id,
+  });
+
+  const catRecord = categoryId
+    ? await prisma.category.findUnique({ where: { id: categoryId } })
+    : null;
+
+  const confirmation = formatConfirmation({
+    amount: tx.amountUzs,
+    type: txType,
+    categoryName: catRecord?.name ?? category ?? null,
+    date: dateStr,
+    language: lang,
+  });
+
+  // Proactive budget alert
+  let budgetWarning = "";
+  if (txType === "expense" && categoryId) {
+    try {
+      const breach = await checkExpenseBudgetBreach(user.id, categoryId);
+      if (breach) {
+        budgetWarning =
+          "\n\n" +
+          formatBudgetAlert({
+            categoryName: breach.categoryName,
+            spentUzs: breach.spentUzs,
+            limitUzs: breach.limitUzs,
+            language: lang,
+          });
+      }
+    } catch {
+      // Budget check failure must NEVER block logging or the confirmation reply
+    }
+  }
+
+  // Build keyboard: dashboard row (if any) + 🗑 delete row
+  const dashConfirm = await dashboardReplyOptions(user.id);
+  const labels = getBotLabels(lang);
+  const deleteRow: InlineKeyboardButton[] = [
+    { text: labels.deleteBtn, callback_data: `d:${tx.id}` },
+  ];
+  const keyboardRows: InlineKeyboardButton[][] = [
+    ...dashConfirm.dashRows,
+    deleteRow,
+  ];
+
+  await ctx.reply(confirmation + budgetWarning + dashConfirm.extraText, {
+    reply_markup: { inline_keyboard: keyboardRows },
+  });
 }
 
 // ── Shared message-handling logic (text + voice share this path) ─────────────
@@ -181,74 +286,9 @@ async function handleMessage(
       return;
     }
 
-    // We have enough to log — resolve category
-    let categoryId: string | null = null;
-    if (category) {
-      try {
-        categoryId = await resolveOrCreateCategory(user.id, category, txType);
-      } catch {
-        // ignore
-      }
-    }
-
+    // We have enough to log — delegate to finalizeLog
     const dateStr = intent.date ?? "today";
-    const occurredAt = dateStringToUtc(dateStr);
-
-    const tx = await createTransaction({
-      userId: user.id,
-      categoryId,
-      type: txType,
-      amountUzs: BigInt(amount),
-      note: intent.note ?? null,
-      occurredAt,
-      source: "bot",
-    });
-
-    // Store lastTransactionId so "fix last" and "delete last" work
-    await clearPendingAction(user.id);
-    await upsertPendingAction(user.id, {
-      intent: "logged",
-      draft: { lastTransactionId: tx.id },
-      question: "",
-      lastTransactionId: tx.id,
-    });
-
-    const catRecord = categoryId
-      ? await prisma.category.findUnique({ where: { id: categoryId } })
-      : null;
-
-    const confirmation = formatConfirmation({
-      amount: tx.amountUzs,
-      type: txType,
-      categoryName: catRecord?.name ?? category ?? null,
-      date: dateStr,
-      language: lang,
-    });
-
-    // Proactive budget alert: append warning inline if this expense breaches the limit
-    let budgetWarning = "";
-    if (txType === "expense" && categoryId) {
-      try {
-        const breach = await checkExpenseBudgetBreach(user.id, categoryId);
-        if (breach) {
-          budgetWarning =
-            "\n\n" +
-            formatBudgetAlert({
-              categoryName: breach.categoryName,
-              spentUzs: breach.spentUzs,
-              limitUzs: breach.limitUzs,
-              language: lang,
-            });
-        }
-      } catch {
-        // Budget check failure must NEVER block logging or the confirmation reply
-      }
-    }
-
-    const dashConfirm = await dashboardReplyOptions(user.id);
-    await ctx.reply(confirmation + budgetWarning + dashConfirm.extraText, {
-      reply_markup: dashConfirm.reply_markup,
-    });
+    await finalizeLog(ctx, user, prisma, { amount, txType, category, dateStr, note: intent.note ?? null }, lang);
     return;
   }
 
@@ -282,7 +322,23 @@ async function handleMessage(
       draft,
       question: intent.reply_text,
     });
-    await ctx.reply(intent.reply_text);
+
+    // If type is the missing field (amount is known but income/expense is not),
+    // show tappable [🟢 Kirim] [🔴 Chiqim] buttons. Otherwise plain text.
+    const typeIsUnknown = (draft.amount != null && draft.amount > 0) && !draft.type;
+    if (typeIsUnknown) {
+      const labels = getBotLabels(lang);
+      await ctx.reply(intent.reply_text, {
+        reply_markup: {
+          inline_keyboard: [[
+            { text: labels.incomeBtn, callback_data: "t:income" },
+            { text: labels.expenseBtn, callback_data: "t:expense" },
+          ]],
+        },
+      });
+    } else {
+      await ctx.reply(intent.reply_text);
+    }
     return;
   }
 
@@ -594,7 +650,8 @@ export function createBot(): Bot {
 
       const audioBuffer = await downloadTelegramFile(fileInfo.file_path);
       const stt = getSttProvider();
-      const transcript = await stt.transcribe(audioBuffer, "voice.oga");
+      // Telegram voice is OGG/Opus. Groq accepts .ogg/.opus but NOT ".oga" → use ".ogg".
+      const transcript = await stt.transcribe(audioBuffer, "voice.ogg");
 
       // Echo transcript so user knows what was heard
       await ctx.reply(`🎤 ${transcript}`);
@@ -610,6 +667,128 @@ export function createBot(): Bot {
       await ctx.reply(
         "Ovozni tanib bo'lmadi. Iltimos, yozma xabar yuboring yoki qaytadan urinib ko'ring."
       );
+    }
+  });
+
+  // ── Inline keyboard callback handler ─────────────────────────────────────
+  bot.on("callback_query:data", async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    const from = ctx.from;
+
+    try {
+      if (!from) {
+        await ctx.answerCallbackQuery();
+        return;
+      }
+
+      // Resolve user (same upsert pattern as elsewhere)
+      const user = await prisma.user.upsert({
+        where: { telegramId: BigInt(from.id) },
+        create: {
+          telegramId: BigInt(from.id),
+          firstName: from.first_name ?? null,
+          username: from.username ?? null,
+          language: "uz",
+        },
+        update: {
+          firstName: from.first_name ?? null,
+          username: from.username ?? null,
+        },
+      });
+
+      const lang = (user.language as "uz" | "ru" | "en") ?? "uz";
+      const labels = getBotLabels(lang);
+
+      // ── t:income / t:expense — complete a type-clarify pending action ──────
+      if (data === "t:income" || data === "t:expense") {
+        const pending = await getPendingAction(user.id);
+        if (!pending || pending.intent !== "clarify_needed") {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+
+        const draft = pending.draft as Record<string, unknown>;
+        const amount = draft.amount as number | undefined;
+        if (!amount || amount <= 0) {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+
+        const txType: TxType = data === "t:income" ? TxType.income : TxType.expense;
+        const category = draft.category as string | undefined;
+        const dateStr = (draft.date as string | undefined) ?? "today";
+        const note = draft.note as string | undefined;
+
+        await ctx.answerCallbackQuery();
+        await finalizeLog(
+          { reply: (text, opts) => ctx.reply(text, opts) },
+          user,
+          prisma,
+          { amount, txType, category, dateStr, note },
+          lang
+        );
+        return;
+      }
+
+      // ── d:<txId> — show delete confirmation row ───────────────────────────
+      if (data.startsWith("d:") && !data.startsWith("dy:") && !data.startsWith("dn")) {
+        const txId = data.slice(2);
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru"
+            ? `Удалить эту транзакцию?`
+            : lang === "en"
+            ? `Delete this transaction?`
+            : `Bu tranzaksiyani o'chirasizmi?`,
+          {
+            reply_markup: {
+              inline_keyboard: [[
+                { text: labels.confirmDeleteBtn, callback_data: `dy:${txId}` },
+                { text: labels.cancelBtn, callback_data: "dn" },
+              ]],
+            },
+          }
+        );
+        return;
+      }
+
+      // ── dy:<txId> — confirmed soft-delete ────────────────────────────────
+      if (data.startsWith("dy:")) {
+        const txId = data.slice(3);
+        const tx = await prisma.transaction.findFirst({
+          where: { id: txId, deletedAt: null },
+        });
+        if (!tx || tx.userId !== user.id) {
+          await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
+          await ctx.reply(labels.notFoundMsg);
+          return;
+        }
+        await prisma.transaction.update({
+          where: { id: txId },
+          data: { deletedAt: new Date() },
+        });
+        await ctx.answerCallbackQuery({ text: labels.deletedMsg });
+        await ctx.reply(labels.deletedMsg);
+        return;
+      }
+
+      // ── dn — cancel (dismiss) ─────────────────────────────────────────────
+      if (data === "dn") {
+        await ctx.answerCallbackQuery({ text: labels.cancelledMsg });
+        return;
+      }
+
+      // Unknown callback data — just dismiss the spinner
+      await ctx.answerCallbackQuery();
+    } catch (err) {
+      console.error("callbackQuery error:", err);
+      try {
+        await ctx.answerCallbackQuery();
+      } catch {
+        // swallow
+      }
     }
   });
 

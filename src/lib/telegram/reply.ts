@@ -13,9 +13,61 @@ export function formatAmount(amount: bigint): string {
   return (amount < 0n ? "−" : "") + parts.join(" ") + " so'm";
 }
 
-type InlineKeyboardButton =
+export type InlineKeyboardButton =
   | { text: string; url: string }
-  | { text: string; web_app: { url: string } };
+  | { text: string; web_app: { url: string } }
+  | { text: string; callback_data: string };
+
+/** Localized button label strings for inline keyboards */
+export function getBotLabels(lang: string): {
+  incomeBtn: string;
+  expenseBtn: string;
+  deleteBtn: string;
+  confirmDeleteBtn: string;
+  cancelBtn: string;
+  deletedMsg: string;
+  expiredMsg: string;
+  notFoundMsg: string;
+  cancelledMsg: string;
+} {
+  if (lang === "ru") {
+    return {
+      incomeBtn: "🟢 Доход",
+      expenseBtn: "🔴 Расход",
+      deleteBtn: "🗑 Удалить",
+      confirmDeleteBtn: "✅ Да, удалить",
+      cancelBtn: "Нет",
+      deletedMsg: "🗑 Удалено.",
+      expiredMsg: "Время вышло, напишите заново.",
+      notFoundMsg: "Не найдено.",
+      cancelledMsg: "Отменено.",
+    };
+  } else if (lang === "en") {
+    return {
+      incomeBtn: "🟢 Income",
+      expenseBtn: "🔴 Expense",
+      deleteBtn: "🗑 Delete",
+      confirmDeleteBtn: "✅ Yes, delete",
+      cancelBtn: "No",
+      deletedMsg: "🗑 Deleted.",
+      expiredMsg: "Expired, please write again.",
+      notFoundMsg: "Not found.",
+      cancelledMsg: "Cancelled.",
+    };
+  } else {
+    return {
+      incomeBtn: "🟢 Kirim",
+      expenseBtn: "🔴 Chiqim",
+      deleteBtn: "🗑 O'chirish",
+      confirmDeleteBtn: "✅ Ha, o'chir",
+      cancelBtn: "Yo'q",
+      deletedMsg: "🗑 O'chirildi.",
+      expiredMsg: "Muddati tugadi, qaytadan yozing.",
+      notFoundMsg: "Topilmadi.",
+      cancelledMsg: "Bekor qilindi.",
+    };
+  }
+}
 
 /**
  * Build the Dashboard reply options.
@@ -27,21 +79,21 @@ type InlineKeyboardButton =
  */
 export async function dashboardReplyOptions(
   userId: string
-): Promise<{ extraText: string; reply_markup?: { inline_keyboard: InlineKeyboardButton[][] } }> {
+): Promise<{ extraText: string; reply_markup?: { inline_keyboard: InlineKeyboardButton[][] }; dashRows: InlineKeyboardButton[][] }> {
   const env = getEnv();
   if (env.APP_URL.startsWith("https://")) {
     // web_app button: opens Mini App in-Telegram; auth happens via initData
+    const dashRows: InlineKeyboardButton[][] = [[{ text: "📊 Moliyachi", web_app: { url: env.APP_URL } }]];
     return {
       extraText: "",
-      reply_markup: {
-        inline_keyboard: [[{ text: "📊 Moliyachi", web_app: { url: env.APP_URL } }]],
-      },
+      dashRows,
+      reply_markup: { inline_keyboard: dashRows },
     };
   }
   // Localhost fallback: magic-link as plain text
   const raw = await issueMagicToken(userId);
   const url = `${env.APP_URL}/api/auth/verify?token=${raw}`;
-  return { extraText: `\n\n📊 Moliyachi: ${url}` };
+  return { extraText: `\n\n📊 Moliyachi: ${url}`, dashRows: [] };
 }
 
 /** Format a localized budget overspend warning to append to a confirmation reply */
