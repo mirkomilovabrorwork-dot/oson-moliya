@@ -610,12 +610,12 @@ export function createBot(): Bot {
   // Localized welcome shown after the user picks a language.
   const welcomeText = (l: "uz" | "ru" | "en", name: string): string => {
     if (l === "ru") {
-      return `Привет, ${name}! 👋\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\nНапишите о расходе или доходе — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"`;
+      return `Привет, ${name}! 👋\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\n✍️ Напишите или 🎤 наговорите о расходе или доходе — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"`;
     }
     if (l === "en") {
-      return `Hi, ${name}! 👋\n\nOson Moliya — a bot to track your business finances.\n\nTell me about an expense or income and I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"`;
+      return `Hi, ${name}! 👋\n\nOson Moliya — a bot to track your business finances.\n\n✍️ Type or 🎤 send a voice message about an expense or income — I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"`;
     }
-    return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\nXarajat yoki daromad haqida yozing, men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"`;
+    return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\n✍️ Yozing yoki 🎤 ovozli xabar yuboring — men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"`;
   };
 
   // /start handler
