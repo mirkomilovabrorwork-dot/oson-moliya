@@ -623,6 +623,11 @@ export function createBot(): Bot {
     const from = ctx.from;
     if (!from) return;
 
+    const existing = await prisma.user.findUnique({
+      where: { telegramId: BigInt(from.id) },
+      select: { id: true },
+    });
+
     const user = await prisma.user.upsert({
       where: { telegramId: BigInt(from.id) },
       create: {
@@ -639,16 +644,32 @@ export function createBot(): Bot {
 
     await ensureDefaultCategories(user.id);
 
-    await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:", {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "🇺🇿 O'zbekcha", callback_data: "lang:uz" },
-            { text: "🇷🇺 Русский", callback_data: "lang:ru" },
-            { text: "🇬🇧 English", callback_data: "lang:en" },
+    // First time only → ask to choose language. Returning users go straight in.
+    if (!existing) {
+      await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:", {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "🇺🇿 O'zbekcha", callback_data: "lang:uz" },
+              { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+              { text: "🇬🇧 English", callback_data: "lang:en" },
+            ],
           ],
-        ],
-      },
+        },
+      });
+      return;
+    }
+
+    const lang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    const name =
+      from.first_name ?? (lang === "ru" ? "друг" : lang === "en" ? "friend" : "Do'stim");
+    const dashStart = await dashboardReplyOptions(user.id);
+    const rows: InlineKeyboardButton[][] = [
+      ...dashStart.dashRows,
+      [{ text: "🌐 Til / Язык / Language", callback_data: "lang:pick" }],
+    ];
+    await ctx.reply(welcomeText(lang, name) + dashStart.extraText, {
+      reply_markup: { inline_keyboard: rows },
     });
   });
 
@@ -806,6 +827,23 @@ export function createBot(): Bot {
         const dashStart = await dashboardReplyOptions(user.id);
         await ctx.reply(welcomeText(chosen, name) + dashStart.extraText, {
           reply_markup: dashStart.reply_markup,
+        });
+        return;
+      }
+
+      // ── lang:pick — re-show the language picker (change language later) ────
+      if (data === "lang:pick") {
+        await ctx.answerCallbackQuery();
+        await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:", {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: "🇺🇿 O'zbekcha", callback_data: "lang:uz" },
+                { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+                { text: "🇬🇧 English", callback_data: "lang:en" },
+              ],
+            ],
+          },
         });
         return;
       }
