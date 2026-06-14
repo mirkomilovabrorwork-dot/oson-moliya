@@ -4,7 +4,18 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus 1M — FINAL REVIEW done + fixed + deployed; production-ready)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus 1M — Revolut-style multi-currency overview LIVE)
+- **MULTI-CURRENCY OVERVIEW REDESIGN — LIVE (commit `5633526`):** per user (Revolut screenshot). Removed the
+  confusing "ORIGINAL" display mode. Currencies = UZS/RUB/EUR/USD; **main currency** (bosh valyuta) selectable
+  in /more, default UZS. Home overview now groups this-period tx by currency: each currency row shows its
+  native total + the value converted to the main currency BELOW at **live CBU rate**, then a grand total
+  "Hammasi" in the main currency, with a "Markaziy bank (CBU) kursi bo'yicha" caption. Transaction rows always
+  show their own currency. Quick-add (QuickAddForm) got a currency picker → /api/transactions POST converts
+  foreign→UZS via CBU + stores originalCurrency/originalAmount. **UZS-only users: byte-identical to before**
+  (one UZS row, no grand-total/CBU note). Aggregates (analytics/budgets/Excel/accounts/debts) stay on
+  amountUzs (entry-time so'm); only the Home overview live-revalues at current CBU. Migration
+  20260614160250 (default UZS, 0 legacy rows). Gates green (typecheck 0, 104 tests, build); 2 reviewers clean;
+  math verified by hand. Known deviation: foreign amounts stored as WHOLE units (cents dropped, matches bot).
 - **FINAL PRODUCTION REVIEW DONE + ALL FIXES LIVE (2026-06-14, commit `93bab02`):** 6-agent audit
   (bot / dashboard / API-security / i18n / data-consistency / docs+cost). Bot + data-consistency = CLEAN.
   Findings fixed + deployed: (1) localized ALL bot error/edge messages uz/ru/en + `formatAmount(lang)`
