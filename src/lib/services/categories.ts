@@ -8,17 +8,21 @@ interface DefaultCategory {
 }
 
 export const DEFAULT_CATEGORIES: DefaultCategory[] = [
-  // Income
+  // Income (Kirim)
   { name: "sotuv", type: TxType.income, emoji: "💰" },
-  { name: "boshqa kirim", type: TxType.income, emoji: "📥" },
-  // Expense
+  { name: "xizmat", type: TxType.income, emoji: "🛠" },
+  { name: "boshqa kirim", type: TxType.income, emoji: "➕" },
+  // Expense (Chiqim)
+  { name: "oziq-ovqat", type: TxType.expense, emoji: "🍽" },
   { name: "logistika", type: TxType.expense, emoji: "🚚" },
-  { name: "oylik", type: TxType.expense, emoji: "👷" },
   { name: "ijara", type: TxType.expense, emoji: "🏠" },
-  { name: "mahsulot", type: TxType.expense, emoji: "📦" },
+  { name: "oylik", type: TxType.expense, emoji: "👥" },
+  { name: "marketing", type: TxType.expense, emoji: "📣" },
+  { name: "soliq", type: TxType.expense, emoji: "🧾" },
   { name: "kommunal", type: TxType.expense, emoji: "💡" },
-  { name: "reklama", type: TxType.expense, emoji: "📢" },
-  { name: "boshqa chiqim", type: TxType.expense, emoji: "📤" },
+  { name: "transport", type: TxType.expense, emoji: "🚕" },
+  { name: "mahsulot", type: TxType.expense, emoji: "📦" },
+  { name: "boshqa chiqim", type: TxType.expense, emoji: "➖" },
 ];
 
 export async function ensureDefaultCategories(userId: string): Promise<void> {
