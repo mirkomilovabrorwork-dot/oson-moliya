@@ -23,6 +23,8 @@ import { downloadTelegramFile } from "./download";
 import { runAggregation } from "../services/analytics";
 import type { FinanceQuery } from "../types";
 import { extractReceipt } from "../claude/receipt";
+import { buildMonthlyReportXlsx } from "../report/excel";
+import { InputFile } from "grammy";
 
 // ── Per-user rate limiter (in-memory, sliding window) ────────────────────────
 // Guards STT + brain calls: 20 AI messages per 10 minutes per Telegram user.
@@ -905,6 +907,73 @@ export function createBot(): Bot {
     });
     const lang = (u?.language as "uz" | "ru" | "en") ?? "uz";
     await ctx.reply(helpText(lang));
+  });
+
+  // /hisobot, /report, /otchet — send a styled monthly Excel report as a document
+  // NOTE: add /hisobot to setMyCommands via BotFather to show it in the command menu.
+  bot.command(["hisobot", "report", "otchet"], async (ctx) => {
+    const from = ctx.from;
+    if (!from) return;
+
+    // Resolve user (same upsert pattern used everywhere in the bot)
+    const user = await prisma.user.upsert({
+      where: { telegramId: BigInt(from.id) },
+      create: {
+        telegramId: BigInt(from.id),
+        firstName: from.first_name ?? null,
+        username: from.username ?? null,
+        language: "uz",
+      },
+      update: {},
+    });
+
+    const lang = (user.language as "uz" | "ru" | "en") ?? "uz";
+
+    // Light abuse guard — reuse the existing in-memory rate limiter.
+    // This is a DB + file-build op (no AI), so the 20/10-min cap is generous.
+    if (isRateLimited(from.id)) {
+      await ctx.reply(
+        lang === "ru"
+          ? "⏳ Подождите немного и попробуйте снова."
+          : lang === "en"
+          ? "⏳ Please wait a moment and try again."
+          : "⏳ Biroz kuting va qaytadan urinib ko'ring."
+      );
+      return;
+    }
+
+    try {
+      await ctx.replyWithChatAction("upload_document");
+
+      const buf = await buildMonthlyReportXlsx(prisma, user.id, {
+        lang,
+        displayName: user.firstName ?? undefined,
+      });
+
+      // Build a date-stamped filename: Oson-Moliya-YYYY-MM.xlsx
+      const tashkentNow = new Date(Date.now() + 5 * 60 * 60 * 1000);
+      const yyyy = tashkentNow.getUTCFullYear();
+      const mm = String(tashkentNow.getUTCMonth() + 1).padStart(2, "0");
+      const filename = `Oson-Moliya-${yyyy}-${mm}.xlsx`;
+
+      const caption =
+        lang === "ru"
+          ? `📊 Отчёт за ${yyyy}-${mm}`
+          : lang === "en"
+          ? `📊 Report for ${yyyy}-${mm}`
+          : `📊 ${yyyy}-${mm} oy hisoboti`;
+
+      await ctx.replyWithDocument(new InputFile(buf, filename), { caption });
+    } catch (err) {
+      console.error("hisobot error:", err);
+      await ctx.reply(
+        lang === "ru"
+          ? "Не удалось создать отчёт. Попробуйте ещё раз."
+          : lang === "en"
+          ? "Could not generate report. Please try again."
+          : "Hisobotni yaratib bo'lmadi. Qaytadan urinib ko'ring."
+      );
+    }
   });
 
   // /language — re-open the language picker any time
