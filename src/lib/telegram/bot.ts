@@ -810,12 +810,12 @@ export function createBot(): Bot {
   // Localized welcome shown after the user picks a language.
   const welcomeText = (l: "uz" | "ru" | "en", name: string): string => {
     if (l === "ru") {
-      return `Привет, ${name}! 👋\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\n✍️ Напишите или 🎤 наговорите о расходе или доходе — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"`;
+      return `Привет, ${name}! 👋\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\n✍️ Пишите расход/доход ПРЯМО СЮДА или 🎤 наговорите — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"\n\n📊 Кнопка "Moliyachi" — только для ПРОСМОТРА отчётов и графиков (туда писать не нужно).`;
     }
     if (l === "en") {
-      return `Hi, ${name}! 👋\n\nOson Moliya — a bot to track your business finances.\n\n✍️ Type or 🎤 send a voice message about an expense or income — I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"`;
+      return `Hi, ${name}! 👋\n\nOson Moliya — a bot to track your business finances.\n\n✍️ Log an expense/income RIGHT HERE or 🎤 by voice — I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"\n\n📊 The "Moliyachi" button just opens your dashboard to VIEW reports — no need to type there.`;
     }
-    return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\n✍️ Yozing yoki 🎤 ovozli xabar yuboring — men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"`;
+    return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\n✍️ Xarajat/daromadni SHU YERGA yozing yoki 🎤 ayting — men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"\n\n📊 "Moliyachi" tugmasi — faqat hisobot va grafiklarni KO'RISH uchun (u yerga yozish shart emas).`;
   };
 
   // /start handler
