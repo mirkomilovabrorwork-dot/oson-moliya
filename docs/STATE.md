@@ -4,7 +4,45 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — Commit 1 + 2 deployed; VOICE FIXED)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — ElevenLabs STT LIVE on prod)
+- **STT SWITCH LIVE (2026-06-14):** Brain decision SEALED = stay on Claude (2026 arXiv: Claude excels at
+  Uzbek; no evidence GPT is better; switch = cost+rewrite+risk, no gain). STT switched Groq→**ElevenLabs
+  Scribe v2** for Uzbek accuracy. Prod env STT_PROVIDER=elevenlabs + ELEVENLABS_API_KEY were stored EMPTY
+  (PowerShell stdin + cmd `<` redirect through npx both failed). FIX: upserted via Vercel REST API
+  (token at %APPDATA%\xdg.data\com.vercel.cli\auth.json; projectId/teamId in .vercel/project.json,
+  upsert=true). Verified non-empty (env pull), redeployed prod (dpl_G3pVmFmNy72qyDQyWK6SnE4ziAj9, READY,
+  alias oson-moliya.vercel.app 200). **USER MUST TEST a real Uzbek voice msg to confirm ElevenLabs quality.**
+  ELEVENLABS_API_KEY stays only in .env (gitignored) + Vercel (encrypted) — repo is PUBLIC. Temp secret
+  files deleted. NOTE: build flagged local .env upload (cosmetic; runtime uses Vercel project env).
+
+### ▶️ NEXT STEPS (resume here — session ended on Claude usage limit, 2026-06-14)
+**USER-ONLY (Claude cannot do — these gate submission confidence):**
+1. **TEST voice** — send a real Uzbek voice msg to @oson_moliya_bot (e.g. "logistikaga besh yuz ming chiqim").
+   Confirm it transcribes correctly now (ElevenLabs). If still wrong → report the transcript, I'll tune keyterms/lang.
+2. **Spend caps** — set usage/billing caps on Anthropic + Groq + ElevenLabs keys (bot is PUBLIC → abuse risk).
+3. **Demo video** — record from PROD per docs/demo-script.md (voice → bot confirm → dashboard updates → budget alert).
+
+**CLAUDE TODO next session (ranked):**
+A. **Finish the dashboard+docs audit** — the parallel audit agent (pages render? every /api route auth+owner-scoped+
+   zod+assertSameOrigin? i18n uz/ru/en no missing keys? README/demo-script/.env.example complete? no "Tez orada"
+   placeholders?) was INTERRUPTED before running. Re-run it (Explore agent) and fix any real gap. THIS IS THE ONE
+   AUDIT NOT YET DONE.
+B. **Bot audit DONE (10/11 wired, well-engineered).** Real findings to decide on:
+   - Debts/Accounts are **dashboard-only — NO bot integration** (intentional; confirm with user it's OK to leave).
+   - Category buttons capped at 6 (bot.ts ~360 `take: 6`) → users with >6 cats can't reach the rest via buttons
+     (they can still type / "✏️ Boshqa"). Low-effort fix if a grader might test it.
+   - Minor edge cases (all LOW): pending-draft reset after "Boshqa" if brain re-reads ambiguous; webhook
+     update_id idempotency not guarded (Telegram rarely retries); message:audio defaults to .mp3; correction
+     `target` only handles "last" (not "second-to-last"); single-word lang defaults to uz. None block submission.
+C. **Commit hygiene** — uncommitted before this commit: docs/tasks/017 (modified), docs/design-experiment/ (untracked,
+   leave UNTRACKED per policy). Review & commit/discard next session.
+
+### 🔐 SECURITY FLAG (handle, do NOT paste secret into any tracked file)
+- The git remote URL in `.git/config` has an **embedded GitHub PAT (ghp_…)**. `.git/config` is LOCAL only (not in the
+  repo), so the PUBLIC repo does NOT expose it — currently safe. But it surfaced in terminal output this session.
+  Recommend the user **rotate that GitHub token** to be safe, and never commit it. (Do not write the token value anywhere
+  in tracked files — repo is public.)
+
 - **SUBMISSION-READY P0 — DEPLOYED (2026-06-14):** MASTER_PLAN.md is the expert-reviewed source of truth
   (3 critics + Codex-coverage + 7-role panel). **Commit 1 (18fc878):** deterministic dates kill the
   /transactions + Home hydration/theme drop; money spaced+signed; 44px targets; Home "Bu oy natijasi" (not
