@@ -642,6 +642,23 @@ export function createBot(): Bot {
       // Show typing indicator while transcribing
       await ctx.replyWithChatAction("typing");
 
+      // Resolve user's account language BEFORE transcribing so Whisper receives
+      // the correct language hint (prevents Uzbek → Turkish mis-detection).
+      const voiceUser = await prisma.user.upsert({
+        where: { telegramId: BigInt(from.id) },
+        create: {
+          telegramId: BigInt(from.id),
+          firstName: from.first_name ?? null,
+          username: from.username ?? null,
+          language: "uz",
+        },
+        update: {
+          firstName: from.first_name ?? null,
+          username: from.username ?? null,
+        },
+      });
+      const voiceLang = (voiceUser.language ?? "uz") as "uz" | "ru" | "en";
+
       const fileInfo = await ctx.api.getFile(voice.file_id);
       if (!fileInfo.file_path) {
         await ctx.reply("Ovozli faylni yuklab bo'lmadi.");
@@ -651,7 +668,7 @@ export function createBot(): Bot {
       const audioBuffer = await downloadTelegramFile(fileInfo.file_path);
       const stt = getSttProvider();
       // Telegram voice is OGG/Opus. Groq accepts .ogg/.opus but NOT ".oga" → use ".ogg".
-      const transcript = await stt.transcribe(audioBuffer, "voice.ogg");
+      const transcript = await stt.transcribe(audioBuffer, "voice.ogg", { language: voiceLang });
 
       // Echo transcript so user knows what was heard
       await ctx.reply(`🎤 ${transcript}`);
@@ -820,6 +837,23 @@ export function createBot(): Bot {
     try {
       await ctx.replyWithChatAction("typing");
 
+      // Resolve user's account language BEFORE transcribing so Whisper receives
+      // the correct language hint (prevents Uzbek → Turkish mis-detection).
+      const audioUser = await prisma.user.upsert({
+        where: { telegramId: BigInt(from.id) },
+        create: {
+          telegramId: BigInt(from.id),
+          firstName: from.first_name ?? null,
+          username: from.username ?? null,
+          language: "uz",
+        },
+        update: {
+          firstName: from.first_name ?? null,
+          username: from.username ?? null,
+        },
+      });
+      const audioLang = (audioUser.language ?? "uz") as "uz" | "ru" | "en";
+
       const fileInfo = await ctx.api.getFile(audio.file_id);
       if (!fileInfo.file_path) {
         await ctx.reply("Audio faylni yuklab bo'lmadi.");
@@ -830,7 +864,8 @@ export function createBot(): Bot {
       const stt = getSttProvider();
       const transcript = await stt.transcribe(
         audioBuffer,
-        audio.file_name ?? "audio.mp3"
+        audio.file_name ?? "audio.mp3",
+        { language: audioLang }
       );
 
       await ctx.reply(`🎤 ${transcript}`);

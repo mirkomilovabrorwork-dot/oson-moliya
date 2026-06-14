@@ -5,13 +5,14 @@ import { audioBufferToBlob } from "./blob";
 /**
  * Groq Whisper STT provider.
  * Uses whisper-large-v3 via Groq's OpenAI-compatible audio transcriptions endpoint.
- * Language is intentionally omitted so Groq auto-detects uz/ru/en.
+ * When opts.language is one of "uz" | "ru" | "en", it is forwarded to Whisper to
+ * prevent mis-detection (e.g. Uzbek being detected as Turkish). Otherwise omitted.
  */
 export class GroqWhisperProvider implements SttProvider {
   async transcribe(
     audio: Buffer,
     filename: string,
-    _opts?: { language?: string }
+    opts?: { language?: string }
   ): Promise<string> {
     const env = getEnv();
     if (!env.GROQ_API_KEY) {
@@ -24,7 +25,11 @@ export class GroqWhisperProvider implements SttProvider {
     form.append("file", blob, filename);
     form.append("model", "whisper-large-v3");
     form.append("response_format", "json");
-    // Intentionally omit "language" → Groq auto-detects uz/ru/en
+    // Forward language hint when provided and valid — prevents Whisper from
+    // mis-detecting Uzbek as Turkish (they are lexically close).
+    if (opts?.language === "uz" || opts?.language === "ru" || opts?.language === "en") {
+      form.append("language", opts.language);
+    }
 
     const response = await fetch(
       "https://api.groq.com/openai/v1/audio/transcriptions",
