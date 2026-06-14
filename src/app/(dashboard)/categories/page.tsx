@@ -60,7 +60,7 @@ export default async function CategoriesPage() {
   }));
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen" style={{ background: "transparent" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <AddSheet lang={lang} mainCurrency={currency} />

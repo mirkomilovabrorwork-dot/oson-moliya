@@ -67,12 +67,12 @@ export default async function MorePage() {
   const displayCurrency = (["UZS", "USD", "EUR", "RUB"].includes(raw) ? raw : "UZS") as "UZS" | "USD" | "EUR" | "RUB";
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen" style={{ background: "transparent" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <AddSheet lang={lang} mainCurrency={displayCurrency} />
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
+      <main className="max-w-2xl mx-auto px-4 sm:px-8 py-5 sm:py-7 pb-32 space-y-5">
         {/* Page heading */}
         <h1
           className="text-xs font-semibold uppercase tracking-wide pl-1"
@@ -84,10 +84,11 @@ export default async function MorePage() {
         {/* Settings card — static rows: Hisoblar, Kategoriyalar, Asosiy valyuta */}
         <div
           style={{
-            background: "var(--surface)",
+            background: "var(--surface-elevated)",
             border: "1px solid var(--border)",
             borderRadius: "var(--radius-lg)",
             overflow: "hidden",
+            boxShadow: "var(--shadow-sm)",
           }}
         >
           {/* Row 1: Hisoblar */}
@@ -96,7 +97,7 @@ export default async function MorePage() {
             className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--surface-sunken)]"
             style={{ minHeight: 56 }}
           >
-            <IconTile bg="var(--income-wash)" color="var(--income)">
+            <IconTile bg="var(--accent-wash)" color="var(--accent)">
               <IconAccounts />
             </IconTile>
             <div className="flex-1 min-w-0">
@@ -118,7 +119,7 @@ export default async function MorePage() {
             className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--surface-sunken)]"
             style={{ minHeight: 56, borderTop: "1px solid var(--border)" }}
           >
-            <IconTile bg="var(--accent-wash)" color="var(--accent)">
+            <IconTile bg="var(--surface-sunken)" color="var(--accent)">
               <IconCategories />
             </IconTile>
             <div className="flex-1 min-w-0">

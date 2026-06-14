@@ -159,10 +159,11 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
       {/* Settings card — tap a row to reveal its options */}
       <div
         style={{
-          background: "var(--surface)",
+          background: "var(--surface-elevated)",
           border: "1px solid var(--border)",
           borderRadius: "var(--radius-lg)",
           overflow: "hidden",
+          boxShadow: "var(--shadow-sm)",
         }}
       >
         {/* Bosh valyuta (Main currency) */}
@@ -208,7 +209,7 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-60"
                     style={
                       cur === currency
-                        ? { background: "var(--accent)", color: "var(--accent-fg, #fff)" }
+                        ? { background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }
                         : {
                             background: "var(--surface-sunken)",
                             color: "var(--fg-muted)",
@@ -300,6 +301,7 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
           color: "var(--expense)",
           border: "none",
           borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--shadow-sm)",
         }}
       >
         {t("nav.logout", lang)}

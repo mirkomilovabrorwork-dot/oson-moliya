@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 
@@ -17,10 +18,16 @@ interface LangSwitcherProps {
 
 export function LangSwitcher({ currentLang }: LangSwitcherProps) {
   const router = useRouter();
+  const [pendingLang, setPendingLang] = useState<LangCode | null>(null);
+
+  useEffect(() => {
+    if (!pendingLang) return;
+    document.cookie = `${LANG_COOKIE}=${pendingLang};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+    router.refresh();
+  }, [pendingLang, router]);
 
   const handleChange = (lang: LangCode) => {
-    document.cookie = `${LANG_COOKIE}=${lang};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
-    router.refresh();
+    setPendingLang(lang);
   };
 
   return (
@@ -38,8 +45,9 @@ export function LangSwitcher({ currentLang }: LangSwitcherProps) {
           style={
             currentLang === code
               ? {
-                  background: "var(--accent)",
-                  color: "var(--accent-fg)",
+                  background: "var(--accent-gradient)",
+                  color: "#fff",
+                  boxShadow: "var(--shadow-sm)",
                   borderRight:
                     i < LANGS.length - 1
                       ? "1px solid var(--accent-hover)"

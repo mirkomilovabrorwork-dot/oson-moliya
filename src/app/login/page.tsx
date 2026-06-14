@@ -3,6 +3,7 @@ import { t, type LangCode } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/LangSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TelegramBootstrap } from "@/components/TelegramBootstrap";
+import { LoginCodeForm } from "@/components/LoginCodeForm";
 
 export default async function LoginPage() {
   let lang: LangCode = "uz";
@@ -16,44 +17,94 @@ export default async function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: "var(--bg)" }}
+      className="flex items-center justify-center px-4 py-6 sm:py-10 lg:px-8"
+      style={{ background: "transparent", minHeight: "100dvh" }}
     >
       {/* Telegram Mini App auto-auth: if inside Telegram, authenticates and redirects.
           If not in Telegram, renders nothing and the normal UI below is shown. */}
       <TelegramBootstrap />
       {/* Lang + Theme switchers */}
-      <div className="fixed top-4 right-4 flex items-center gap-2">
+      <div className="fixed right-4 top-4 z-10 flex items-center gap-2">
         <ThemeToggle lang={lang} />
         <LangSwitcher currentLang={lang} />
       </div>
 
       <div
-        className="w-full max-w-sm rounded-[10px] p-8 space-y-6"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+        className="grid w-full max-w-5xl gap-5 lg:grid-cols-[0.95fr_1.05fr] lg:items-stretch"
       >
-        {/* Brand */}
-        <div className="text-center space-y-2">
-          <div
-            className="mx-auto w-14 h-14 rounded-xl flex items-center justify-center mb-4"
-            style={{ background: "var(--surface-sunken)" }}
-          >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-muted)" }}>
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 6v2m0 8v2M8.5 9a3.5 3.5 0 0 1 7 0c0 4-7 4-7 7h7"/>
-            </svg>
+        <section
+          className="hidden rounded-[var(--radius-lg)] p-8 lg:flex lg:flex-col lg:justify-between"
+          style={{
+            background: "var(--accent-gradient)",
+            boxShadow: "var(--shadow-lg)",
+            color: "#fff",
+            minHeight: 520,
+          }}
+        >
+          <div className="space-y-6">
+            <div
+              className="flex h-14 w-14 items-center justify-center rounded-2xl"
+              style={{ background: "rgba(255,255,255,0.16)" }}
+            >
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v2m0 8v2M8.5 9a3.5 3.5 0 0 1 7 0c0 4-7 4-7 7h7"/>
+              </svg>
+            </div>
+            <div className="max-w-sm space-y-3">
+              <p className="text-sm font-semibold uppercase tracking-[0.08em]" style={{ color: "rgba(255,255,255,0.72)" }}>
+                {t("login.title", lang)}
+              </p>
+              <h1 className="text-4xl font-bold leading-tight">
+                {t("login.description", lang)}
+              </h1>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
-            {t("login.title", lang)}
-          </h1>
-          <p className="text-sm" style={{ color: "var(--fg-muted)" }}>
-            {t("login.description", lang)}
-          </p>
-        </div>
+          <div className="grid grid-cols-3 gap-3 text-sm">
+            {[t("form.type.income", lang), t("form.type.expense", lang), t("nav.debts", lang)].map((item) => (
+              <div
+                key={item}
+                className="rounded-2xl px-4 py-3"
+                style={{ background: "rgba(255,255,255,0.13)", border: "1px solid rgba(255,255,255,0.18)" }}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </section>
 
-        {/* Instruction card */}
+        <section
+          className="w-full rounded-[var(--radius-lg)] p-6 sm:p-8"
+          style={{
+            background: "var(--surface-elevated)",
+            border: "1px solid var(--border)",
+            boxShadow: "var(--shadow-md)",
+          }}
+        >
+          {/* Brand */}
+          <div className="space-y-2 text-center lg:text-left">
+            <div
+              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl lg:mx-0"
+              style={{ background: "var(--accent-gradient)", boxShadow: "var(--shadow-lg)" }}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#fff" }}>
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v2m0 8v2M8.5 9a3.5 3.5 0 0 1 7 0c0 4-7 4-7 7h7"/>
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
+              {t("login.title", lang)}
+            </h1>
+            <p className="text-sm" style={{ color: "var(--fg-muted)" }}>
+              {t("login.description", lang)}
+            </p>
+          </div>
+
+        <div className="my-6 h-px" style={{ background: "var(--border)" }} />
+
+        {/* Instruction */}
         <div
-          className="rounded-xl p-5 space-y-2"
+          className="space-y-2 rounded-2xl p-4"
           style={{ background: "var(--accent-wash)" }}
         >
           <div className="flex items-center gap-2">
@@ -69,16 +120,24 @@ export default async function LoginPage() {
           </p>
         </div>
 
+        <div className="my-6 space-y-3">
+          <h2 className="text-base font-semibold" style={{ color: "var(--fg)" }}>
+            {t("login.code.title", lang)}
+          </h2>
+          <LoginCodeForm lang={lang} />
+        </div>
+
         {/* CTA */}
         <a
           href="https://t.me/oson_moliya_bot?start=login"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-medium transition-all"
-          style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-all"
+          style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
         >
           {t("login.open_bot", lang)}
         </a>
+        </section>
       </div>
     </div>
   );

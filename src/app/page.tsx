@@ -54,7 +54,8 @@ export default async function OverviewPage() {
   });
 
   // Budget progress
-  const now = new Date(Date.now() + 5 * 60 * 60 * 1000);
+  const nowUtc = new Date();
+  const now = new Date(nowUtc.getTime() + 5 * 60 * 60 * 1000);
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth() + 1;
   const monthStart = new Date(Date.UTC(year, month - 1, 1) - 5 * 60 * 60 * 1000);
@@ -229,17 +230,17 @@ export default async function OverviewPage() {
   const netDelta = buildDeltaLine(net, prevNet, "net");
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen" style={{ background: "transparent" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <AddSheet lang={lang} mainCurrency={currency} />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
+      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-5 sm:py-7 pb-32 space-y-5">
 
         {/* 1 — Balance hero card */}
         <div
-          className="p-4 sm:p-5 rounded-[18px]"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          className="p-5 sm:p-6 rounded-[var(--radius-lg)]"
+          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-md)" }}
         >
           <p
             className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-1"
@@ -254,7 +255,7 @@ export default async function OverviewPage() {
             {t("home.scope_hero", lang)}
           </p>
           <p
-            className="text-3xl font-bold tabular"
+            className="text-4xl font-bold tabular tracking-normal"
             style={{ color: netPositive ? "var(--fg)" : "var(--expense)" }}
           >
             {netPositive ? "+" : "−"}
@@ -299,8 +300,8 @@ export default async function OverviewPage() {
         {/* 2 — Per-currency breakdown (Revolut-style) */}
         {showPerCurrency && (
           <div
-            className="p-4 sm:p-5 rounded-[18px]"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            className="p-4 sm:p-5 rounded-[var(--radius-lg)]"
+            style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
           >
             <p
               className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-3"
@@ -380,8 +381,8 @@ export default async function OverviewPage() {
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)]">
           <div className="space-y-5">
         <div
-          className="p-4 sm:p-5 rounded-[18px]"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          className="p-4 sm:p-5 rounded-[var(--radius-lg)]"
+          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
         >
           <div className="flex items-center justify-between mb-3">
             <p
@@ -409,8 +410,8 @@ export default async function OverviewPage() {
           </div>
           <div className="space-y-5">
         <div
-          className="rounded-[18px] overflow-hidden"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          className="rounded-[var(--radius-lg)] overflow-hidden"
+          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
         >
           <div
             className="flex items-center justify-between px-4 py-3.5"
@@ -514,8 +515,8 @@ export default async function OverviewPage() {
         {/* 4 — Budget bars card (only when budgets exist) */}
         {budgetDTOs.length > 0 && (
           <div
-            className="rounded-[18px] p-4 sm:p-5 space-y-4"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            className="rounded-[var(--radius-lg)] p-4 sm:p-5 space-y-4"
+            style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
           >
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-sm" style={{ color: "var(--fg)" }}>

@@ -29,12 +29,13 @@ export function AddSheet({ lang, mainCurrency = "UZS" }: AddSheetProps) {
   // Lazy-load categories on first open
   useEffect(() => {
     if (!open || categories !== null) return;
-    setLoading(true);
-    fetch("/api/categories")
+    void Promise.resolve()
+      .then(() => {
+        setLoading(true);
+        return fetch("/api/categories");
+      })
       .then((r) => r.json())
       .then((data: CategoryRaw[]) => {
-        // Normalize type to lowercase (Prisma enum comes back as "income"/"expense" already,
-        // but guard just in case)
         setCategories(
           data.map((c) => ({
             ...c,
@@ -64,8 +65,8 @@ export function AddSheet({ lang, mainCurrency = "UZS" }: AddSheetProps) {
       {/* FAB — mobile: above bottom nav; sm+: bottom-8 right-8 */}
       <style>{`
         .add-sheet-fab {
-          bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
-          right: 1rem;
+          bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+          right: 1.35rem;
         }
         @media (min-width: 640px) {
           .add-sheet-fab {
@@ -79,7 +80,7 @@ export function AddSheet({ lang, mainCurrency = "UZS" }: AddSheetProps) {
         onClick={() => setOpen(true)}
         className="add-sheet-fab fixed z-50 flex items-center justify-center w-14 h-14 rounded-full transition-transform active:scale-95"
         style={{
-          background: "var(--accent)",
+          background: "var(--accent-gradient)",
           color: "#ffffff",
           boxShadow: "var(--shadow-lg)",
         }}
@@ -103,11 +104,19 @@ export function AddSheet({ lang, mainCurrency = "UZS" }: AddSheetProps) {
             style={{
               background: "var(--surface)",
               borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
+              border: "1px solid var(--border)",
+              boxShadow: "var(--shadow-lg)",
               paddingBottom: "env(safe-area-inset-bottom, 0px)",
               maxHeight: "90dvh",
               overflowY: "auto",
             }}
           >
+            <div className="flex justify-center pt-2">
+              <span
+                className="h-1 w-12 rounded-full"
+                style={{ background: "var(--border-strong)" }}
+              />
+            </div>
             {/* Sheet header */}
             <div
               className="flex items-center justify-between px-4 py-3"

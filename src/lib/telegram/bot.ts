@@ -1,5 +1,6 @@
 import { Bot } from "grammy";
 import { TxType, DebtDirection } from "@prisma/client";
+import { issueLoginCode } from "../auth/token";
 import { getEnv } from "../env";
 import { db } from "../db";
 import { runBrain } from "../claude/brain";
@@ -818,6 +819,47 @@ export function createBot(): Bot {
     return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\n✍️ Yozing yoki 🎤 ovozli xabar yuboring — men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"`;
   };
 
+  const loginAccessText = (
+    l: "uz" | "ru" | "en",
+    code: string,
+    hasMiniAppButton: boolean
+  ): string => {
+    if (l === "ru") {
+      return `Код входа: ${code}\n\nВведите этот 6-значный код на сайте. Код действует 10 минут.\n\n${
+        hasMiniAppButton
+          ? "Или нажмите кнопку Moliyachi ниже, чтобы войти автоматически внутри Telegram."
+          : "Или откройте панель по ссылке ниже."
+      }`;
+    }
+    if (l === "en") {
+      return `Login code: ${code}\n\nEnter this 6-digit code on the website. It works for 10 minutes.\n\n${
+        hasMiniAppButton
+          ? "Or tap the Moliyachi button below to sign in automatically inside Telegram."
+          : "Or open the dashboard from the link below."
+      }`;
+    }
+    return `Kirish kodi: ${code}\n\nSaytdagi kod oynasiga shu 6 xonali kodni kiriting. Kod 10 daqiqa amal qiladi.\n\n${
+      hasMiniAppButton
+        ? "Yoki pastdagi Moliyachi tugmasi orqali Telegram ichida avtomatik kiring."
+        : "Yoki pastdagi havola orqali panelni oching."
+    }`;
+  };
+
+  const buildLoginAccessReply = async (
+    userId: string,
+    lang: "uz" | "ru" | "en"
+  ): Promise<{
+    text: string;
+    reply_markup?: { inline_keyboard: InlineKeyboardButton[][] };
+  }> => {
+    const code = await issueLoginCode(userId);
+    const dash = await dashboardReplyOptions(userId);
+    return {
+      text: loginAccessText(lang, code, Boolean(dash.reply_markup)) + dash.extraText,
+      reply_markup: dash.reply_markup,
+    };
+  };
+
   // /start handler
   bot.command("start", async (ctx) => {
     const from = ctx.from;
@@ -846,7 +888,7 @@ export function createBot(): Bot {
 
     // First time only → ask to choose language. Returning users go straight in.
     if (!existing) {
-      await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:", {
+      await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:\n\nTil tanlangach kirish kodi keladi. / После выбора языка придёт код входа. / After choosing a language, you will get a login code.", {
         reply_markup: {
           inline_keyboard: [
             [
@@ -861,6 +903,13 @@ export function createBot(): Bot {
     }
 
     const lang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    const startPayload = typeof ctx.match === "string" ? ctx.match.trim().toLowerCase() : "";
+    if (startPayload === "login") {
+      const access = await buildLoginAccessReply(user.id, lang);
+      await ctx.reply(access.text, { reply_markup: access.reply_markup });
+      return;
+    }
+
     const name =
       from.first_name ?? (lang === "ru" ? "друг" : lang === "en" ? "friend" : "Do'stim");
     const dashStart = await dashboardReplyOptions(user.id);
@@ -885,13 +934,15 @@ export function createBot(): Bot {
         username: from.username ?? null,
         language: "uz",
       },
-      update: {},
+      update: {
+        firstName: from.first_name ?? null,
+        username: from.username ?? null,
+      },
     });
-    const dash = await dashboardReplyOptions(user.id);
-    const lead = dash.reply_markup
-      ? "📊 Moliyachi'ni ochish uchun pastdagi tugmani bosing:"
-      : "📊 Moliyachi'ni ochish uchun havolani bosing:";
-    await ctx.reply(lead + dash.extraText, { reply_markup: dash.reply_markup });
+    await ensureDefaultCategories(user.id);
+    const lang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    const access = await buildLoginAccessReply(user.id, lang);
+    await ctx.reply(access.text, { reply_markup: access.reply_markup });
   });
 
   // Localized /help text
@@ -1130,9 +1181,9 @@ export function createBot(): Bot {
         await ctx.answerCallbackQuery();
         const name =
           from.first_name ?? (chosen === "ru" ? "друг" : chosen === "en" ? "friend" : "Do'stim");
-        const dashStart = await dashboardReplyOptions(user.id);
-        await ctx.reply(welcomeText(chosen, name) + dashStart.extraText, {
-          reply_markup: dashStart.reply_markup,
+        const access = await buildLoginAccessReply(user.id, chosen);
+        await ctx.reply(`${welcomeText(chosen, name)}\n\n${access.text}`, {
+          reply_markup: access.reply_markup,
         });
         return;
       }

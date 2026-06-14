@@ -37,9 +37,9 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
         {/* No-flash theme: runs before hydration so data-theme is set pre-paint.
-            Resolution: localStorage('pultrack_theme') → 'system' follows OS → DEFAULT dark (Kissa-style). */}
+            Resolution: localStorage('pultrack_theme') -> system follows OS -> default light. */}
         <Script id="theme-init" strategy="beforeInteractive">
-          {`(function(){try{var s=localStorage.getItem('pultrack_theme');var t;if(s==='light'||s==='dark'){t=s;}else if(s==='system'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';}else{t='dark';}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='dark';}})();`}
+          {`(function(){try{var s=localStorage.getItem('pultrack_theme');var t;if(s==='light'||s==='dark'){t=s;}else if(s==='system'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';}else{t='light';}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();`}
         </Script>
         <TelegramBackButton />
         {children}

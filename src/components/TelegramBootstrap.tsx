@@ -26,12 +26,11 @@ export function TelegramBootstrap() {
       return;
     }
 
-    // We are inside a Telegram Mini App
-    setLoading(true);
     twa?.ready?.();
     twa?.expand?.();
 
     void (async () => {
+      setLoading(true);
       try {
         const res = await fetch("/api/auth/telegram", {
           method: "POST",
@@ -63,7 +62,7 @@ export function TelegramBootstrap() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "var(--bg)",
+          background: "var(--bg-ambient)",
           zIndex: 9999,
           gap: "12px",
         }}
@@ -96,7 +95,7 @@ export function TelegramBootstrap() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "var(--bg)",
+          background: "var(--bg-ambient)",
           zIndex: 9999,
         }}
       >

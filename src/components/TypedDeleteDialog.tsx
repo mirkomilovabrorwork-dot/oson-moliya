@@ -38,7 +38,8 @@ export function TypedDeleteDialog({
   const [typedValue, setTypedValue] = useState("");
 
   useEffect(() => {
-    if (open) setTypedValue("");
+    if (!open) return;
+    void Promise.resolve().then(() => setTypedValue(""));
   }, [open, requiredWord]);
 
   const isConfirmed = useMemo(
@@ -59,8 +60,8 @@ export function TypedDeleteDialog({
       }}
     >
       <div
-        className="w-full max-w-md rounded-[12px] p-6 space-y-4"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+        className="w-full max-w-md rounded-[var(--radius-lg)] p-6 space-y-4"
+        style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="typed-delete-title"
@@ -122,7 +123,7 @@ export function TypedDeleteDialog({
             className="w-full rounded-[12px] px-3 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 disabled:opacity-60"
             style={{
               border: "1px solid var(--border-strong)",
-              background: "transparent",
+              background: "var(--surface)",
               color: "var(--fg)",
             }}
             placeholder={requiredWord}

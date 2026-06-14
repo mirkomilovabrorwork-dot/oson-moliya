@@ -56,11 +56,11 @@ export default async function TransactionsPage() {
   }));
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen" style={{ background: "transparent" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <AddSheet lang={lang} mainCurrency={currency} />
-      <main className="max-w-5xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
+      <main className="max-w-5xl mx-auto px-4 sm:px-8 py-5 sm:py-7 pb-32 space-y-5">
         <h1
           className="text-xs font-semibold uppercase tracking-wide pl-1"
           style={{ color: "var(--fg-subtle)" }}

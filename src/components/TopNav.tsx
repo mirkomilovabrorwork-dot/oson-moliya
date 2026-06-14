@@ -26,8 +26,9 @@ export function TopNav({ lang }: TopNavProps) {
     <header
       className="sticky top-0 z-30"
       style={{
-        background: "var(--surface)",
+        background: "var(--surface-elevated)",
         borderBottom: "1px solid var(--border)",
+        backdropFilter: "blur(14px)",
       }}
     >
       <div className="max-w-5xl mx-auto px-5 sm:px-8">
@@ -36,7 +37,7 @@ export function TopNav({ lang }: TopNavProps) {
           <div className="flex items-center gap-6">
             <Link
               href="/"
-              className="font-semibold text-base"
+              className="font-bold text-base"
               style={{ color: "var(--fg)" }}
             >
               Oson Moliya

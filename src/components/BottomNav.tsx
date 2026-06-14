@@ -69,11 +69,15 @@ export function BottomNav({ lang }: BottomNavProps) {
 
   return (
     <nav
-      className="sm:hidden fixed bottom-0 inset-x-0 z-40 flex items-stretch"
+      className="sm:hidden fixed left-3 right-3 z-40 grid grid-cols-4 items-stretch"
       style={{
-        background: "var(--surface)",
-        borderTop: "1px solid var(--border)",
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        bottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+        background: "var(--surface-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: 22,
+        boxShadow: "var(--shadow-md)",
+        minHeight: 72,
+        backdropFilter: "blur(18px)",
       }}
       aria-label="bottom-nav"
     >
@@ -83,7 +87,7 @@ export function BottomNav({ lang }: BottomNavProps) {
           <Link
             key={href}
             href={href}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors"
+            className="flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-semibold transition-colors"
             style={{
               color: active ? "var(--accent)" : "var(--fg-subtle)",
               minHeight: 56,
@@ -91,11 +95,11 @@ export function BottomNav({ lang }: BottomNavProps) {
           >
             <span
               className="flex items-center justify-center w-7 h-7 rounded-xl transition-colors"
-              style={active ? { background: "var(--accent-wash)" } : {}}
+              style={active ? { background: "var(--accent-wash)", boxShadow: "var(--shadow-sm)" } : {}}
             >
               <Icon />
             </span>
-            <span className="leading-none tracking-tight">
+            <span className="leading-none">
               {t(labelKey, lang)}
             </span>
           </Link>

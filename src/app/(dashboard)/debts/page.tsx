@@ -45,11 +45,11 @@ export default async function DebtsPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen" style={{ background: "transparent" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <AddSheet lang={lang} mainCurrency={currency} />
-      <main className="max-w-2xl mx-auto px-4 sm:px-8 py-6 pb-28">
+      <main className="max-w-2xl mx-auto px-4 sm:px-8 py-5 sm:py-7 pb-32">
         <div className="mb-6">
           <h1 className="text-2xl font-bold" style={{ color: "var(--fg)" }}>
             {t("debt.title", lang)}

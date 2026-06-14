@@ -39,7 +39,7 @@ export default async function AccountsPage() {
   const serializedTotal = (totalBalance as bigint).toString();
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen" style={{ background: "transparent" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <AddSheet lang={lang} mainCurrency={currency} />

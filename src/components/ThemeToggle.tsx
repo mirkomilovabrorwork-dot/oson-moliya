@@ -31,20 +31,22 @@ const OPTIONS: { value: ThemePref; labelKey: string }[] = [
 ];
 
 export function ThemeToggle({ lang }: ThemeToggleProps) {
-  const [pref, setPref] = useState<ThemePref>("dark");
+  const [pref, setPref] = useState<ThemePref>("light");
 
   // On mount, read saved pref
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(THEME_KEY) as ThemePref | null;
-      if (saved === "light" || saved === "dark" || saved === "system") {
-        setPref(saved);
-      } else {
-        setPref("dark"); // default = dark (Kissa-style), matches the no-flash script
+    void Promise.resolve().then(() => {
+      try {
+        const saved = localStorage.getItem(THEME_KEY) as ThemePref | null;
+        if (saved === "light" || saved === "dark" || saved === "system") {
+          setPref(saved);
+        } else {
+          setPref("light");
+        }
+      } catch {
+        // SSR safety
       }
-    } catch {
-      // SSR safety
-    }
+    });
   }, []);
 
   const handleChange = (next: ThemePref) => {

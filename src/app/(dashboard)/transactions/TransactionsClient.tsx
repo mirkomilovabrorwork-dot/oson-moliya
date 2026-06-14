@@ -258,8 +258,8 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
   };
 
   const inputStyle = {
-    border: "1px solid var(--border-strong)",
-    background: "transparent",
+    border: "1px solid var(--border)",
+    background: "var(--surface-elevated)",
     color: "var(--fg)",
   };
 
@@ -323,7 +323,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
           className="w-full h-11 pl-11 pr-4 text-sm transition-all focus:outline-none focus:ring-2"
           style={{
             ...inputStyle,
-            borderRadius: "12px",
+            borderRadius: "var(--radius-md)",
             background: "var(--surface-sunken)",
             border: "1px solid var(--border)",
           }}
@@ -439,8 +439,8 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
       {/* ── Summary cards — v3: neutral bg, colored NUMBER only ── */}
       <div className="grid grid-cols-2 gap-3">
         <div
-          className="rounded-md px-4 py-4 space-y-1"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          className="rounded-[var(--radius-lg)] px-4 py-4 space-y-1"
+          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
         >
           <p
             className="text-xs font-medium uppercase tracking-wide"
@@ -456,8 +456,8 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
           </p>
         </div>
         <div
-          className="rounded-md px-4 py-4 space-y-1"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          className="rounded-[var(--radius-lg)] px-4 py-4 space-y-1"
+          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
         >
           <p
             className="text-xs font-medium uppercase tracking-wide"
@@ -476,8 +476,8 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
 
       {/* ── Transaction list ── */}
       <div
-        className="rounded-[12px] overflow-hidden"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+        className="rounded-[var(--radius-lg)] overflow-hidden"
+        style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
       >
         {filtered.length === 0 ? (
           <div className="py-16 text-center space-y-3">
@@ -505,11 +505,12 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
           </div>
         ) : (
           <>
-          <div className="sm:hidden divide-y" style={{ borderColor: "var(--border)" }}>
-            {pagedRows.map((tx) => (
+          <div className="sm:hidden">
+            {pagedRows.map((tx, idx) => (
               <div
                 key={tx.id}
                 className="row-hover flex items-center gap-3 px-4 py-3.5 transition-colors"
+                style={{ borderTop: idx === 0 ? undefined : "1px solid var(--border)" }}
               >
                 <span
                   className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 text-sm"
@@ -782,7 +783,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
         >
           <div
             className="w-full max-w-md rounded-[12px] p-6 space-y-4"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
           >
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base" style={{ color: "var(--fg)" }}>
@@ -938,7 +939,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                 onClick={handleEditSave}
                 disabled={editLoading}
                 className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all disabled:opacity-60"
-                style={{ background: "var(--accent)", color: "#fff" }}
+                style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
               >
                 {editLoading ? t("form.submitting", lang) : t("common.save", lang)}
               </button>

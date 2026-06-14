@@ -23,7 +23,8 @@ export default async function AnalyticsPage() {
 
   // Default: this month — half-open window [monthStart, monthEnd) to match
   // Home/getOverview and the bot's "bu oy" window (P0-A3).
-  const now = new Date(Date.now() + 5 * 60 * 60 * 1000); // Tashkent now
+  const nowUtc = new Date();
+  const now = new Date(nowUtc.getTime() + 5 * 60 * 60 * 1000); // Tashkent now
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth() + 1; // 1-based
   // monthStart = UTC midnight of 1st of this Tashkent month (UTC+5 → shift back 5h)
@@ -87,7 +88,7 @@ export default async function AnalyticsPage() {
     }));
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen" style={{ background: "transparent" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <AddSheet lang={lang} mainCurrency={currency} />

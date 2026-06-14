@@ -1,57 +1,60 @@
 @import "tailwindcss";
 
 /*
- * Oson Moliya — DESIGN v5 (Kissa-inspired): DARK-first, bright sky-blue accent,
- * soft rounded dark cards. Light theme kept as a toggle. Color = signal (blue=action,
- * green=income, red=expense). Single source of truth; components use these var() names.
+ * Oson Moliya - DESIGN v6: Telegram Mini App polish.
+ * Warm-mint canvas, deep emerald actions, quiet cards, and finance-only signal colors.
  */
 
-/* ── Light (toggle) ── */
 :root {
-  --bg: #f8fafc;
+  --bg: #f7faf5;
+  --bg-ambient: radial-gradient(circle at 50% -10%, rgba(221, 253, 232, .72) 0, rgba(247, 250, 245, 0) 34rem), linear-gradient(180deg, #fbfdf9 0%, #f5f7f1 100%);
   --surface: #ffffff;
-  --surface-sunken: #f1f5f9;
-  --surface-hover: #f1f5f9;
+  --surface-elevated: rgba(255, 255, 255, .94);
+  --surface-sunken: #eef6f0;
+  --surface-hover: #f2f8f3;
 
-  --fg: #0f172a;
-  --fg-muted: #475569;
-  --fg-subtle: #94a3b8;
+  --fg: #15201c;
+  --fg-muted: #65746d;
+  --fg-subtle: #98a49e;
   --fg-on-accent: #ffffff;
 
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
+  --border: #e2e9df;
+  --border-strong: #cbd8d0;
 
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  --accent: #0e663c;
+  --accent-hover: #0a5332;
   --accent-fg: #ffffff;
-  --accent-ring: rgba(37, 99, 235, .35);
-  --accent-wash: #eff6ff;
+  --accent-ring: rgba(14, 102, 60, .28);
+  --accent-wash: #e7f6ed;
+  --accent-gradient: linear-gradient(135deg, #188f52 0%, #065538 100%);
 
-  --income: #059669;
+  --income: #0b8f5a;
   --income-fg: #ffffff;
-  --income-wash: #ecfdf5;
+  --income-wash: #e8f7ef;
 
-  --expense: #dc2626;
+  --expense: #c4313b;
   --expense-fg: #ffffff;
-  --expense-wash: #fef2f2;
+  --expense-wash: #fff1f2;
 
-  --chart-1: #2563eb;
-  --chart-2: #059669;
-  --chart-3: #f59e0b;
-  --chart-4: #7c3aed;
-  --chart-5: #64748b;
-  --chart-grid: #e2e8f0;
+  --warning: #d98407;
+  --warning-wash: #fff5dd;
 
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
+  --chart-1: #0e663c;
+  --chart-2: #0b8f5a;
+  --chart-3: #d98407;
+  --chart-4: #3f7f75;
+  --chart-5: #8da19a;
+  --chart-grid: #e2e9df;
+
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, .05);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, .08), 0 1px 3px rgba(15, 23, 42, .05);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, .14);
+  --shadow-sm: 0 1px 2px rgba(21, 32, 28, .05);
+  --shadow-md: 0 8px 26px rgba(21, 32, 28, .08), 0 1px 3px rgba(21, 32, 28, .05);
+  --shadow-lg: 0 18px 42px rgba(14, 102, 60, .20);
 
-  /* Motion */
   --dur-fast: 120ms;
   --dur-base: 180ms;
   --dur-slow: 240ms;
@@ -62,57 +65,62 @@
   --foreground: var(--fg);
 }
 
-/* ── Dark (DEFAULT) — Kissa-style neutral charcoal + bright sky-blue ── */
 [data-theme="dark"] {
-  --bg: #0e0e11;
-  --surface: #1c1c21;
-  --surface-sunken: #141418;
-  --surface-hover: #26262d;
+  --bg: #0f1412;
+  --bg-ambient: radial-gradient(circle at 50% -14%, rgba(21, 116, 73, .24) 0, rgba(15, 20, 18, 0) 30rem), #0f1412;
+  --surface: #1a201d;
+  --surface-elevated: rgba(26, 32, 29, .94);
+  --surface-sunken: #121714;
+  --surface-hover: #222a25;
 
-  --fg: #f2f2f5;
-  --fg-muted: #9a9aa3;
-  --fg-subtle: #6b6b73;
+  --fg: #f4f7f3;
+  --fg-muted: #a4b0aa;
+  --fg-subtle: #74827b;
   --fg-on-accent: #ffffff;
 
-  --border: #2c2c34;
-  --border-strong: #3a3a44;
+  --border: #2b342f;
+  --border-strong: #3b4841;
 
-  --accent: #2d9cdb;
-  --accent-hover: #2387c1;
-  --accent-fg: #ffffff;
-  --accent-ring: rgba(45, 156, 219, .40);
-  --accent-wash: rgba(45, 156, 219, .16);
+  --accent: #36d087;
+  --accent-hover: #56df9f;
+  --accent-fg: #062e1d;
+  --accent-ring: rgba(54, 208, 135, .34);
+  --accent-wash: rgba(54, 208, 135, .14);
+  --accent-gradient: linear-gradient(135deg, #24b56d 0%, #08704b 100%);
 
-  --income: #34d399;
-  --income-fg: #052e16;
-  --income-wash: rgba(52, 211, 153, .16);
+  --income: #44d995;
+  --income-fg: #062e1d;
+  --income-wash: rgba(68, 217, 149, .15);
 
-  --expense: #f87171;
-  --expense-fg: #450a0a;
-  --expense-wash: rgba(248, 113, 113, .16);
+  --expense: #ff7b85;
+  --expense-fg: #450a0f;
+  --expense-wash: rgba(255, 123, 133, .15);
 
-  --chart-1: #2d9cdb;
-  --chart-2: #34d399;
-  --chart-3: #fbbf24;
-  --chart-4: #a78bfa;
-  --chart-5: #9a9aa3;
+  --warning: #f4ad3d;
+  --warning-wash: rgba(244, 173, 61, .14);
+
+  --chart-1: #36d087;
+  --chart-2: #73e4ae;
+  --chart-3: #f4ad3d;
+  --chart-4: #5fb5a7;
+  --chart-5: #a4b0aa;
   --chart-grid: rgba(255, 255, 255, .07);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
-  --shadow-lg: 0 14px 36px rgba(0, 0, 0, .6);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, .62);
 
   --background: var(--bg);
   --foreground: var(--fg);
 }
 
-/* ── Tailwind v4 @theme inline ── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-hover: var(--surface-hover);
 
@@ -135,6 +143,8 @@
   --color-expense: var(--expense);
   --color-expense-fg: var(--expense-fg);
   --color-expense-wash: var(--expense-wash);
+  --color-warning: var(--warning);
+  --color-warning-wash: var(--warning-wash);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -147,15 +157,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* ── Body ── */
-body {
+html {
   background: var(--bg);
+}
+
+body {
+  background: var(--bg-ambient);
   color: var(--fg);
   font-family: var(--font-geist-sans), -apple-system, system-ui, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* ── Shared focus-visible ring ── */
 :where(button, a, input, textarea, select, [role="tab"], [tabindex]):focus-visible {
   outline: none;
   border-color: var(--accent);
@@ -165,7 +178,6 @@ body {
     border-color var(--dur-fast) var(--ease-out);
 }
 
-/* ── Prefers-reduced-motion reset ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
@@ -175,12 +187,16 @@ body {
   }
 }
 
-/* ── Tabular figures ── */
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Row hover ── */
 .row-hover:hover {
   background: var(--surface-hover);
+}
+
+.premium-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }

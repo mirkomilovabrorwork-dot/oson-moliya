@@ -352,7 +352,7 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
         type="submit"
         disabled={loading}
         className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all min-h-[44px] disabled:opacity-60"
-        style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
+        style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
       >
         {loading ? t("form.submitting", lang) : t("form.submit", lang)}
       </button>

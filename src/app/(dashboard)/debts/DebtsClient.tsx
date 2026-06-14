@@ -47,8 +47,8 @@ function formatDate(iso: string): string {
 }
 
 const inputStyle = {
-  border: "1px solid var(--border-strong)",
-  background: "transparent",
+  border: "1px solid var(--border)",
+  background: "var(--surface-elevated)",
   color: "var(--fg)",
 };
 const inputCls =
@@ -246,7 +246,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         >
           <div
             className="w-full max-w-sm rounded-[16px] p-6 space-y-4"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
           >
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base" style={{ color: "var(--fg)" }}>
@@ -367,7 +367,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                 onClick={handleAdd}
                 disabled={addLoading || !addCounterparty.trim() || !addAmount.trim()}
                 className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold disabled:opacity-60"
-                style={{ background: "var(--accent)", color: "#fff" }}
+                style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
               >
                 {addLoading ? t("form.submitting", lang) : t("common.save", lang)}
               </button>
@@ -387,7 +387,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         >
           <div
             className="w-full max-w-sm rounded-[16px] p-6 space-y-4"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
           >
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base" style={{ color: "var(--fg)" }}>
@@ -477,7 +477,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                 onClick={handleEdit}
                 disabled={editLoading || !editCounterparty.trim() || !editAmount.trim()}
                 className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold disabled:opacity-60"
-                style={{ background: "var(--accent)", color: "#fff" }}
+                style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
               >
                 {editLoading ? t("form.submitting", lang) : t("common.save", lang)}
               </button>
@@ -490,8 +490,8 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
       <div className="grid grid-cols-2 gap-3 mb-6">
         {/* Given (lent out) */}
         <div
-          className="rounded-[16px] p-4"
-          style={{ background: "var(--income-wash)", border: "1px solid var(--border)" }}
+          className="rounded-[var(--radius-lg)] p-4"
+          style={{ background: "var(--income-wash)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
         >
           <p className="text-xs font-medium mb-1" style={{ color: "var(--income)" }}>
             {t("debt.given", lang)}
@@ -502,8 +502,8 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         </div>
         {/* Taken (borrowed) */}
         <div
-          className="rounded-[16px] p-4"
-          style={{ background: "var(--expense-wash)", border: "1px solid var(--border)" }}
+          className="rounded-[var(--radius-lg)] p-4"
+          style={{ background: "var(--expense-wash)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
         >
           <p className="text-xs font-medium mb-1" style={{ color: "var(--expense)" }}>
             {t("debt.taken", lang)}
@@ -545,7 +545,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         <button
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-1.5 px-4 py-2 rounded-[12px] text-sm font-semibold min-h-[44px]"
-          style={{ background: "var(--accent)", color: "#fff" }}
+          style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
         >
           <span className="text-lg leading-none">+</span>
           <span className="hidden sm:inline">{t("debt.add", lang)}</span>
@@ -554,8 +554,8 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
 
       {/* Debt list */}
       <div
-        className="rounded-[12px] overflow-hidden"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+        className="rounded-[var(--radius-lg)] overflow-hidden"
+        style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
       >
         {visible.length === 0 ? (
           <div className="px-5 py-12 text-center space-y-2">
