@@ -5,6 +5,12 @@
 > Specs: `docs/tasks/NNN-*.md`.
 
 ## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — final audit + security hardening + design lessons)
+- **CODEX COMMIT/PUSH DONE, DEPLOY BLOCKED (2026-06-14):** Commit `0a7b1b2` (`feat(currency): preserve original
+  transaction currency`) was pushed to GitHub `main`. Working tree was clean after push. Vercel prod deploy
+  attempted with `npx vercel --prod --yes`, but Vercel CLI returned: "The specified token is not valid".
+  Live `https://oson-moliya.vercel.app/login` still shows the old login-link copy, so GitHub push did **not**
+  auto-deploy. Next action: user must re-auth Vercel CLI (`vercel login`) or provide a fresh Vercel token, then
+  run `npx vercel --prod --yes` from `C:\Users\localhost\Desktop\pultrack`.
 - **CODEX RESUME (2026-06-14, Claude limitdan keyin davom):** Claude qoldirgan joydan davom etildi.
   Uncommitted `ORIGINAL` display-currency / original transaction currency work reviewed; Prisma migration
   `20260614130528_tx_original_currency` exists and `npx prisma migrate status` says DB is **up to date**.
