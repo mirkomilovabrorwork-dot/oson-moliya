@@ -1,4 +1,5 @@
 import { webhookCallback } from "grammy";
+import { timingSafeEqual } from "crypto";
 import { getBot } from "@/lib/telegram/bot";
 import { getEnv } from "@/lib/env";
 
@@ -9,8 +10,11 @@ export async function POST(request: Request): Promise<Response> {
   // Verify Telegram secret token
   try {
     const env = getEnv();
-    const secretHeader = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
-    if (!secretHeader || secretHeader !== env.TELEGRAM_WEBHOOK_SECRET) {
+    const secretHeader = request.headers.get("X-Telegram-Bot-Api-Secret-Token") ?? "";
+    const a = Buffer.from(secretHeader);
+    const b = Buffer.from(env.TELEGRAM_WEBHOOK_SECRET);
+    const validSecret = a.length === b.length && timingSafeEqual(a, b);
+    if (!validSecret) {
       console.warn("Telegram webhook: invalid secret token");
       return new Response("Unauthorized", { status: 401 });
     }

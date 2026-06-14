@@ -33,11 +33,12 @@ function IconTransactions() {
 function IconDebts() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      {/* Hand holding coins */}
-      <path d="M20 12c0 1.1-.9 2-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4z"/>
-      <circle cx="10" cy="10" r="1.5"/>
-      <circle cx="14" cy="10" r="1.5"/>
-      <path d="M4 14c0 2.2 1.8 4 4 4h8c2.2 0 4-1.8 4-4"/>
+      {/* Ledger / notebook (qarz daftari) — margin line + ruled rows */}
+      <rect x="4" y="3" width="16" height="18" rx="2"/>
+      <path d="M9 3v18"/>
+      <path d="M12.5 8h4"/>
+      <path d="M12.5 12h4"/>
+      <path d="M12.5 16h4"/>
     </svg>
   );
 }
