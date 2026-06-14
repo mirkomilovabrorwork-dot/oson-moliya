@@ -4,7 +4,22 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — task-015 Kissa IA redesign deployed)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — Commit 1 + 2 deployed; VOICE FIXED)
+- **SUBMISSION-READY P0 — DEPLOYED (2026-06-14):** MASTER_PLAN.md is the expert-reviewed source of truth
+  (3 critics + Codex-coverage + 7-role panel). **Commit 1 (18fc878):** deterministic dates kill the
+  /transactions + Home hydration/theme drop; money spaced+signed; 44px targets; Home "Bu oy natijasi" (not
+  "balans") + safe period-delta; bot net "Sof" (not "Balans"); foreign-currency guard ("100 dollar"→clarify);
+  /api GET validation + assertSameOrigin on mutating routes + voice cap + in-memory rate-limit; analytics
+  window half-open; README+demo-script rewritten to reality. **Commit 2 (833bd72):** bot inline buttons
+  ([🟢 Kirim][🔴 Chiqim] type-clarify + [🗑 O'chirish]→Ha/Yo'q soft-delete; new callbackQuery handler,
+  ownership-checked, try/catch; finalizeLog refactor; text flow unchanged) **+ VOICE BUG FIXED** — Groq
+  400-rejected "voice.oga" (root-caused from prod logs), now "voice.ogg"; voice transcribes. Gates green
+  (typecheck 0, test, next build). Live verified: prod routes 200, "Bu oy natijasi" rendered.
+- **DEFERRED (not blockers):** webhook update_id idempotency (needs migration); multi-currency (016);
+  P1 polish (analytics mobile, shared formatters); hallmark design skill installed (5/10 fit — use its
+  audit-checklist selectively, NOT its bold-aesthetic flow). docs/design-experiment/ left UNTRACKED.
+- **USER ACTIONS LEFT:** (1) make GitHub repo PUBLIC (verified secret-clean) or add evaluator collaborator;
+  (2) phone-test voice + buttons; (3) record the demo (docs/demo-script.md rewritten to reality).
 - **CODEX TASK-017 UI/UX + FINANCE REVIEW PLAN (2026-06-14, local only; NOT implemented/deployed):**
   User wants the product to stay **sodda va yoqimli** and asked Claude to follow a durable design/fix plan
   even for future updates. Full Codex review found P0 UI bugs (/transactions hydration/theme mismatch,
