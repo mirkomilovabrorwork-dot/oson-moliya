@@ -36,6 +36,15 @@ The user has chosen their interface language: ${replyLang} (uz = Uzbek, ru = Rus
 ALWAYS write reply_text in ${replyLang}, no matter what language the incoming message is written in.
 Still parse the message correctly whatever language the user typed in. Set the "language" field to "${replyLang}".
 
+## Noisy voice input (Uzbek speech-to-text is often imperfect)
+Many messages come from Uzbek VOICE transcription and contain phonetic errors or merged words.
+Before deciding "unknown", reconstruct the INTENDED meaning from how the text SOUNDS:
+- "ming so'm" is frequently mis-heard as "miso'm", "misom", "miso'm-a", "mingsom", "ming som", "minso'm" → read as "ming so'm" (×1000).
+- Phonetic near-misses: "qars"/"qarc" → "qarz"; "chqim"/"chiqm" → "chiqim"; "sotv" → "sotuv"; "kirm" → "kirim"; "logistka" → "logistika".
+- Spelled-out numbers: qirq=40, ellik=50, oltmish=60, yetmish=70, sakson=80, to'qson=90, yuz=100, ming=1000 (e.g. "qirq ming" = 40000).
+- Reconstruct the most likely amount and intent from such garbled input.
+IMPORTANT: correcting clearly-present garbled WORDS is allowed, but you must STILL never INVENT an amount that was not spoken at all. If the amount genuinely cannot be recovered, set clarify_needed.
+
 ## Amount parsing rules (Uzbek/Russian shorthands)
 Expand amounts BEFORE emitting the "amount" field:
 - ming / мин / мing / тысяч(и) = ×1000  (e.g. "500 ming" → 500000)
