@@ -124,8 +124,9 @@ export function MoreClient({ lang }: MoreClientProps) {
             className={rowClass}
             style={{ minHeight: 56, background: "transparent" }}
             aria-expanded={open === "currency"}
+            aria-label={`${t("more.currency", lang)}: UZS`}
           >
-            <IconTile bg="var(--accent-wash)" color="var(--accent)">
+            <IconTile bg="var(--surface-sunken)" color="var(--fg-muted)">
               <IconCurrency />
             </IconTile>
             <div className="flex-1 min-w-0">
@@ -164,8 +165,9 @@ export function MoreClient({ lang }: MoreClientProps) {
             className={rowClass}
             style={{ minHeight: 56, background: "transparent" }}
             aria-expanded={open === "lang"}
+            aria-label={`${t("more.language", lang)}: ${LANG_LABELS[lang]}`}
           >
-            <IconTile bg="var(--accent-wash)" color="var(--accent)">
+            <IconTile bg="var(--surface-sunken)" color="var(--fg-muted)">
               <IconLanguage />
             </IconTile>
             <div className="flex-1 min-w-0">
@@ -196,6 +198,7 @@ export function MoreClient({ lang }: MoreClientProps) {
             className={rowClass}
             style={{ minHeight: 56, background: "transparent" }}
             aria-expanded={open === "theme"}
+            aria-label={t("nav.theme", lang)}
           >
             <IconTile bg="var(--surface-sunken)" color="var(--fg-muted)">
               <IconTheme />

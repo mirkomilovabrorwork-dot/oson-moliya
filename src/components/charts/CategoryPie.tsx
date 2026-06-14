@@ -24,10 +24,11 @@ interface Props {
 
 // Chart palette — cool/professional, mirrors --chart-1..5 tokens then extends
 const COLORS = [
-  "#2563eb", "#059669", "#f59e0b",
-  "#7c3aed", "#0891b2", "#dc2626",
-  "#db2777", "#64748b", "#ca8a04",
-  "#0d9488",
+  "var(--expense)",
+  "var(--accent)",
+  "var(--chart-5)",
+  "var(--fg-subtle)",
+  "var(--border-strong)",
 ];
 
 /** Space-grouped money formatter — reliable on Vercel/Node (mirrors --expense:#dc2626 token) */

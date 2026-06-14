@@ -473,7 +473,98 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="sm:hidden divide-y" style={{ borderColor: "var(--border)" }}>
+            {pagedRows.map((tx) => (
+              <div
+                key={tx.id}
+                className="row-hover flex items-center gap-3 px-4 py-3.5 transition-colors"
+              >
+                <span
+                  className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 text-sm"
+                  style={{
+                    background: "var(--surface-sunken)",
+                    color: "var(--fg-muted)",
+                  }}
+                  aria-hidden="true"
+                >
+                  {tx.categoryEmoji ?? (tx.type === "income" ? "+" : "-")}
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p
+                      className="text-sm font-medium truncate"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {tx.categoryName ?? t("form.category_none", lang)}
+                    </p>
+                    <span
+                      className="text-[11px] font-medium shrink-0"
+                      style={{
+                        color:
+                          tx.type === "income"
+                            ? "var(--income)"
+                            : "var(--expense)",
+                      }}
+                    >
+                      {t(`form.type.${tx.type}`, lang)}
+                    </span>
+                  </div>
+                  <p className="text-xs truncate" style={{ color: "var(--fg-subtle)" }}>
+                    {formatDate(tx.occurredAt, lang)}
+                    {tx.note ? ` · ${tx.note}` : ""}
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span
+                    className="text-sm font-semibold tabular whitespace-nowrap"
+                    style={{
+                      color:
+                        tx.type === "income"
+                          ? "var(--income)"
+                          : "var(--expense)",
+                    }}
+                  >
+                    {tx.type === "income" ? "+" : "−"}
+                    {formatMoney(tx.amountUzs)} so&apos;m
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEdit(tx)}
+                      className="w-8 h-8 rounded-[10px] flex items-center justify-center"
+                      style={{ color: "var(--accent)" }}
+                      aria-label={t("common.edit", lang)}
+                      title={t("common.edit", lang)}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(tx)}
+                      disabled={deletingId === tx.id}
+                      className="w-8 h-8 rounded-[10px] flex items-center justify-center disabled:opacity-40"
+                      style={{ color: "var(--expense)" }}
+                      aria-label={t("common.delete", lang)}
+                      title={t("common.delete", lang)}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                        <path
+                          fillRule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead
                 style={{
@@ -609,6 +700,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* Pagination */}

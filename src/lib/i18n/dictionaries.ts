@@ -5,7 +5,7 @@ export type Dictionary = Record<string, string>;
 const uz: Dictionary = {
   // ── Navigation
   "nav.overview": "Umumiy",
-  "nav.transactions": "Tranzaksiyalar",
+  "nav.transactions": "Yozuvlar",
   "nav.analytics": "Tahlil",
   "nav.categories": "Kategoriyalar",
   "nav.logout": "Chiqish",
@@ -25,7 +25,7 @@ const uz: Dictionary = {
   "overview.this_month": "Bu oy",
   "overview.vs_last_month": "o'tgan oyga nisbatan",
   "overview.quick_add": "Tez qo'shish",
-  "overview.recent": "So'nggi tranzaksiyalar",
+  "overview.recent": "So'nggi yozuvlar",
   "overview.budget_alerts": "Byudjet holati",
   "overview.view_all": "Barchasini ko'rish",
   // ── Quick add form
@@ -41,9 +41,9 @@ const uz: Dictionary = {
   "form.success": "Muvaffaqiyatli saqlandi!",
   "form.category_none": "Kategoriyasiz",
   // ── Transactions page
-  "transactions.title": "Barcha tranzaksiyalar",
+  "transactions.title": "Kirim-chiqim yozuvlari",
   "transactions.empty": "Hozircha hech narsa yo'q",
-  "transactions.empty.hint": "Telegram botga birinchi tranzaksiyani yuboring",
+  "transactions.empty.hint": "Telegram botga birinchi yozuvni yuboring",
   "transactions.date": "Sana",
   "transactions.type": "Turi",
   "transactions.category": "Kategoriya",
@@ -63,10 +63,10 @@ const uz: Dictionary = {
   "transactions.summary.expense": "Xarajat",
   "transactions.page": "Sahifa",
   "transactions.of": "dan",
-  "transactions.edit.title": "Tranzaksiyani tahrirlash",
-  "transactions.delete.confirm": "Bu tranzaksiyani o'chirishni tasdiqlaysizmi?",
-  "transactions.deleted": "Tranzaksiya o'chirildi",
-  "transactions.updated": "Tranzaksiya yangilandi",
+  "transactions.edit.title": "Yozuvni tahrirlash",
+  "transactions.delete.confirm": "Bu yozuvni o'chirishni tasdiqlaysizmi?",
+  "transactions.deleted": "Yozuv o'chirildi",
+  "transactions.updated": "Yozuv yangilandi",
   "transactions.no_results": "Hech qanday natija topilmadi",
   // ── Analytics page
   "analytics.title": "Tahlil",
@@ -101,7 +101,7 @@ const uz: Dictionary = {
   "categories.rename": "Nomini o'zgartirish",
   "categories.delete": "O'chirish",
   "categories.delete.confirm":
-    "Kategoriyani o'chirishni tasdiqlaysizmi? Ushbu kategoriyaga tegishli tranzaksiyalar kategoriyasiz qoladi.",
+    "Kategoriyani o'chirishni tasdiqlaysizmi? Ushbu kategoriyaga tegishli yozuvlar kategoriyasiz qoladi.",
   "categories.delete.budget_confirm":
     "Bu kategoriyada byudjet bor. O'chirsangiz byudjet ham o'chadi. Davom etasizmi?",
   "categories.deleted": "Kategoriya o'chirildi",
@@ -109,7 +109,7 @@ const uz: Dictionary = {
   "categories.budget_saved": "Byudjet saqlandi",
   "categories.empty": "Hozircha kategoriyalar yo'q",
   "categories.default_badge": "Standart",
-  "categories.tx_count": "ta tranzaksiya",
+  "categories.tx_count": "ta yozuv",
   "categories.budget_progress": "Byudjet",
   "categories.spent_of": "sarflandi",
   // ── Budget progress
@@ -132,9 +132,9 @@ const uz: Dictionary = {
   "onboarding.hint": "Ma'lumotlar avtomatik ravishda bu yerda paydo bo'ladi.",
   "onboarding.go_dashboard": "Dashboardga o'tish",
   // ── Empty states
-  "empty.overview": "Hozircha hech qanday tranzaksiya yo'q",
+  "empty.overview": "Hozircha hech qanday yozuv yo'q",
   "empty.overview.hint": "Botga birinchi xarajat yoki daromadni yuboring",
-  "empty.transactions": "Tranzaksiyalar topilmadi",
+  "empty.transactions": "Yozuvlar topilmadi",
   "empty.analytics": "Tahlil uchun ma'lumot yo'q",
   "empty.categories": "Kategoriyalar mavjud emas",
   "empty.budgets": "Byudjet belgilanmagan",
@@ -203,7 +203,7 @@ const uz: Dictionary = {
 const ru: Dictionary = {
   // ── Navigation
   "nav.overview": "Обзор",
-  "nav.transactions": "Операции",
+  "nav.transactions": "Записи",
   "nav.analytics": "Аналитика",
   "nav.categories": "Категории",
   "nav.logout": "Выйти",
@@ -223,7 +223,7 @@ const ru: Dictionary = {
   "overview.this_month": "Этот месяц",
   "overview.vs_last_month": "по сравнению с прошлым месяцем",
   "overview.quick_add": "Быстрое добавление",
-  "overview.recent": "Последние операции",
+  "overview.recent": "Последние записи",
   "overview.budget_alerts": "Состояние бюджета",
   "overview.view_all": "Смотреть все",
   // ── Quick add form
@@ -239,9 +239,9 @@ const ru: Dictionary = {
   "form.success": "Успешно сохранено!",
   "form.category_none": "Без категории",
   // ── Transactions page
-  "transactions.title": "Все операции",
+  "transactions.title": "Записи доходов и расходов",
   "transactions.empty": "Пока ничего нет",
-  "transactions.empty.hint": "Отправьте первую операцию боту в Telegram",
+  "transactions.empty.hint": "Отправьте первую запись боту в Telegram",
   "transactions.date": "Дата",
   "transactions.type": "Тип",
   "transactions.category": "Категория",
@@ -261,10 +261,10 @@ const ru: Dictionary = {
   "transactions.summary.expense": "Расходы",
   "transactions.page": "Страница",
   "transactions.of": "из",
-  "transactions.edit.title": "Редактировать операцию",
-  "transactions.delete.confirm": "Подтвердите удаление операции?",
-  "transactions.deleted": "Операция удалена",
-  "transactions.updated": "Операция обновлена",
+  "transactions.edit.title": "Редактировать запись",
+  "transactions.delete.confirm": "Подтвердите удаление записи?",
+  "transactions.deleted": "Запись удалена",
+  "transactions.updated": "Запись обновлена",
   "transactions.no_results": "Ничего не найдено",
   // ── Analytics page
   "analytics.title": "Аналитика",
@@ -298,7 +298,7 @@ const ru: Dictionary = {
   "categories.save": "Сохранить",
   "categories.rename": "Переименовать",
   "categories.delete": "Удалить",
-  "categories.delete.confirm": "Удалить категорию? Связанные операции останутся без категории.",
+  "categories.delete.confirm": "Удалить категорию? Связанные записи останутся без категории.",
   "categories.delete.budget_confirm":
     "У этой категории есть бюджет. Если удалить категорию, бюджет тоже удалится. Продолжить?",
   "categories.deleted": "Категория удалена",
@@ -306,7 +306,7 @@ const ru: Dictionary = {
   "categories.budget_saved": "Бюджет сохранён",
   "categories.empty": "Категорий пока нет",
   "categories.default_badge": "По умолчанию",
-  "categories.tx_count": "операций",
+  "categories.tx_count": "записей",
   "categories.budget_progress": "Бюджет",
   "categories.spent_of": "потрачено",
   // ── Budget progress
@@ -329,9 +329,9 @@ const ru: Dictionary = {
   "onboarding.hint": "Данные появятся здесь автоматически.",
   "onboarding.go_dashboard": "Перейти в дашборд",
   // ── Empty states
-  "empty.overview": "Операций пока нет",
+  "empty.overview": "Записей пока нет",
   "empty.overview.hint": "Отправьте первый расход или доход боту",
-  "empty.transactions": "Операции не найдены",
+  "empty.transactions": "Записи не найдены",
   "empty.analytics": "Нет данных для анализа",
   "empty.categories": "Категорий нет",
   "empty.budgets": "Бюджеты не заданы",
@@ -400,7 +400,7 @@ const ru: Dictionary = {
 const en: Dictionary = {
   // ── Navigation
   "nav.overview": "Overview",
-  "nav.transactions": "Transactions",
+  "nav.transactions": "Records",
   "nav.analytics": "Analytics",
   "nav.categories": "Categories",
   "nav.logout": "Logout",
@@ -420,7 +420,7 @@ const en: Dictionary = {
   "overview.this_month": "This month",
   "overview.vs_last_month": "vs last month",
   "overview.quick_add": "Quick add",
-  "overview.recent": "Recent transactions",
+  "overview.recent": "Recent records",
   "overview.budget_alerts": "Budget status",
   "overview.view_all": "View all",
   // ── Quick add form
@@ -436,9 +436,9 @@ const en: Dictionary = {
   "form.success": "Saved successfully!",
   "form.category_none": "No category",
   // ── Transactions page
-  "transactions.title": "All transactions",
+  "transactions.title": "Income and expense records",
   "transactions.empty": "Nothing here yet",
-  "transactions.empty.hint": "Send your first transaction to the Telegram bot",
+  "transactions.empty.hint": "Send your first record to the Telegram bot",
   "transactions.date": "Date",
   "transactions.type": "Type",
   "transactions.category": "Category",
@@ -458,10 +458,10 @@ const en: Dictionary = {
   "transactions.summary.expense": "Expense",
   "transactions.page": "Page",
   "transactions.of": "of",
-  "transactions.edit.title": "Edit transaction",
-  "transactions.delete.confirm": "Confirm delete this transaction?",
-  "transactions.deleted": "Transaction deleted",
-  "transactions.updated": "Transaction updated",
+  "transactions.edit.title": "Edit record",
+  "transactions.delete.confirm": "Confirm delete this record?",
+  "transactions.deleted": "Record deleted",
+  "transactions.updated": "Record updated",
   "transactions.no_results": "No results found",
   // ── Analytics page
   "analytics.title": "Analytics",
@@ -495,7 +495,7 @@ const en: Dictionary = {
   "categories.save": "Save",
   "categories.rename": "Rename",
   "categories.delete": "Delete",
-  "categories.delete.confirm": "Delete category? Linked transactions will lose their category.",
+  "categories.delete.confirm": "Delete category? Linked records will lose their category.",
   "categories.delete.budget_confirm":
     "This category has a budget. Deleting it will also remove the budget. Continue?",
   "categories.deleted": "Category deleted",
@@ -503,7 +503,7 @@ const en: Dictionary = {
   "categories.budget_saved": "Budget saved",
   "categories.empty": "No categories yet",
   "categories.default_badge": "Default",
-  "categories.tx_count": "transactions",
+  "categories.tx_count": "records",
   "categories.budget_progress": "Budget",
   "categories.spent_of": "spent",
   // ── Budget progress
@@ -526,9 +526,9 @@ const en: Dictionary = {
   "onboarding.hint": "Your data will appear here automatically.",
   "onboarding.go_dashboard": "Go to Dashboard",
   // ── Empty states
-  "empty.overview": "No transactions yet",
+  "empty.overview": "No records yet",
   "empty.overview.hint": "Send your first expense or income to the bot",
-  "empty.transactions": "No transactions found",
+  "empty.transactions": "No records found",
   "empty.analytics": "No data to analyze",
   "empty.categories": "No categories",
   "empty.budgets": "No budgets set",

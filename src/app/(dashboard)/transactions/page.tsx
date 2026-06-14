@@ -53,7 +53,7 @@ export default async function TransactionsPage() {
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
       <AddSheet lang={lang} />
-      <main className="max-w-2xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
+      <main className="max-w-5xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
         <h1
           className="text-xs font-semibold uppercase tracking-wide pl-1"
           style={{ color: "var(--fg-subtle)" }}

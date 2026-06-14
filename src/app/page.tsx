@@ -129,7 +129,7 @@ export default async function OverviewPage() {
       <BottomNav lang={lang} />
       <AddSheet lang={lang} />
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
+      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
 
         {/* 1 — Balance hero card */}
         <div
@@ -178,6 +178,8 @@ export default async function OverviewPage() {
         </div>
 
         {/* 2 — Expense overview card */}
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)]">
+          <div className="space-y-5">
         <div
           className="p-4 sm:p-5 rounded-[18px]"
           style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
@@ -205,6 +207,8 @@ export default async function OverviewPage() {
         </div>
 
         {/* 3 — Recent transactions card */}
+          </div>
+          <div className="space-y-5">
         <div
           className="rounded-[18px] overflow-hidden"
           style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
@@ -333,6 +337,8 @@ export default async function OverviewPage() {
             </div>
           </div>
         )}
+          </div>
+        </div>
       </main>
     </div>
   );
