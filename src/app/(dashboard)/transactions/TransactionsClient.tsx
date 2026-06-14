@@ -47,11 +47,34 @@ function formatMoney(s: string): string {
   return parts.join(" ");
 }
 
+// Deterministic date formatter — same output on server and client (no Intl locale dependency).
+// Month names sourced inline; do NOT move to shared helpers or dictionaries.
+const MONTHS: Record<string, string[]> = {
+  uz: ["yan", "fev", "mar", "apr", "may", "iyun", "iyul", "avg", "sen", "okt", "noy", "dek"],
+  ru: ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"],
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+};
+
+function toTashkentParts(iso: string): { y: number; m: number; d: number } {
+  // Add +5h offset to convert UTC to Tashkent (UTC+5). No DST in Tashkent.
+  const utcMs = new Date(iso).getTime();
+  const tashkentMs = utcMs + 5 * 60 * 60 * 1000;
+  const dt = new Date(tashkentMs);
+  return { y: dt.getUTCFullYear(), m: dt.getUTCMonth(), d: dt.getUTCDate() };
+}
+
 function formatDate(iso: string, lang: string): string {
-  return new Intl.DateTimeFormat(
-    lang === "ru" ? "ru-RU" : lang === "en" ? "en-US" : "uz-UZ",
-    { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Tashkent" }
-  ).format(new Date(iso));
+  const { y, m, d } = toTashkentParts(iso);
+  const key = lang === "ru" ? "ru" : lang === "en" ? "en" : "uz";
+  const mon = MONTHS[key][m];
+  const dd = String(d).padStart(2, "0");
+  return `${dd} ${mon} ${y}`;
+}
+
+// Derive "YYYY-MM-DD" in Tashkent timezone from an ISO string — used for filter boundary.
+function toTashkentDateStr(iso: string): string {
+  const { y, m, d } = toTashkentParts(iso);
+  return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
 interface EditState {
@@ -111,9 +134,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
     }
     if (dateFrom || dateTo) {
       r = r.filter((tx) => {
-        const tashkentDate = new Date(new Date(tx.occurredAt).getTime() + 5 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 10);
+        const tashkentDate = toTashkentDateStr(tx.occurredAt);
         if (dateFrom && tashkentDate < dateFrom) return false;
         if (dateTo && tashkentDate > dateTo) return false;
         return true;
@@ -533,7 +554,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => openEdit(tx)}
-                      className="w-8 h-8 rounded-[10px] flex items-center justify-center"
+                      className="w-11 h-11 rounded-[10px] flex items-center justify-center"
                       style={{ color: "var(--accent)" }}
                       aria-label={t("common.edit", lang)}
                       title={t("common.edit", lang)}
@@ -545,7 +566,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                     <button
                       onClick={() => setDeleteTarget(tx)}
                       disabled={deletingId === tx.id}
-                      className="w-8 h-8 rounded-[10px] flex items-center justify-center disabled:opacity-40"
+                      className="w-11 h-11 rounded-[10px] flex items-center justify-center disabled:opacity-40"
                       style={{ color: "var(--expense)" }}
                       aria-label={t("common.delete", lang)}
                       title={t("common.delete", lang)}

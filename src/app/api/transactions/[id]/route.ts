@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { serializeBigInt } from "@/lib/serialize";
 import { z } from "zod";
+import { assertSameOrigin } from "@/lib/http/origin";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
+  const originError = assertSameOrigin(request);
+  if (originError) return originError;
+
   const user = await getSessionUser();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -100,9 +104,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
+  const originError = assertSameOrigin(request);
+  if (originError) return originError;
+
   const user = await getSessionUser();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

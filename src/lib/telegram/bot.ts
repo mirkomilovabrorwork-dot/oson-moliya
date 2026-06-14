@@ -20,6 +20,30 @@ import { downloadTelegramFile } from "./download";
 import { runAggregation } from "../services/analytics";
 import type { FinanceQuery } from "../types";
 
+// ── Per-user rate limiter (in-memory, sliding window) ────────────────────────
+// Guards STT + brain calls: 20 AI messages per 10 minutes per Telegram user.
+// In-memory is acceptable for a single-instance bot deployment.
+
+const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+const userMessageTimestamps = new Map<number, number[]>();
+
+function isRateLimited(telegramUserId: number): boolean {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  const timestamps = (userMessageTimestamps.get(telegramUserId) ?? []).filter(
+    (t) => t >= windowStart
+  );
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    userMessageTimestamps.set(telegramUserId, timestamps);
+    return true;
+  }
+  timestamps.push(now);
+  userMessageTimestamps.set(telegramUserId, timestamps);
+  return false;
+}
+
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
 // NOTE: getTashkentDateString was kept in brain.ts; it is not needed here.
@@ -519,6 +543,13 @@ export function createBot(): Bot {
   // Text message handler
   bot.on("message:text", async (ctx) => {
     if (!ctx.from) return;
+    // Rate limit check before brain call
+    if (isRateLimited(ctx.from.id)) {
+      await ctx.reply(
+        "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring."
+      );
+      return;
+    }
     await handleMessage(
       {
         from: ctx.from,
@@ -534,11 +565,28 @@ export function createBot(): Bot {
     const from = ctx.from;
     if (!from) return;
 
+    // Voice size cap (R4): reject overly long/large audio before downloading
+    const voice = ctx.message.voice;
+    if (voice.duration > 60 || (voice.file_size !== undefined && voice.file_size > 5 * 1024 * 1024)) {
+      await ctx.reply(
+        "🎤 Audio juda uzun. Iltimos, 60 soniyadan qisqaroq ovozli xabar yuboring yoki yozma xabar kiriting."
+      );
+      return;
+    }
+
+    // Rate limit check before STT + brain
+    if (isRateLimited(from.id)) {
+      await ctx.reply(
+        "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring."
+      );
+      return;
+    }
+
     try {
       // Show typing indicator while transcribing
       await ctx.replyWithChatAction("typing");
 
-      const fileInfo = await ctx.api.getFile(ctx.message.voice.file_id);
+      const fileInfo = await ctx.api.getFile(voice.file_id);
       if (!fileInfo.file_path) {
         await ctx.reply("Ovozli faylni yuklab bo'lmadi.");
         return;
@@ -570,10 +618,30 @@ export function createBot(): Bot {
     const from = ctx.from;
     if (!from) return;
 
+    // Audio size cap (R4): reject overly large audio before downloading
+    const audio = ctx.message.audio;
+    if (
+      (audio.duration !== undefined && audio.duration > 60) ||
+      (audio.file_size !== undefined && audio.file_size > 5 * 1024 * 1024)
+    ) {
+      await ctx.reply(
+        "🎤 Audio juda uzun. Iltimos, 60 soniyadan qisqaroq audio yuboring yoki yozma xabar kiriting."
+      );
+      return;
+    }
+
+    // Rate limit check before STT + brain
+    if (isRateLimited(from.id)) {
+      await ctx.reply(
+        "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring."
+      );
+      return;
+    }
+
     try {
       await ctx.replyWithChatAction("typing");
 
-      const fileInfo = await ctx.api.getFile(ctx.message.audio.file_id);
+      const fileInfo = await ctx.api.getFile(audio.file_id);
       if (!fileInfo.file_path) {
         await ctx.reply("Audio faylni yuklab bo'lmadi.");
         return;
@@ -583,7 +651,7 @@ export function createBot(): Bot {
       const stt = getSttProvider();
       const transcript = await stt.transcribe(
         audioBuffer,
-        ctx.message.audio.file_name ?? "audio.mp3"
+        audio.file_name ?? "audio.mp3"
       );
 
       await ctx.reply(`🎤 ${transcript}`);

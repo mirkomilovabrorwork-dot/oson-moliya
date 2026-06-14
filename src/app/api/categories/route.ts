@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { serializeBigInt } from "@/lib/serialize";
 import { z } from "zod";
+import { assertSameOrigin } from "@/lib/http/origin";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,9 @@ const CreateCategorySchema = z.object({
 });
 
 export async function POST(request: NextRequest): Promise<Response> {
+  const originError = assertSameOrigin(request);
+  if (originError) return originError;
+
   const user = await getSessionUser();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

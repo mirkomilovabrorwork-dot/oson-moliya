@@ -6,6 +6,7 @@ import { resolveOrCreateCategory } from "@/lib/services/categories";
 import { serializeBigInt } from "@/lib/serialize";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { assertSameOrigin } from "@/lib/http/origin";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +29,12 @@ export async function GET(request: NextRequest): Promise<Response> {
   }
 
   const url = request.nextUrl;
-  const limit = parseInt(url.searchParams.get("limit") ?? "50", 10);
-  const offset = parseInt(url.searchParams.get("offset") ?? "0", 10);
+
+  // Clamp limit and offset to safe ranges (R11)
+  const rawLimit = Number(url.searchParams.get("limit") ?? "50");
+  const rawOffset = Number(url.searchParams.get("offset") ?? "0");
+  const limit = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 50, 1), 100);
+  const offset = Math.max(Number.isFinite(rawOffset) ? rawOffset : 0, 0);
 
   // Filters: type, category, from, to, search
   const typeParam = url.searchParams.get("type");
@@ -37,6 +42,14 @@ export async function GET(request: NextRequest): Promise<Response> {
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
   const searchParam = url.searchParams.get("search");
+
+  // Validate date filters — return 422 instead of letting Prisma 500 (R11)
+  if (fromParam && isNaN(new Date(fromParam).getTime())) {
+    return Response.json({ error: "Invalid 'from' date" }, { status: 422 });
+  }
+  if (toParam && isNaN(new Date(toParam).getTime())) {
+    return Response.json({ error: "Invalid 'to' date" }, { status: 422 });
+  }
 
   // Resolve type filter
   let typeFilter: TxType | undefined;
@@ -109,6 +122,9 @@ const CreateTransactionSchema = z.object({
 });
 
 export async function POST(request: NextRequest): Promise<Response> {
+  const originError = assertSameOrigin(request);
+  if (originError) return originError;
+
   const user = await getSessionUser();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

@@ -13,11 +13,19 @@ import type { BudgetDTO } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+// Deterministic date formatter — no locale-dependent Intl.DateTimeFormat so SSR and
+// client always produce the same string (avoids hydration mismatch).
+const MONTHS_UZ = ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avg", "sen", "okt", "noy", "dek"];
+const MONTHS_RU = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 function formatDate(date: Date, lang: string): string {
-  return new Intl.DateTimeFormat(
-    lang === "ru" ? "ru-RU" : lang === "en" ? "en-US" : "uz-UZ",
-    { day: "2-digit", month: "short", timeZone: "Asia/Tashkent" }
-  ).format(date);
+  // Convert to Tashkent (UTC+5) by shifting the date value
+  const tDate = new Date(date.getTime() + 5 * 60 * 60 * 1000);
+  const day = tDate.getUTCDate();
+  const monthIdx = tDate.getUTCMonth(); // 0-based
+  const months = lang === "ru" ? MONTHS_RU : lang === "en" ? MONTHS_EN : MONTHS_UZ;
+  return `${String(day).padStart(2, "0")} ${months[monthIdx]}`;
 }
 
 function formatMoney(val: bigint): string {
@@ -123,6 +131,47 @@ export default async function OverviewPage() {
   const net = overview.net;
   const netPositive = net >= 0n;
 
+  // Period comparison helpers (P0-A2) — net delta shown on hero
+  const prevNet = overview.prevNet;
+
+  function buildDeltaLine(
+    current: bigint,
+    prev: bigint,
+    metricType: "income" | "expense" | "net"
+  ): { text: string; color: string } | null {
+    if (prev === 0n) {
+      return {
+        text: t("home.delta.no_prev", lang),
+        color: "var(--fg-subtle)",
+      };
+    }
+    const sameSign = (current >= 0n) === (prev >= 0n);
+    if (!sameSign) {
+      // Show absolute movement
+      const fmtPrev = formatMoney(prev < 0n ? -prev : prev);
+      const fmtCurr = formatMoney(current < 0n ? -current : current);
+      const tpl = t("home.delta.sign_change", lang)
+        .replace("{prev}", (prev < 0n ? "−" : "+") + fmtPrev)
+        .replace("{curr}", (current < 0n ? "−" : "+") + fmtCurr);
+      return { text: tpl, color: "var(--fg-muted)" };
+    }
+    const diff = current - prev;
+    const base = prev < 0n ? -prev : prev;
+    const rawPct = Number((diff * 100n) / base);
+    const absPct = Math.abs(rawPct);
+    const sign = diff >= 0n ? "+" : "";
+    const pctStr = absPct > 999 ? `${sign}>999%` : `${sign}${Math.round(rawPct)}%`;
+    // Direction: income/net up = good (green); expense up = bad (red)
+    const good = metricType === "expense" ? diff <= 0n : diff >= 0n;
+    const arrow = diff >= 0n ? "▲" : "▼";
+    return {
+      text: `${arrow} ${pctStr} ${t("overview.vs_last_month", lang)}`,
+      color: good ? "var(--income)" : "var(--expense)",
+    };
+  }
+
+  const netDelta = buildDeltaLine(net, prevNet, "net");
+
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <TopNav lang={lang} />
@@ -137,10 +186,16 @@ export default async function OverviewPage() {
           style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           <p
-            className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-3"
+            className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-1"
             style={{ color: "var(--fg-subtle)" }}
           >
             {t("home.balance", lang)}
+          </p>
+          <p
+            className="text-[10px] font-medium mb-2 pl-0.5"
+            style={{ color: "var(--fg-subtle)", opacity: 0.7 }}
+          >
+            {t("home.scope_hero", lang)}
           </p>
           <p
             className="text-3xl font-bold tabular"
@@ -149,6 +204,14 @@ export default async function OverviewPage() {
             {netPositive ? "+" : "−"}
             {formatMoneyShort(net < 0n ? -net : net)}
           </p>
+          {netDelta && (
+            <p
+              className="text-xs font-medium mt-1.5 pl-0.5"
+              style={{ color: netDelta.color }}
+            >
+              {netDelta.text}
+            </p>
+          )}
           <div className="flex items-center gap-5 mt-3">
             <div className="flex items-center gap-1.5">
               <span
@@ -218,7 +281,7 @@ export default async function OverviewPage() {
             style={{ borderBottom: "1px solid var(--border)" }}
           >
             <h2 className="font-semibold text-sm" style={{ color: "var(--fg)" }}>
-              {t("overview.recent", lang)}
+              {t("home.scope_recent", lang)}
             </h2>
             <Link
               href="/transactions"

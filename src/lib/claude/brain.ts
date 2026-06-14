@@ -86,11 +86,31 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
 
   const intent = parsed.data;
 
+  // Foreign-currency guard (R10): if the text mentions a foreign currency
+  // token, do NOT run the UZS amount fallback — force clarification instead.
+  // This prevents "100 dollar" from being silently logged as 100 so'm.
+  const FOREIGN_CURRENCY_RE =
+    /dollar|do['']llar|do['']lr|\$|евро|euro|€|rubl|рубль|₽|£|¥/i;
+
   // Amount fallback: if model returned null but text has parseable amount
   if (
     (intent.intent === "log_income" || intent.intent === "log_expense") &&
     (intent.amount === null || intent.amount === undefined)
   ) {
+    if (FOREIGN_CURRENCY_RE.test(input.text)) {
+      // Foreign currency detected — skip UZS fallback, force clarification
+      return {
+        intent: {
+          intent: "clarify_needed",
+          language: (input.user.language as "uz" | "ru" | "en") ?? "uz",
+          confidence: 0.5,
+          reply_text:
+            "Qaysi valyutada? Iltimos, so'mda miqdorni yozing (masalan: 500 ming so'm).",
+          missing_fields: ["amount"],
+        },
+        raw: toolUse.input,
+      };
+    }
     const fallbackAmount = parseAmountUzs(input.text);
     if (fallbackAmount !== null) {
       intent.amount = Number(fallbackAmount);

@@ -159,7 +159,7 @@ const uz: Dictionary = {
   "more.accounts_sub": "Hisoblarni boshqarish",
   "more.categories_sub": "Kategoriyalarni boshqarish",
   "more.currency": "Asosiy valyuta",
-  "more.currency_sub": "Asosiy valyutani tanlash",
+  "more.currency_sub": "Hozircha faqat UZS",
   "more.currency_only": "Hozircha faqat UZS — boshqa valyutalar tez orada",
   "more.language": "Til",
   "more.language_sub": "Tilni tanlash",
@@ -167,10 +167,15 @@ const uz: Dictionary = {
   // ── Common
   "common.soon": "Tez orada",
   // ── Home page
-  "home.balance": "Umumiy balans",
+  "home.balance": "Bu oy natijasi",
   "home.expense_overview": "Xarajatlar sharhi",
   "home.total": "Jami",
   "home.more": "Ko'proq",
+  "home.scope_hero": "Bu oy",
+  "home.scope_recent": "So'nggi yozuvlar",
+  "home.delta.no_prev": "o'tgan oyda ma'lumot yo'q",
+  "home.delta.new": "yangi",
+  "home.delta.sign_change": "o'tgan oy {prev} → bu oy {curr}",
   // ── Debts / Accounts placeholders
   "debts.soon_desc": "Qarzlar moduli tez orada qo'shiladi.",
   "accounts.soon_desc": "Hisoblar moduli tez orada qo'shiladi.",
@@ -356,7 +361,7 @@ const ru: Dictionary = {
   "more.accounts_sub": "Управление счетами",
   "more.categories_sub": "Управление категориями",
   "more.currency": "Основная валюта",
-  "more.currency_sub": "Выбор основной валюты",
+  "more.currency_sub": "Пока только UZS",
   "more.currency_only": "Пока только UZS — другие валюты скоро",
   "more.language": "Язык",
   "more.language_sub": "Выбор языка",
@@ -364,10 +369,15 @@ const ru: Dictionary = {
   // ── Common
   "common.soon": "Скоро",
   // ── Home page
-  "home.balance": "Общий баланс",
+  "home.balance": "Итог за месяц",
   "home.expense_overview": "Обзор расходов",
   "home.total": "Всего",
   "home.more": "Подробнее",
+  "home.scope_hero": "Этот месяц",
+  "home.scope_recent": "Последние записи",
+  "home.delta.no_prev": "нет данных за прошлый месяц",
+  "home.delta.new": "новый",
+  "home.delta.sign_change": "прошлый месяц {prev} → этот {curr}",
   // ── Debts / Accounts placeholders
   "debts.soon_desc": "Модуль долгов появится скоро.",
   "accounts.soon_desc": "Модуль счетов появится скоро.",
@@ -553,7 +563,7 @@ const en: Dictionary = {
   "more.accounts_sub": "Manage accounts",
   "more.categories_sub": "Manage categories",
   "more.currency": "Main currency",
-  "more.currency_sub": "Choose main currency",
+  "more.currency_sub": "UZS only for now",
   "more.currency_only": "Only UZS for now — more currencies soon",
   "more.language": "Language",
   "more.language_sub": "Choose language",
@@ -561,10 +571,15 @@ const en: Dictionary = {
   // ── Common
   "common.soon": "Coming soon",
   // ── Home page
-  "home.balance": "Total balance",
+  "home.balance": "This month's result",
   "home.expense_overview": "Expense overview",
   "home.total": "Total",
   "home.more": "More",
+  "home.scope_hero": "This month",
+  "home.scope_recent": "Recent records",
+  "home.delta.no_prev": "no data for last month",
+  "home.delta.new": "new",
+  "home.delta.sign_change": "last month {prev} → this month {curr}",
   // ── Debts / Accounts placeholders
   "debts.soon_desc": "The debts module is coming soon.",
   "accounts.soon_desc": "The accounts module is coming soon.",

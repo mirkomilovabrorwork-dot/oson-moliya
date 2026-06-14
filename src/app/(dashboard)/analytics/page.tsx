@@ -15,12 +15,15 @@ export default async function AnalyticsPage() {
 
   const lang = await resolveLang(user.language);
 
-  // Default: this month
+  // Default: this month — half-open window [monthStart, monthEnd) to match
+  // Home/getOverview and the bot's "bu oy" window (P0-A3).
   const now = new Date(Date.now() + 5 * 60 * 60 * 1000); // Tashkent now
   const year = now.getUTCFullYear();
-  const month = now.getUTCMonth() + 1;
+  const month = now.getUTCMonth() + 1; // 1-based
+  // monthStart = UTC midnight of 1st of this Tashkent month (UTC+5 → shift back 5h)
   const monthStart = new Date(Date.UTC(year, month - 1, 1) - 5 * 60 * 60 * 1000);
-  const monthEnd = new Date(Date.now() + 5 * 60 * 60 * 1000);
+  // monthEnd = first day of NEXT Tashkent month (exclusive upper bound)
+  const monthEnd = new Date(Date.UTC(year, month, 1) - 5 * 60 * 60 * 1000);
 
   const prisma = db as import("@prisma/client").PrismaClient;
 
@@ -28,7 +31,7 @@ export default async function AnalyticsPage() {
     where: {
       userId: user.id,
       deletedAt: null,
-      occurredAt: { gte: monthStart, lte: monthEnd },
+      occurredAt: { gte: monthStart, lt: monthEnd },
     },
     include: { category: true },
     orderBy: { occurredAt: "asc" },

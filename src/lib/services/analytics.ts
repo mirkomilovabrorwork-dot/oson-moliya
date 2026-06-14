@@ -299,7 +299,7 @@ export async function runAggregation(
         `📊 Hisobot:\n` +
         `💰 Kirim: ${formatSignedSom(income as bigint, "income")}\n` +
         `💸 Chiqim: ${formatSignedSom(expense as bigint, "expense")}\n` +
-        `📈 Balans: ${formatSignedSom(net as bigint, "net")}\n` +
+        `📈 Sof (kirim−chiqim): ${formatSignedSom(net as bigint, "net")}\n` +
         (topLines ? `\nEng ko'p chiqimlar:\n${topLines}` : "");
     }
 
@@ -389,10 +389,10 @@ export async function runAggregation(
     const net = income - expense;
     const text =
       language === "ru"
-        ? `Доход: ${formatSignedSom(income, "income")}\nРасход: ${formatSignedSom(expense, "expense")}\nБаланс: ${formatSignedSom(net, "net")}`
+        ? `Доход: ${formatSignedSom(income, "income")}\nРасход: ${formatSignedSom(expense, "expense")}\nИтог (доход−расход): ${formatSignedSom(net, "net")}`
         : language === "en"
         ? `Income: ${formatSignedSom(income, "income")}\nExpense: ${formatSignedSom(expense, "expense")}\nNet: ${formatSignedSom(net, "net")}`
-        : `Kirim: ${formatSignedSom(income, "income")}\nChiqim: ${formatSignedSom(expense, "expense")}\nBalans: ${formatSignedSom(net, "net")}`;
+        : `Kirim: ${formatSignedSom(income, "income")}\nChiqim: ${formatSignedSom(expense, "expense")}\nSof (kirim−chiqim): ${formatSignedSom(net, "net")}`;
     return {
       text,
       data: {
