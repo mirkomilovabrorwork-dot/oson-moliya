@@ -4,13 +4,16 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — final audit + security hardening + design lessons)
-- **CODEX COMMIT/PUSH DONE, DEPLOY BLOCKED (2026-06-14):** Commit `0a7b1b2` (`feat(currency): preserve original
-  transaction currency`) was pushed to GitHub `main`. Working tree was clean after push. Vercel prod deploy
-  attempted with `npx vercel --prod --yes`, but Vercel CLI returned: "The specified token is not valid".
-  Live `https://oson-moliya.vercel.app/login` still shows the old login-link copy, so GitHub push did **not**
-  auto-deploy. Next action: user must re-auth Vercel CLI (`vercel login`) or provide a fresh Vercel token, then
-  run `npx vercel --prod --yes` from `C:\Users\localhost\Desktop\pultrack`.
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus 1M — currency-original DEPLOYED; Codex work reviewed GOOD)
+- **CURRENCY-ORIGINAL DEPLOYED + CODEX WORK VERIFIED (2026-06-14):** Codex committed+pushed `0a7b1b2`
+  (feat(currency): preserve original transaction currency) + README/docs updates, but its Vercel token was
+  invalid → deploy blocked. Opus re-reviewed: Codex work is GOOD — gates green (typecheck 0, 104 tests), the
+  earlier BLOCKER fix (TransactionsClient desktop table → formatTxMoney, both rows) is present, owner-scoping
+  intact, migration additive (`prisma migrate status` = up to date). Two reviewer "issues" were FALSE POSITIVES
+  (verified before acting): prod `STT_PROVIDER=elevenlabs` (+ key) so README "production uses ElevenLabs" is
+  ACCURATE; receipt-photo correctly removed from the 3-day roadmap (it already shipped at 16fc74e). The
+  formatTxMoney "double-sign" is dead code (amounts are always positive). DEPLOYED to prod via the working
+  Vercel CLI auth — currency-original ("$100 stays $100" + Asl valyutada/so'm toggle) is now LIVE.
 - **CODEX RESUME (2026-06-14, Claude limitdan keyin davom):** Claude qoldirgan joydan davom etildi.
   Uncommitted `ORIGINAL` display-currency / original transaction currency work reviewed; Prisma migration
   `20260614130528_tx_original_currency` exists and `npx prisma migrate status` says DB is **up to date**.
