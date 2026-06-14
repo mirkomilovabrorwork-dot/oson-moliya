@@ -16,7 +16,9 @@ export default async function CategoriesPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
-  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const rawCurrency = (user.displayCurrency ?? "ORIGINAL") as DisplayCurrency;
+  // Categories/budgets show aggregates only — ORIGINAL maps to UZS
+  const currency: DisplayCurrency = rawCurrency === "ORIGINAL" ? "UZS" : rawCurrency;
   const rates: Rates = await getRates();
   const prisma = db as import("@prisma/client").PrismaClient;
 

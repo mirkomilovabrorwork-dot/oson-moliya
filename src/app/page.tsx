@@ -36,9 +36,11 @@ export default async function OverviewPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
-  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const currency = (user.displayCurrency ?? "ORIGINAL") as DisplayCurrency;
   const rates = await getRates();
-  const fmt = (val: bigint) => formatMoneyFn(val, currency, rates, lang);
+  // For aggregates/totals: ORIGINAL mode shows so'm (amountUzs is the common base)
+  const aggregateCurrency = currency === "ORIGINAL" ? "UZS" : currency;
+  const fmt = (val: bigint) => formatMoneyFn(val, aggregateCurrency, rates, lang);
   const overview = await getOverview(user.id, "this_month");
 
   const prisma = db as import("@prisma/client").PrismaClient;

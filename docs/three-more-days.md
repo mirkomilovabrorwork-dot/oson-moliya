@@ -6,7 +6,7 @@ Given three additional days, the priorities in rough order would be:
 
 - **Recurring transactions.** Most SMB expenses — rent, salaries, utilities — happen on a fixed schedule. A `RecurringRule` table (category, amount, frequency, nextDue) plus a lightweight daily Vercel Cron job (`/api/cron/apply-recurring`) would log them automatically and notify the owner via Telegram. Zero additional input after setup.
 
-- **Receipt-photo OCR.** Users could send a photo of a receipt in Telegram; the server would pass it to Claude's vision capability to extract merchant, amount, date, and category, then run the same confirmation loop as a text message. This closes the last gap between paper receipts and digital records.
+- **Transfers and reconciliation.** Accounts exist now, but moving money between cash/card/bank should be a first-class transfer, not income or expense. Add transfer records, daily cash close, and reconciliation against account balances so a bookkeeper can explain the numbers at day end.
 
 - **PDF / Excel export.** A `/api/export?from=&to=&format=xlsx|pdf` route would generate a formatted statement (Recharts charts embedded in PDF, proper column formatting in Excel) so owners can share data with an accountant or tax office without copy-pasting.
 
@@ -14,4 +14,4 @@ Given three additional days, the priorities in rough order would be:
 
 - **Full cross-language category mapping.** Right now the prompt instructs Claude to reuse the nearest existing category name; a complete solution would maintain a synonym table (logistika = логистика = logistics = yetkazib berish) so categories converge across languages deterministically rather than relying on model judgment.
 
-- **Auto-fallback to OpenAI STT on low Whisper confidence.** The STT interface is already swappable; the missing piece is a confidence threshold: if Groq Whisper returns a low-confidence transcript (detectable from its JSON metadata), silently retry with `gpt-4o-transcribe` before presenting the result to the user. This would meaningfully improve accuracy for heavily Uzbek-accented audio.
+- **STT confidence fallback.** The STT interface is already swappable; the next step is an A/B confidence fallback: if ElevenLabs returns a weak or suspicious Uzbek transcript, retry with OpenAI `gpt-4o-transcribe` or Groq Whisper before sending the text to the finance brain.

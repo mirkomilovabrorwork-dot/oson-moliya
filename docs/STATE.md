@@ -5,6 +5,16 @@
 > Specs: `docs/tasks/NNN-*.md`.
 
 ## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — final audit + security hardening + design lessons)
+- **CODEX RESUME (2026-06-14, Claude limitdan keyin davom):** Claude qoldirgan joydan davom etildi.
+  Uncommitted `ORIGINAL` display-currency / original transaction currency work reviewed; Prisma migration
+  `20260614130528_tx_original_currency` exists and `npx prisma migrate status` says DB is **up to date**.
+  Gates green after resume: `npm run typecheck`, `npm test` (104/104), `npm run build`. Remaining audit gap
+  closed: API routes reviewed for auth/owner scope/origin guards, i18n key parity checked (uz/ru/en 225/225/225,
+  no missing used keys), docs updated from stale Groq/UZS-only/no-accounts wording to current ElevenLabs +
+  multi-currency/accounts/debts reality. Browser smoke on `localhost:3011/login`: no horizontal overflow, new
+  WebApp/auto-login copy visible, old "xavfsiz kirish havolasi" copy gone. Protected route smoke: `/transactions`
+  redirects unauthenticated, `/api/transactions` returns 401. Not deployed and not committed in this Codex resume.
+  USER-ONLY still gates final confidence: real Uzbek voice test in Telegram, provider spend caps, demo video.
 - **FINAL AUDIT + HARDENING (2026-06-14):** 5-agent parallel audit (pages/API-security/docs/i18n/design).
   Pages PASSED (no placeholders). **Webhook VERIFIED healthy** (live POST: correct secret→200, wrong→401;
   the old 401 last_error was stale). **Security:** audit claimed 4 "IDOR" + 2 CSRF; on review 3 were

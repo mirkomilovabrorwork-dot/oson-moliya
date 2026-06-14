@@ -16,7 +16,9 @@ export default async function AnalyticsPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
-  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const rawCurrency = (user.displayCurrency ?? "ORIGINAL") as DisplayCurrency;
+  // Analytics shows aggregates only — ORIGINAL maps to UZS (so'm is the common base)
+  const currency: DisplayCurrency = rawCurrency === "ORIGINAL" ? "UZS" : rawCurrency;
   const rates: Rates = await getRates();
 
   // Default: this month — half-open window [monthStart, monthEnd) to match

@@ -9,7 +9,7 @@
  * fallback is returned so the dashboard never breaks.
  */
 
-export type DisplayCurrency = "UZS" | "USD" | "EUR" | "RUB";
+export type DisplayCurrency = "UZS" | "USD" | "EUR" | "RUB" | "ORIGINAL";
 
 export interface Rates {
   USD: number;

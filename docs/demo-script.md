@@ -18,8 +18,8 @@ flow and bot text speak for themselves. Suggested tool: OBS Studio or Windows Ga
 5. Pre-test voice BEFORE recording: send the recording phrase 3× on prod and confirm each round-trip
    completes in under ~15s. If any trip is slower, record the main expense-log scene via TEXT and
    add voice as a short secondary clip only.
-6. Never say a foreign-currency amount on camera (e.g. "dollar", "yevro", "rubl") — say amounts
-   in so'm only.
+6. Keep the required core flow in so'm only. Foreign-currency entry is supported, but record it only
+   as an optional extra after the core demo is complete.
 7. Keep the entire recording in Uzbek (uz) — mixing languages causes the bot to auto-switch per message.
 8. Single-send each message (one tap — no double-tap); never delete a category on camera.
 
@@ -164,8 +164,8 @@ flow and bot text speak for themselves. Suggested tool: OBS Studio or Windows Ga
 
 ## Edge cases (optional, time permitting)
 
-- **Foreign-currency guard:** send `"yuz dollar to'ladim"` → bot asks for the so'm amount instead of
-  logging 100 so'm silently. (Requires P0-E guard to be deployed.)
+- **Foreign-currency entry:** send `"yuz dollar to'ladim"` → bot logs the UZS base amount while keeping
+  the original USD amount visible in the dashboard's original-currency mode.
 - **Duplicate-send test:** send the same message twice quickly → only ONE record appears on the dashboard.
   (Requires P0-E update_id idempotency guard.)
 
@@ -176,7 +176,7 @@ flow and bot text speak for themselves. Suggested tool: OBS Studio or Windows Ga
 - Clean account → zero stray rows.
 - Reload dashboard after EVERY bot save → new record on camera.
 - Single-send per message → no double-tap.
-- Amounts in so'm only → no foreign currency on camera.
+- Core flow amounts in so'm only; optional foreign-currency entry comes after the core pass.
 - uz only → no language auto-flip mid-recording.
 - DevTools closed → no cookies/URLs on camera.
 - Do NOT delete a category on camera.

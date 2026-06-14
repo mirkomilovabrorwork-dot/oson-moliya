@@ -17,10 +17,67 @@ export function convertFromUzs(
   currency: DisplayCurrency,
   rates: Rates
 ): number {
-  if (currency === "UZS") return Number(amountUzs);
+  if (currency === "UZS" || currency === "ORIGINAL") return Number(amountUzs);
   const rate = rates[currency as keyof Rates];
   if (!rate || rate <= 0) return Number(amountUzs);
   return Number(amountUzs) / rate;
+}
+
+/**
+ * Per-transaction display helper.
+ *
+ * - displayCurrency === "ORIGINAL":
+ *     If the row has originalCurrency (a foreign row), format using originalAmount + that
+ *     currency's symbol (e.g. "$100", "₽5 000").
+ *     Otherwise (a plain UZS row), format amountUzs as so'm — identical to formatMoney UZS.
+ * - displayCurrency === "UZS" | "USD" | "EUR" | "RUB":
+ *     Delegate to formatMoney (convert-all behavior, same as before).
+ *
+ * Negative values: leading "−" (U+2212).
+ */
+export function formatTxMoney(
+  tx: {
+    amountUzs: bigint;
+    originalCurrency?: string | null;
+    originalAmount?: bigint | null;
+  },
+  displayCurrency: DisplayCurrency,
+  rates: Rates,
+  lang: string
+): string {
+  if (displayCurrency === "ORIGINAL") {
+    if (tx.originalCurrency && tx.originalAmount != null) {
+      // Foreign row — show in original currency
+      const oc = tx.originalCurrency.toUpperCase();
+      const amt = tx.originalAmount < 0n ? -tx.originalAmount : tx.originalAmount;
+      const negative = tx.originalAmount < 0n;
+      const sign = negative ? "−" : "";
+      if (oc === "USD" || oc === "EUR") {
+        const symbol = oc === "USD" ? "$" : "€";
+        const n = Number(amt);
+        const formatted = n.toFixed(2);
+        const [intPart, decPart] = formatted.split(".");
+        if (lang === "ru") {
+          const groupedInt = spaceGroup(parseInt(intPart, 10));
+          return sign + groupedInt + "," + decPart + " " + symbol;
+        }
+        const usInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return sign + symbol + usInt + "." + decPart;
+      }
+      if (oc === "RUB") {
+        const rounded = Math.round(Number(amt));
+        const grouped = spaceGroup(rounded);
+        if (lang === "ru") return sign + grouped + " ₽";
+        return sign + "₽" + grouped;
+      }
+      // Generic fallback: number + currency code
+      return sign + spaceGroup(Number(amt)) + " " + oc;
+    }
+    // Plain UZS row — format as so'm (same as formatMoney with UZS)
+    return formatMoney(tx.amountUzs, "UZS", rates, lang);
+  }
+  // Convert-all mode: delegate to formatMoney
+  return formatMoney(tx.amountUzs, displayCurrency, rates, lang);
 }
 
 /** Convert a foreign-currency float amount to UZS BigInt. */

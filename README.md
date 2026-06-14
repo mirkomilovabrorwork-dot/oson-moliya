@@ -55,14 +55,14 @@ the language of each message independently.
 ## Key Features
 
 ### Telegram bot
-- Text and voice input (Groq Whisper STT, swappable to OpenAI via `STT_PROVIDER`)
+- Text and voice input (production uses ElevenLabs Scribe v2 STT for Uzbek; Groq/OpenAI are swappable via `STT_PROVIDER`)
 - Language auto-detection: Uzbek, Russian, English per message
 - Amount shorthand expansion: `ming` ×1 000, `mln`/`млн` ×1 000 000, `mlrd` ×10⁹, `yarim` = 0.5
-- Intent detection via Claude forced tool-use: log income/expense, query totals/reports, correct or
-  delete the last transaction, add custom categories
+- Intent detection via Claude forced tool-use: log income/expense, log debts, query totals/reports,
+  correct or delete the last transaction, add custom categories
 - Single-step clarification loop for missing fields (amount, type) — text-based, confirmed on camera
-- UZS-only guard: foreign-currency tokens (dollar, euro, rubl) trigger a clarification prompt rather
-  than silently logging the numeric digits as so'm
+- Multi-currency entry for USD/EUR/RUB: the bot stores a UZS base amount and keeps the original
+  amount/currency for display; unsupported currencies trigger a clarification prompt
 - Custom categories (canonical lowercased, cross-language reuse)
 - Proactive budget alerts when a category's monthly spend reaches the limit (once per category per
   month; fires at 100% or above)
@@ -86,23 +86,23 @@ the language of each message independently.
 
 Oson Moliya is a **cash-flow tracker (cash basis)**: every record is real money in or out at the
 moment it happened. "Bu oy natijasi" equals this month's total income minus this month's total
-expense — it is **not** an account balance and not an accounting profit. Transfers between accounts,
-debts and receivables, and a true running balance across all cashboxes are on the 3-day roadmap
+expense — it is **not** an accounting profit. Accounts and simple debts are available, but transfers,
+reconciliation, accrual accounting, and team workflows are on the 3-day roadmap
 (`docs/three-more-days.md`).
 
 ---
 
-## Why Claude + Groq instead of OpenAI
+## Why Claude + ElevenLabs instead of a full OpenAI stack
 
 **Structured output via forced tool-use + zod.** Every bot message goes to Claude with a
 `record_intent` tool schema; Claude must call the tool, and the result is validated with zod before
 any DB write. This is functionally equivalent to OpenAI structured-output / function-calling — the
 model never writes SQL, and a malformed response is rejected cleanly.
 
-**STT is swappable.** Voice goes to Groq Whisper (`whisper-large-v3`) by default, but the
-`STT_PROVIDER=openai` environment variable switches the same interface to OpenAI Whisper with no
-code change. The choice is cost and Uzbek-language accuracy: in testing Groq's Whisper handled
-Uzbek phone audio reliably at lower latency than the OpenAI endpoint at the time of development.
+**STT is swappable.** Production voice input currently uses ElevenLabs Scribe v2 because Uzbek
+phone audio accuracy matters more than provider uniformity for this assessment. The same interface
+can switch to Groq Whisper or OpenAI `gpt-4o-transcribe` through `STT_PROVIDER` without changing the
+bot flow.
 
 **Cost.** Claude Haiku (the default model) is among the cheapest available models that reliably
 follows a multi-field tool schema in three languages including Uzbek.
@@ -118,7 +118,7 @@ Telegram  ──POST──►  /api/telegram (webhook)
                           │
                           ▼
                     Claude brain (forced tool-use + zod)
-                    Groq Whisper (voice → text)
+                    ElevenLabs Scribe v2 (voice -> text)
                     Prisma 6 → Neon Postgres
                           │
                           ▼
@@ -133,8 +133,10 @@ Browser  ──HTTPS──►  Next.js App Router
   Next.js process and the same Neon Postgres database.
 - **Brain:** every bot message goes to Claude via forced tool-use (`record_intent`). The structured
   output is validated with zod before any DB write — the model never writes SQL.
-- **Voice:** Telegram sends OGG audio; the server downloads it and forwards the buffer to Groq
-  Whisper (`whisper-large-v3`, language autodetect). The transcript feeds the same brain path as text.
+- **Voice:** Telegram sends OGG audio; the server downloads it and forwards the buffer to the
+  configured STT provider. Production uses ElevenLabs Scribe v2; Groq Whisper and OpenAI
+  `gpt-4o-transcribe` remain available behind the same provider interface. The transcript feeds the
+  same brain path as text.
 
 ---
 
@@ -171,9 +173,10 @@ recorded demo.
 - **500-row view cap.** The Transactions page currently fetches the most-recent 500 records on the
   server side. Server-side pagination and full-text search are on the roadmap; the cap is a
   conscious first-ship trade-off.
-- **Rate-limiting / spend caps.** The public bot calls Groq STT + Claude on every message. A basic
-  per-user sliding window and global daily counter are in place. Provider-side spend caps on both
-  the Anthropic and Groq keys are set to ensure a cost spike cannot fail the live demo.
+- **Rate-limiting / spend caps.** The public bot calls an STT provider + Claude on voice messages. A basic
+  per-user sliding window and global daily counter are in place. Provider-side spend caps on the
+  Anthropic and STT keys should be set before the final public demo so a cost spike cannot fail the
+  live assessment.
 - **Magic-link issuance rate-limit and token-in-chat-history risk** are known limitations noted for
   Phase 4 hardening.
 
@@ -188,7 +191,7 @@ recorded demo.
 | Charts | Recharts |
 | Database | Neon Postgres (serverless) via Prisma 6 + `@prisma/adapter-neon` |
 | AI brain | Anthropic Claude (`claude-haiku-4-5-20251001` default, forced tool-use) |
-| Voice STT | Groq Whisper (`whisper-large-v3`); swappable to OpenAI via `STT_PROVIDER` |
+| Voice STT | ElevenLabs Scribe v2 in production; Groq Whisper/OpenAI `gpt-4o-transcribe` swappable via `STT_PROVIDER` |
 | Bot framework | grammY |
 | Deploy | Vercel |
 | Test runner | Vitest |
@@ -276,8 +279,10 @@ Calls `setWebhook` on Telegram pointing to `${APP_URL}/api/telegram` with the co
 | `DIRECT_URL` | Yes | Neon **unpooled** connection string (used by `prisma migrate` only) |
 | `ANTHROPIC_API_KEY` | Yes | Anthropic API key — powers the bot brain |
 | `CLAUDE_MODEL` | No | Claude model ID (default: `claude-haiku-4-5-20251001`) |
-| `GROQ_API_KEY` | Yes (voice) | Groq API key for Whisper STT |
-| `STT_PROVIDER` | No | `groq` (default) or `openai` |
+| `ELEVENLABS_API_KEY` | Yes for prod voice | ElevenLabs key for Scribe v2 STT |
+| `GROQ_API_KEY` | Optional | Groq key for Whisper STT fallback |
+| `OPENAI_API_KEY` | Optional | OpenAI key when `STT_PROVIDER=openai` |
+| `STT_PROVIDER` | No | `elevenlabs`, `groq`, or `openai` |
 | `TELEGRAM_BOT_TOKEN` | Yes | Bot token from @BotFather |
 | `TELEGRAM_WEBHOOK_SECRET` | Yes | Random string — verified on every webhook POST |
 | `APP_URL` | Yes | Public base URL: `https://<project>.vercel.app` in prod, `http://localhost:3000` locally |
@@ -287,13 +292,14 @@ Calls `setWebhook` on Telegram pointing to `${APP_URL}/api/telegram` with the co
 
 ## Known Limitations
 
-- **Uzbek STT accuracy is moderate.** Groq Whisper handles Uzbek reasonably but may mis-transcribe
-  uncommon words; the confirmation echo lets users catch errors.
-- **UZS only.** Foreign-currency amounts (dollars, euros, rubles) trigger a clarification prompt;
-  the user must convert manually. Multi-currency display is on the Phase 2 roadmap.
+- **Uzbek STT can still mis-transcribe.** ElevenLabs is the current production STT choice for Uzbek
+  voice quality, but the bot still echoes the transcript so users can catch errors.
+- **Multi-currency is pragmatic, not accounting-grade FX.** USD/EUR/RUB can be logged and displayed;
+  amounts are stored on a UZS base using live/fallback CBU rates. Unsupported currencies ask for
+  clarification.
 - **Single-user workspace.** Each Telegram user has their own isolated data. Team/multi-user
   workspaces are not yet implemented.
-- **Cash basis only.** No accounts, no transfers, no debt/receivables ledger — those are the first
-  items on the 3-day roadmap.
+- **Cash basis only.** Accounts and simple debts exist, but transfers, reconciliation, accrual
+  accounting, and role-based team access are not implemented yet.
 - **500-row view cap.** Transactions page shows the most-recent 500 records; server-side search and
   pagination are roadmap items.

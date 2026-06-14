@@ -62,7 +62,7 @@ export default async function MorePage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
-  const displayCurrency = (user.displayCurrency ?? "UZS") as "UZS" | "USD" | "EUR" | "RUB";
+  const displayCurrency = (user.displayCurrency ?? "ORIGINAL") as "ORIGINAL" | "UZS" | "USD" | "EUR" | "RUB";
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>

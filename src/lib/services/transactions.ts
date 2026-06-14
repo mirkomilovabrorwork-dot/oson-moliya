@@ -25,6 +25,10 @@ export interface CreateTransactionInput {
   accountId?: string | null;
   type: TxType;
   amountUzs: bigint;
+  /** Original foreign currency code (e.g. "USD"). Null/undefined for plain UZS transactions. */
+  originalCurrency?: string | null;
+  /** Original foreign amount in whole units (e.g. 100 for $100). Null/undefined for plain UZS. */
+  originalAmount?: bigint | null;
   note?: string | null;
   occurredAt?: Date;
   source?: string;
@@ -39,6 +43,8 @@ export async function createTransaction(input: CreateTransactionInput) {
       accountId: input.accountId ?? null,
       type: input.type,
       amountUzs: input.amountUzs,
+      originalCurrency: input.originalCurrency ?? null,
+      originalAmount: input.originalAmount ?? null,
       note: input.note ?? null,
       occurredAt: input.occurredAt ?? new Date(),
       source: input.source ?? "bot",

@@ -118,6 +118,12 @@ async function finalizeLog(
     accountId: defaultAccountId,
     type: txType,
     amountUzs: BigInt(amount),
+    originalCurrency:
+      originalCurrency && originalCurrency !== "UZS" ? originalCurrency : null,
+    originalAmount:
+      originalCurrency && originalCurrency !== "UZS" && originalAmount != null
+        ? BigInt(Math.round(originalAmount))
+        : null,
     note: note ?? null,
     occurredAt,
     source: "bot",

@@ -7,12 +7,14 @@ import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
 import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
-import { formatMoney as formatMoneyFn } from "@/lib/currency";
+import { formatMoney as formatMoneyFn, formatTxMoney as formatTxMoneyFn } from "@/lib/currency";
 
 interface TxRow {
   id: string;
   type: "income" | "expense";
   amountUzs: string;
+  originalCurrency: string | null;
+  originalAmount: string | null;
   categoryId: string | null;
   categoryName: string | null;
   categoryEmoji: string | null;
@@ -81,8 +83,23 @@ interface EditState {
 
 export function TransactionsClient({ transactions: initial, categories, lang, currency, rates }: Props) {
   const router = useRouter();
+  // formatMoney: for aggregated totals (always uses amountUzs, converts to chosen currency)
+  // When displayCurrency is ORIGINAL, totals are shown in so'm (UZS is the common base)
+  const totalsCurrency = currency === "ORIGINAL" ? "UZS" : currency;
   const formatMoney = (s: string) =>
-    formatMoneyFn(BigInt(Math.round(Number(s))), currency, rates, lang);
+    formatMoneyFn(BigInt(Math.round(Number(s))), totalsCurrency, rates, lang);
+  // formatTxMoney: for individual transaction rows (respects ORIGINAL mode)
+  const formatTxMoney = (tx: TxRow) =>
+    formatTxMoneyFn(
+      {
+        amountUzs: BigInt(Math.round(Number(tx.amountUzs))),
+        originalCurrency: tx.originalCurrency,
+        originalAmount: tx.originalAmount != null ? BigInt(tx.originalAmount) : null,
+      },
+      currency,
+      rates,
+      lang
+    );
 
   // Filter state
   const [typeFilter, setTypeFilter] = useState<"" | "income" | "expense">("");
@@ -269,7 +286,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
         description={t("transactions.delete.confirm", lang)}
         targetLabel={
           deleteTarget
-            ? `${deleteTarget.type === "income" ? "+" : "-"}${formatMoney(deleteTarget.amountUzs)} · ${
+            ? `${deleteTarget.type === "income" ? "+" : "-"}${formatTxMoney(deleteTarget)} · ${
                 deleteTarget.categoryName ?? t("form.category_none", lang)
               }`
             : undefined
@@ -544,7 +561,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                     }}
                   >
                     {tx.type === "income" ? "+" : "−"}
-                    {formatMoney(tx.amountUzs)}
+                    {formatTxMoney(tx)}
                   </span>
                   <div className="flex items-center gap-1">
                     <button
@@ -672,7 +689,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                       }}
                     >
                       {tx.type === "income" ? "+" : "−"}
-                      {formatMoney(tx.amountUzs)}
+                      {formatTxMoney(tx)}
                     </td>
                     <td
                       className="px-4 py-3.5 text-xs hidden sm:table-cell"

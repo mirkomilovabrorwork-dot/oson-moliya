@@ -141,8 +141,8 @@ const uz: Dictionary = {
   // ── Auth / login
   "login.title": "Oson Moliya",
   "login.description": "Biznesingiz moliyasini kuzating",
-  "login.instruction": "Telegram bot sizga xavfsiz kirish havolasini yuboradi",
-  "login.steps": "Bot ochilgach Start yoki /login ni bosing. Keyin bot yuborgan Dashboard tugmasini bosing.",
+  "login.instruction": "Dashboard Telegram ichida avtomatik ochiladi",
+  "login.steps": "Bot ochilgach Start yoki /login ni bosing. Keyin Moliyachi/Dashboard tugmasini bosing.",
   "login.open_bot": "Telegram botni ochish",
   // ── Lang switcher
   "lang.uz": "O'zbekcha",
@@ -161,6 +161,8 @@ const uz: Dictionary = {
   "more.currency": "Asosiy valyuta",
   "more.currency_sub": "Ko'rsatiladigan valyutani tanlang",
   "more.currency_only": "Barcha summalar tanlangan valyutada ko'rsatiladi",
+  "more.currency_original": "Asl valyutada",
+  "more.currency_original_desc": "Har bir yozuv o'z valyutasida ko'rsatiladi",
   "more.language": "Til",
   "more.language_sub": "Tilni tanlash",
   "more.theme_sub": "Yorug', qorong'i yoki tizim",
@@ -388,8 +390,8 @@ const ru: Dictionary = {
   // ── Auth / login
   "login.title": "Oson Moliya",
   "login.description": "Отслеживайте финансы бизнеса",
-  "login.instruction": "Telegram-бот отправит безопасную ссылку для входа",
-  "login.steps": "Когда бот откроется, нажмите Start или отправьте /login. Затем нажмите кнопку Dashboard от бота.",
+  "login.instruction": "Дашборд откроется внутри Telegram автоматически",
+  "login.steps": "Когда бот откроется, нажмите Start или отправьте /login. Затем нажмите кнопку Moliyachi/Dashboard.",
   "login.open_bot": "Открыть Telegram-бот",
   // ── Lang switcher
   "lang.uz": "O'zbekcha",
@@ -408,6 +410,8 @@ const ru: Dictionary = {
   "more.currency": "Основная валюта",
   "more.currency_sub": "Выберите валюту отображения",
   "more.currency_only": "Все суммы будут показаны в выбранной валюте",
+  "more.currency_original": "В исходной валюте",
+  "more.currency_original_desc": "Каждая запись отображается в своей валюте",
   "more.language": "Язык",
   "more.language_sub": "Выбор языка",
   "more.theme_sub": "Светлая, тёмная или системная",
@@ -635,8 +639,8 @@ const en: Dictionary = {
   // ── Auth / login
   "login.title": "Oson Moliya",
   "login.description": "Track your business finances",
-  "login.instruction": "The Telegram bot will send you a secure login link",
-  "login.steps": "When the bot opens, tap Start or send /login. Then tap the Dashboard button from the bot.",
+  "login.instruction": "The dashboard opens inside Telegram automatically",
+  "login.steps": "When the bot opens, tap Start or send /login. Then tap the Moliyachi/Dashboard button.",
   "login.open_bot": "Open Telegram Bot",
   // ── Lang switcher
   "lang.uz": "O'zbekcha",
@@ -655,6 +659,8 @@ const en: Dictionary = {
   "more.currency": "Main currency",
   "more.currency_sub": "Choose display currency",
   "more.currency_only": "All amounts shown in the selected currency",
+  "more.currency_original": "Original currency",
+  "more.currency_original_desc": "Each record shown in its own currency",
   "more.language": "Language",
   "more.language_sub": "Choose language",
   "more.theme_sub": "Light, dark or system",

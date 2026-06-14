@@ -17,7 +17,9 @@ export default async function DebtsPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
-  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const rawCurrency = (user.displayCurrency ?? "ORIGINAL") as DisplayCurrency;
+  // Debts show totals only — ORIGINAL maps to UZS (so'm is the common base)
+  const currency: DisplayCurrency = rawCurrency === "ORIGINAL" ? "UZS" : rawCurrency;
   const rates: Rates = await getRates();
 
   const [debts, totals] = await Promise.all([

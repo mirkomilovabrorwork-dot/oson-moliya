@@ -38,7 +38,7 @@ model User {
   firstName       String?
   username        String?
   language        String   @default("uz")
-  displayCurrency String   @default("UZS")
+  displayCurrency String   @default("ORIGINAL")
   createdAt       DateTime @default(now())
 
   transactions  Transaction[]
@@ -76,12 +76,14 @@ model Transaction {
   accountId  String?
   account    Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
   type       TxType
-  amountUzs  BigInt
-  note       String?
-  occurredAt DateTime
-  source     String    @default("bot")
-  deletedAt  DateTime?
-  createdAt  DateTime  @default(now())
+  amountUzs        BigInt
+  originalCurrency String?
+  originalAmount   BigInt?
+  note             String?
+  occurredAt       DateTime
+  source           String    @default("bot")
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
 
   @@index([userId, occurredAt])
   @@index([userId, type, occurredAt])

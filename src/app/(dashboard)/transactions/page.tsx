@@ -16,7 +16,7 @@ export default async function TransactionsPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
-  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const currency = (user.displayCurrency ?? "ORIGINAL") as DisplayCurrency;
   const rates: Rates = await getRates();
   const prisma = db as import("@prisma/client").PrismaClient;
 
@@ -37,6 +37,8 @@ export default async function TransactionsPage() {
     id: tx.id,
     type: tx.type as "income" | "expense",
     amountUzs: tx.amountUzs.toString(),
+    originalCurrency: tx.originalCurrency ?? null,
+    originalAmount: tx.originalAmount != null ? tx.originalAmount.toString() : null,
     categoryId: tx.categoryId,
     categoryName: tx.category?.name ?? null,
     categoryEmoji: tx.category?.emoji ?? null,
