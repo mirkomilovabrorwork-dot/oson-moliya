@@ -66,7 +66,7 @@ export async function PATCH(
   }
 
   const updated = await prisma.category.update({
-    where: { id },
+    where: { id, userId: user.id },
     data: {
       ...(normalizedName !== undefined ? { name: normalizedName } : {}),
       ...(emoji !== undefined ? { emoji } : {}),
@@ -111,7 +111,7 @@ export async function DELETE(
     );
   }
 
-  await prisma.category.delete({ where: { id } });
+  await prisma.category.delete({ where: { id, userId: user.id } });
 
   return new Response(null, { status: 204 });
 }

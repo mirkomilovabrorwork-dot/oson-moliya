@@ -141,7 +141,8 @@ flow and bot text speak for themselves. Suggested tool: OBS Studio or Windows Ga
 |---|---|
 | Home (balance hero + recent) | Bottom nav: **Bosh sahifa** |
 | Transaction list | Bottom nav: **Yozuvlar** |
-| Debts (coming soon) | Bottom nav: **Qarzlar** (shows "Tez orada") |
+| Debts (Berilgan/Olingan + add/settle/delete) | Bottom nav: **Qarzlar** (fully working) |
+| Accounts (Hisoblar — balances) | Bottom nav: **Yana** → **Hisoblar** |
 | Categories, theme, language | Bottom nav: **Yana** → then the item |
 | Quick-add | **FAB** (+ button, bottom-right) |
 | Analytics | Yana → Analitika |

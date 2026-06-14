@@ -107,7 +107,7 @@ export async function PATCH(
   }
 
   const updated = await prisma.transaction.update({
-    where: { id },
+    where: { id, userId: user.id },
     data: {
       type: data.type ? nextType : undefined,
       amountUzs: data.amountUzs,
@@ -145,7 +145,7 @@ export async function DELETE(
   }
 
   await prisma.transaction.update({
-    where: { id },
+    where: { id, userId: user.id },
     data: { deletedAt: new Date() },
   });
 

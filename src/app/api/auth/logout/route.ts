@@ -1,10 +1,13 @@
 import { headers } from "next/headers";
 import { destroySession } from "@/lib/auth/session";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { assertSameOrigin } from "@/lib/http/origin";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(): Promise<Response> {
+export async function POST(request: NextRequest): Promise<Response> {
+  const originError = assertSameOrigin(request);
+  if (originError) return originError;
   try {
     await destroySession();
   } catch (err) {

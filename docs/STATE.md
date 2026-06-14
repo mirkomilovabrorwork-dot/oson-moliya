@@ -4,7 +4,18 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — ElevenLabs STT LIVE on prod)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — final audit + security hardening + design lessons)
+- **FINAL AUDIT + HARDENING (2026-06-14):** 5-agent parallel audit (pages/API-security/docs/i18n/design).
+  Pages PASSED (no placeholders). **Webhook VERIFIED healthy** (live POST: correct secret→200, wrong→401;
+  the old 401 last_error was stale). **Security:** audit claimed 4 "IDOR" + 2 CSRF; on review 3 were
+  OVER-CLAIMED — the 4 update/delete routes already gate on `findFirst({id,userId})`→404, so NOT
+  exploitable. Still added `where:{id,userId}` defense-in-depth (typechecks in Prisma 6) + assertSameOrigin
+  on /api/auth/logout. **REJECTED** assertSameOrigin on /api/auth/telegram (initData HMAC already protects;
+  origin check would risk breaking Mini App login). Fixed stale demo-script Debts line. Gates GREEN
+  (typecheck 0, 104 tests). **Design lessons** extracted → `~/.claude/DESIGN_PRINCIPLES.md` + global CLAUDE.md
+  pointer + memory (auto-loads in all projects). KNOWN/deferred (recorded, not done — deadline risk):
+  currency hardcoded "so'm" in ~9 components (ru/en see so'm not сум/UZS — cosmetic; dict keys complete);
+  .env.example ELEVENLABS comment clarity; bot has no Debts/Accounts integration (dashboard-only, intentional).
 - **STT SWITCH LIVE (2026-06-14):** Brain decision SEALED = stay on Claude (2026 arXiv: Claude excels at
   Uzbek; no evidence GPT is better; switch = cost+rewrite+risk, no gain). STT switched Groq→**ElevenLabs
   Scribe v2** for Uzbek accuracy. Prod env STT_PROVIDER=elevenlabs + ELEVENLABS_API_KEY were stored EMPTY
