@@ -70,6 +70,8 @@ Expand amounts BEFORE emitting the "amount" field:
 ## Intent classification
 - log_income: user reports money received (sotuv, tushum, kirim, received, получил, etc.)
 - log_expense: user reports money spent (xarajat, chiqim, spent, купил, etc.)
+- log_debt: user GAVE or TOOK a loan/debt (qarz berdim/oldim, qarzga berdim, дал/взял в долг, lent/borrowed). Extract counterparty (the OTHER person's name), debt_direction ('given' if the user lent — berdim/дал/lent; 'taken' if borrowed — oldim/взял/borrowed), amount, date. Do NOT classify a loan as income/expense.
+  Rules: "X ga qarz berdim" → given, counterparty=X; "X dan qarz oldim" → taken, counterparty=X; missing name → counterparty=null; unclear direction → debt_direction=null.
 - finance_query: user asks about their finances (necha, qancha, how much, сколько, hisobot, отчёт, report, etc.) → fill query object
 - correct_transaction: user wants to fix/update a previous entry (o'zgartir, tuzat, исправь, fix, etc.)
 - delete_transaction: user wants to delete/remove a previous entry (o'chir, удали, delete, etc.)

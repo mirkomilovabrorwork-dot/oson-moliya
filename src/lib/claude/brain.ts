@@ -92,7 +92,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
 
   // Amount fallback: if model returned null but text has parseable UZS amount
   if (
-    (intent.intent === "log_income" || intent.intent === "log_expense") &&
+    (intent.intent === "log_income" || intent.intent === "log_expense" || intent.intent === "log_debt") &&
     (intent.amount === null || intent.amount === undefined)
   ) {
     const detectedCurrency = intent.currency ?? "UZS";
@@ -110,7 +110,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
   // This means "100 dollar" becomes amountUzs = 100 * rate, stored as UZS in DB.
   const detectedCurrency = intent.currency ?? "UZS";
   if (
-    (intent.intent === "log_income" || intent.intent === "log_expense") &&
+    (intent.intent === "log_income" || intent.intent === "log_expense" || intent.intent === "log_debt") &&
     detectedCurrency !== "UZS" &&
     intent.amount != null &&
     intent.amount > 0

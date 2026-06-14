@@ -30,6 +30,7 @@ export const RecordIntentSchema = z.object({
   intent: z.enum([
     "log_income",
     "log_expense",
+    "log_debt",
     "finance_query",
     "correct_transaction",
     "delete_transaction",
@@ -48,6 +49,8 @@ export const RecordIntentSchema = z.object({
   query: QuerySchema.nullable().optional(),
   target: z.enum(["last", "by_amount"]).nullable().optional(),
   patch: PatchSchema.nullable().optional(),
+  counterparty: z.string().nullable().optional(),
+  debt_direction: z.enum(["given", "taken"]).nullable().optional(),
   missing_fields: z.array(z.string()).default([]),
   reply_text: z.string(),
 });
@@ -68,6 +71,7 @@ export const RECORD_INTENT_TOOL = {
         enum: [
           "log_income",
           "log_expense",
+          "log_debt",
           "finance_query",
           "correct_transaction",
           "delete_transaction",
@@ -159,6 +163,15 @@ export const RECORD_INTENT_TOOL = {
           type: { type: ["string", "null"], enum: ["income", "expense", null] },
           note: { type: ["string", "null"] },
         },
+      },
+      counterparty: {
+        type: ["string", "null"],
+        description: "The OTHER person's name involved in a debt (for log_debt). Null if unknown.",
+      },
+      debt_direction: {
+        type: ["string", "null"],
+        enum: ["given", "taken", null],
+        description: "'given' if the user lent money (berdim/дал/lent), 'taken' if borrowed (oldim/взял/borrowed). Null if unclear.",
       },
       missing_fields: {
         type: "array",
