@@ -694,6 +694,45 @@ export function createBot(): Bot {
     await ctx.reply(lead + dash.extraText, { reply_markup: dash.reply_markup });
   });
 
+  // Localized /help text
+  const helpText = (l: "uz" | "ru" | "en"): string => {
+    if (l === "ru") {
+      return `📖 Oson Moliya — Помощь\n\nОтправьте мне текст или 🎤 голосовое — я автоматически сохраню ваши расходы и доходы.\n\nКоманды:\n/start — Запустить бота\n/language — Сменить язык\n/dashboard — Открыть панель Moliyachi\n/help — Список команд\n\n💡 Например:\n"На обед ушло 35 тысяч"\n"Зарплата 5 000 000 сум"\n"сколько расходов в этом месяце?"`;
+    }
+    if (l === "en") {
+      return `📖 Oson Moliya — Help\n\nSend me text or a 🎤 voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the Moliyachi dashboard\n/help — Command list\n\n💡 For example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
+    }
+    return `📖 Oson Moliya — Yordam\n\nMenga matn yoki 🎤 ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Moliyachi panelini ochish\n/help — Buyruqlar ro'yxati\n\n💡 Masalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
+  };
+
+  // /help — command list + examples
+  bot.command("help", async (ctx) => {
+    const from = ctx.from;
+    if (!from) return;
+    const u = await prisma.user.findUnique({
+      where: { telegramId: BigInt(from.id) },
+      select: { language: true },
+    });
+    const lang = (u?.language as "uz" | "ru" | "en") ?? "uz";
+    await ctx.reply(helpText(lang));
+  });
+
+  // /language — re-open the language picker any time
+  bot.command("language", async (ctx) => {
+    if (!ctx.from) return;
+    await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:", {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🇺🇿 O'zbekcha", callback_data: "lang:uz" },
+            { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+            { text: "🇬🇧 English", callback_data: "lang:en" },
+          ],
+        ],
+      },
+    });
+  });
+
   // Text message handler
   bot.on("message:text", async (ctx) => {
     if (!ctx.from) return;
