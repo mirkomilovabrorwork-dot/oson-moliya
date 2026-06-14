@@ -241,25 +241,25 @@ export default async function OverviewPage() {
         {/* 1 — UMUMIY BALANS hero card (all-time) */}
         <div
           className="p-5 sm:p-6 rounded-[var(--radius-lg)]"
-          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-md)" }}
+          style={{ background: "var(--accent-gradient)", boxShadow: "var(--shadow-lg)" }}
         >
           <p
             className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-1"
-            style={{ color: "var(--fg-subtle)" }}
+            style={{ color: "rgba(255,255,255,.80)" }}
           >
             {t("home.total_balance", lang)}
           </p>
           <p
             className="text-4xl font-bold tabular tracking-normal"
-            style={{ color: allTimeBalancePositive ? "var(--fg)" : "var(--expense)" }}
+            style={{ color: "#ffffff" }}
           >
             {allTimeBalancePositive ? "+" : "−"}
             {allTimeBalanceMain}
           </p>
-          {/* This-month context: smaller, muted */}
+          {/* This-month context: smaller, on the green card */}
           <p
             className="text-xs font-medium mt-2 pl-0.5"
-            style={{ color: "var(--fg-subtle)", opacity: 0.75 }}
+            style={{ color: "rgba(255,255,255,.74)" }}
           >
             {thisMonthContext}
           </p>
