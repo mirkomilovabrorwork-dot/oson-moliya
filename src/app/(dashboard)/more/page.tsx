@@ -49,16 +49,6 @@ function IconCategories() {
   );
 }
 
-function IconCurrency() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9"/>
-      <path d="M9 8h5a2 2 0 0 1 0 4H9v4h7"/>
-      <path d="M12 6v2M12 16v2"/>
-    </svg>
-  );
-}
-
 function ChevronRight() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -140,30 +130,6 @@ export default async function MorePage() {
               <ChevronRight />
             </span>
           </Link>
-
-          {/* Row 3: Asosiy valyuta (static, UZS) */}
-          <div
-            className="flex items-center gap-3 px-4 py-3.5"
-            style={{ minHeight: 56, borderTop: "1px solid var(--border)" }}
-          >
-            <IconTile bg="var(--accent-wash)" color="var(--accent)">
-              <IconCurrency />
-            </IconTile>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium" style={{ color: "var(--fg)" }}>
-                {t("more.currency", lang)}
-              </div>
-              <div className="text-xs" style={{ color: "var(--fg-subtle)" }}>
-                {t("more.currency_sub", lang)}
-              </div>
-            </div>
-            <span className="text-sm mr-1" style={{ color: "var(--fg-muted)" }}>
-              UZS
-            </span>
-            <span style={{ color: "var(--fg-subtle)" }}>
-              <ChevronRight />
-            </span>
-          </div>
         </div>
 
         {/* Client section: Til (Language) + Mavzu (Theme) rows + Logout button

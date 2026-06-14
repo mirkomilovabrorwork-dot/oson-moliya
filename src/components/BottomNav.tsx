@@ -22,10 +22,10 @@ function IconHome() {
 function IconTransactions() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 7l4-4 4 4"/>
-      <path d="M12 3v10"/>
-      <path d="M16 17l-4 4-4-4"/>
-      <path d="M12 21V11"/>
+      {/* Receipt — clearly "transactions / records" */}
+      <path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/>
+      <path d="M9.5 8h5"/>
+      <path d="M9.5 12h5"/>
     </svg>
   );
 }
