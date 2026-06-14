@@ -281,7 +281,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                     key={d}
                     type="button"
                     onClick={() => setAddDirection(d)}
-                    className="flex-1 py-2 rounded-[10px] text-xs font-semibold transition-all min-h-[36px]"
+                    className="flex-1 py-2 rounded-[10px] text-xs font-semibold transition-all min-h-[44px]"
                     style={
                       addDirection === d
                         ? {
@@ -525,7 +525,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
             <button
               key={key}
               onClick={() => setTab(key)}
-              className="px-4 py-1.5 rounded-[10px] text-sm font-semibold transition-all min-h-[36px]"
+              className="px-4 py-1.5 rounded-[10px] text-sm font-semibold transition-all min-h-[44px]"
               style={
                 tab === key
                   ? {
@@ -661,7 +661,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                         <button
                           onClick={() => handleSettle(debt.id)}
                           disabled={settlingId === debt.id}
-                          className="p-2 rounded-[10px] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center disabled:opacity-40"
+                          className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-40"
                           style={{ color: "var(--income)" }}
                           title={t("debt.settle", lang)}
                         >
@@ -681,7 +681,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                       {!isSettled && (
                         <button
                           onClick={() => openEdit(debt)}
-                          className="p-2 rounded-[10px] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+                          className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
                           style={{ color: "var(--accent)" }}
                           title={t("common.edit", lang)}
                         >
@@ -695,7 +695,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                       <button
                         onClick={() => handleDelete(debt.id)}
                         disabled={deletingId === debt.id}
-                        className="p-2 rounded-[10px] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center disabled:opacity-40"
+                        className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-40"
                         style={{ color: "var(--expense)" }}
                         title={t("common.delete", lang)}
                       >

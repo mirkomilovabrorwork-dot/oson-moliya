@@ -41,7 +41,10 @@ export function proxy(request: NextRequest): NextResponse {
     pathname.startsWith("/api/transactions") ||
     pathname.startsWith("/api/categories") ||
     pathname.startsWith("/api/budgets") ||
-    pathname.startsWith("/api/currency");
+    pathname.startsWith("/api/currency") ||
+    pathname.startsWith("/api/accounts") ||
+    pathname.startsWith("/api/analytics") ||
+    pathname.startsWith("/api/debts");
 
   if (isProtectedApi && !hasSessionCookie(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

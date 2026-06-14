@@ -232,7 +232,7 @@ async function showUpdatedTx(
       { text: labels.deleteBtn, callback_data: `d:${tx.id}` },
     ],
   ];
-  await ctx.reply(`${head}: ${formatAmount(tx.amountUzs)}, ${typeLabel}${catPart}.` + dash.extraText, {
+  await ctx.reply(`${head}: ${formatAmount(tx.amountUzs, lang)}, ${typeLabel}${catPart}.` + dash.extraText, {
     reply_markup: { inline_keyboard: rows },
   });
 }
@@ -325,9 +325,8 @@ async function handleMessage(
     });
   } catch (err) {
     console.error("Brain error:", err);
-    await ctx.reply(
-      "Kechirasiz, xatolik yuz berdi. Iltimos qaytadan urinib ko'ring."
-    );
+    const brainErrLang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    await ctx.reply(getBotLabels(brainErrLang).botErrorMsg);
     return;
   }
 
@@ -453,7 +452,7 @@ async function handleMessage(
     });
 
     // Format draft summary
-    const amountStr = formatAmount(BigInt(amount));
+    const amountStr = formatAmount(BigInt(amount), lang);
     const dirLabel =
       direction === "given"
         ? (lang === "ru" ? "↗️ Вы дали" : lang === "en" ? "↗️ You lent" : "↗️ Siz berdingiz")
@@ -791,9 +790,18 @@ export function createBot(): Bot {
   bot.catch(async (err) => {
     console.error("Bot error while handling update:", err.error);
     try {
-      await err.ctx.reply(
-        "Kechirasiz, xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring."
-      );
+      const fromId = err.ctx.from?.id;
+      let catchLang: "uz" | "ru" | "en" = "uz";
+      if (fromId) {
+        try {
+          const catchUser = await prisma.user.findUnique({
+            where: { telegramId: BigInt(fromId) },
+            select: { language: true },
+          });
+          catchLang = (catchUser?.language as "uz" | "ru" | "en") ?? "uz";
+        } catch { /* ignore — use default */ }
+      }
+      await err.ctx.reply(getBotLabels(catchLang).botErrorMsg);
     } catch {
       // swallow
     }
@@ -997,9 +1005,9 @@ export function createBot(): Bot {
     if (!ctx.from) return;
     // Rate limit check before brain call
     if (isRateLimited(ctx.from.id)) {
-      await ctx.reply(
-        "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring."
-      );
+      const rlUser = await prisma.user.findUnique({ where: { telegramId: BigInt(ctx.from.id) }, select: { language: true } });
+      const rlLang = (rlUser?.language as "uz" | "ru" | "en") ?? "uz";
+      await ctx.reply(getBotLabels(rlLang).rateLimitMsg);
       return;
     }
     await handleMessage(
@@ -1020,17 +1028,17 @@ export function createBot(): Bot {
     // Voice size cap (R4): reject overly long/large audio before downloading
     const voice = ctx.message.voice;
     if (voice.duration > 60 || (voice.file_size !== undefined && voice.file_size > 5 * 1024 * 1024)) {
-      await ctx.reply(
-        "🎤 Audio juda uzun. Iltimos, 60 soniyadan qisqaroq ovozli xabar yuboring yoki yozma xabar kiriting."
-      );
+      const vlUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
+      const vlLang = (vlUser?.language as "uz" | "ru" | "en") ?? "uz";
+      await ctx.reply(getBotLabels(vlLang).audioTooLongMsg);
       return;
     }
 
     // Rate limit check before STT + brain
     if (isRateLimited(from.id)) {
-      await ctx.reply(
-        "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring."
-      );
+      const vlrlUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
+      const vlrlLang = (vlrlUser?.language as "uz" | "ru" | "en") ?? "uz";
+      await ctx.reply(getBotLabels(vlrlLang).rateLimitMsg);
       return;
     }
 
@@ -1057,7 +1065,7 @@ export function createBot(): Bot {
 
       const fileInfo = await ctx.api.getFile(voice.file_id);
       if (!fileInfo.file_path) {
-        await ctx.reply("Ovozli faylni yuklab bo'lmadi.");
+        await ctx.reply(getBotLabels(voiceLang).voiceDownloadErrMsg);
         return;
       }
 
@@ -1077,9 +1085,9 @@ export function createBot(): Bot {
       );
     } catch (err) {
       console.error("Voice handling error:", err);
-      await ctx.reply(
-        "Ovozni tanib bo'lmadi. Iltimos, yozma xabar yuboring yoki qaytadan urinib ko'ring."
-      );
+      const verrUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
+      const verrLang = (verrUser?.language as "uz" | "ru" | "en") ?? "uz";
+      await ctx.reply(getBotLabels(verrLang).voiceTranscribeErrMsg);
     }
   });
 
@@ -1256,12 +1264,12 @@ export function createBot(): Bot {
         const catBtns: InlineKeyboardButton[] = editCats.map((c) => ({ text: c.name, callback_data: `ec:${c.id}` }));
         for (let i = 0; i < catBtns.length; i += 2) rows.push(catBtns.slice(i, i + 2));
         rows.push([
-          { text: lang === "ru" ? "💰 Сумма" : lang === "en" ? "💰 Amount" : "💰 Summa", callback_data: "ef:amt" },
+          { text: labels.editAmountLabel, callback_data: "ef:amt" },
           { text: labels.deleteBtn, callback_data: `d:${txId}` },
         ]);
         await ctx.answerCallbackQuery();
         await ctx.reply(
-          lang === "ru" ? "Что исправить?" : lang === "en" ? "Fix what?" : "Nimani to'g'irlaymiz?",
+          labels.editFixWhatPrompt,
           { reply_markup: { inline_keyboard: rows } }
         );
         return;
@@ -1289,8 +1297,8 @@ export function createBot(): Bot {
         await upsertPendingAction(user.id, { intent: "edit_tx", draft: { txId, field: "amount" }, question: "" });
         await ctx.answerCallbackQuery();
         await ctx.reply(
-          lang === "ru" ? "Напишите новую сумму (напр. 50 000):" : lang === "en" ? "Write the new amount (e.g. 50 000):" : "Yangi summani yozing (masalan 50 000):",
-          { reply_markup: { force_reply: true, input_field_placeholder: lang === "ru" ? "Сумма" : lang === "en" ? "Amount" : "Summa" } }
+          labels.editAmountPrompt,
+          { reply_markup: { force_reply: true, input_field_placeholder: labels.editAmountLabel.replace("💰 ", "") } }
         );
         return;
       }
@@ -1446,7 +1454,7 @@ export function createBot(): Bot {
         });
         await clearPendingAction(user.id);
 
-        const amtStr = formatAmount(BigInt(debtAmount));
+        const amtStr = formatAmount(BigInt(debtAmount), lang);
         const dirPart =
           debtDirection === "given"
             ? (lang === "ru" ? `${debtCounterparty} дали` : lang === "en" ? `lent to ${debtCounterparty}` : `${debtCounterparty}ga berdingiz`)
@@ -1510,7 +1518,7 @@ export function createBot(): Bot {
         });
         await clearPendingAction(user.id);
 
-        const amtStr2 = formatAmount(BigInt(debtAmount));
+        const amtStr2 = formatAmount(BigInt(debtAmount), lang);
         const dirPart2 =
           chosenDirection === "given"
             ? (lang === "ru" ? `${debtCounterparty} дали` : lang === "en" ? `lent to ${debtCounterparty}` : `${debtCounterparty}ga berdingiz`)
@@ -1549,9 +1557,9 @@ export function createBot(): Bot {
 
     // Rate limit (same guard as voice/audio)
     if (isRateLimited(from.id)) {
-      await ctx.reply(
-        "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring."
-      );
+      const phrlUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
+      const phrlLang = (phrlUser?.language as "uz" | "ru" | "en") ?? "uz";
+      await ctx.reply(getBotLabels(phrlLang).rateLimitMsg);
       return;
     }
 
@@ -1562,9 +1570,9 @@ export function createBot(): Bot {
       const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
 
       if (largest.file_size !== undefined && largest.file_size > MAX_PHOTO_BYTES) {
-        await ctx.reply(
-          "🖼 Rasm juda katta (5 MB dan oshiq). Iltimos, kichikroq rasm yuboring."
-        );
+        const phszUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
+        const phszLang = (phszUser?.language as "uz" | "ru" | "en") ?? "uz";
+        await ctx.reply(getBotLabels(phszLang).photoTooLargeMsg);
         return;
       }
 
@@ -1585,6 +1593,7 @@ export function createBot(): Bot {
         },
       });
       const lang = (photoUser.language ?? "uz") as "uz" | "ru" | "en";
+      const photoLabels = getBotLabels(lang);
 
       await ensureDefaultCategories(photoUser.id);
 
@@ -1598,13 +1607,7 @@ export function createBot(): Bot {
       // Download the photo and convert to base64
       const fileInfo = await ctx.api.getFile(largest.file_id);
       if (!fileInfo.file_path) {
-        const errMsg =
-          lang === "ru"
-            ? "Не удалось загрузить фото. Попробуйте ещё раз."
-            : lang === "en"
-            ? "Could not download photo. Please try again."
-            : "Rasmni yuklab bo'lmadi. Qaytadan urinib ko'ring.";
-        await ctx.reply(errMsg);
+        await ctx.reply(photoLabels.photoDownloadErrMsg);
         return;
       }
 
@@ -1619,13 +1622,7 @@ export function createBot(): Bot {
 
       if (result.found && result.amountUzs && result.amountUzs > 0) {
         // Prepend a receipt header then delegate to the shared finalizeLog
-        const receiptPrefix =
-          lang === "ru"
-            ? "🧾 Прочитал чек:"
-            : lang === "en"
-            ? "🧾 Read receipt:"
-            : "🧾 Chekdan o'qidim:";
-        await ctx.reply(receiptPrefix);
+        await ctx.reply(photoLabels.receiptHeader);
         await finalizeLog(
           { reply: (text, opts) => ctx.reply(text, opts) },
           photoUser,
@@ -1640,19 +1637,13 @@ export function createBot(): Bot {
           lang
         );
       } else {
-        const noSumMsg =
-          lang === "ru"
-            ? "Не смог определить сумму из чека. Напишите вручную или пришлите более чёткое фото."
-            : lang === "en"
-            ? "Could not read the total from the receipt. Please type it manually or send a clearer photo."
-            : "Chekdan summani aniqlay olmadim. Iltimos qo'lda yozing yoki aniqroq rasm yuboring.";
-        await ctx.reply(noSumMsg);
+        await ctx.reply(photoLabels.receiptNoAmountMsg);
       }
     } catch (err) {
       console.error("Photo handling error:", err);
-      const errMsg =
-        "Rasmni qayta ishlashda xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.";
-      await ctx.reply(errMsg);
+      const pherrUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
+      const pherrLang = (pherrUser?.language as "uz" | "ru" | "en") ?? "uz";
+      await ctx.reply(getBotLabels(pherrLang).photoProcessErrMsg);
     }
   });
 
@@ -1667,17 +1658,17 @@ export function createBot(): Bot {
       (audio.duration !== undefined && audio.duration > 60) ||
       (audio.file_size !== undefined && audio.file_size > 5 * 1024 * 1024)
     ) {
-      await ctx.reply(
-        "🎤 Audio juda uzun. Iltimos, 60 soniyadan qisqaroq audio yuboring yoki yozma xabar kiriting."
-      );
+      const auszUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
+      const auszLang = (auszUser?.language as "uz" | "ru" | "en") ?? "uz";
+      await ctx.reply(getBotLabels(auszLang).audioTooLongMsg);
       return;
     }
 
     // Rate limit check before STT + brain
     if (isRateLimited(from.id)) {
-      await ctx.reply(
-        "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring."
-      );
+      const aurlUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
+      const aurlLang = (aurlUser?.language as "uz" | "ru" | "en") ?? "uz";
+      await ctx.reply(getBotLabels(aurlLang).rateLimitMsg);
       return;
     }
 
@@ -1703,7 +1694,7 @@ export function createBot(): Bot {
 
       const fileInfo = await ctx.api.getFile(audio.file_id);
       if (!fileInfo.file_path) {
-        await ctx.reply("Audio faylni yuklab bo'lmadi.");
+        await ctx.reply(getBotLabels(audioLang).audioDownloadErrMsg);
         return;
       }
 
@@ -1723,7 +1714,9 @@ export function createBot(): Bot {
       );
     } catch (err) {
       console.error("Audio handling error:", err);
-      await ctx.reply("Ovozni tanib bo'lmadi. Yozma xabar yuboring.");
+      const auerrUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
+      const auerrLang = (auerrUser?.language as "uz" | "ru" | "en") ?? "uz";
+      await ctx.reply(getBotLabels(auerrLang).audioTranscribeErrMsg);
     }
   });
 

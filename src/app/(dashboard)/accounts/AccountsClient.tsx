@@ -512,7 +512,7 @@ function AccountModal({
                 key={opt}
                 type="button"
                 onClick={() => setType(opt)}
-                className="flex-1 py-2 rounded-[8px] text-sm font-medium transition-all min-h-[36px] flex items-center justify-center gap-1"
+                className="flex-1 py-2 rounded-[8px] text-sm font-medium transition-all min-h-[44px] flex items-center justify-center gap-1"
                 style={
                   type === opt
                     ? {

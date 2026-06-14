@@ -26,16 +26,19 @@ export async function issueMagicToken(userId: string): Promise<string> {
 export async function consumeMagicToken(raw: string): Promise<string | null> {
   const prisma = db as import("@prisma/client").PrismaClient;
   const tokenHash = sha256(raw);
-  const token = await prisma.magicToken.findUnique({ where: { tokenHash } });
 
-  if (!token) return null;
-  if (token.usedAt) return null;
-  if (token.expiresAt < new Date()) return null;
-
-  await prisma.magicToken.update({
-    where: { tokenHash },
+  // Atomic single-use consume: the updateMany only matches an UNUSED, UNEXPIRED
+  // token, so two concurrent requests can never both succeed (only one gets
+  // count === 1). This closes the findUnique→update race condition.
+  const result = await prisma.magicToken.updateMany({
+    where: { tokenHash, usedAt: null, expiresAt: { gt: new Date() } },
     data: { usedAt: new Date() },
   });
+  if (result.count === 0) return null;
 
-  return token.userId;
+  const token = await prisma.magicToken.findUnique({
+    where: { tokenHash },
+    select: { userId: true },
+  });
+  return token?.userId ?? null;
 }

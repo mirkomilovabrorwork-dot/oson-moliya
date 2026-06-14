@@ -313,7 +313,7 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className="px-5 py-2 rounded-[10px] text-sm font-semibold transition-all min-h-[36px]"
+            className="px-5 py-2 rounded-[10px] text-sm font-semibold transition-all min-h-[44px]"
             style={
               activeTab === tab
                 ? {
@@ -508,7 +508,7 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
                           setRenameVal(cat.name);
                           setRenameEmoji(cat.emoji ?? "");
                         }}
-                        className="p-2 rounded-[10px] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+                        className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
                         style={{ color: "var(--accent)" }}
                         title={t("categories.rename", lang)}
                       >
@@ -519,7 +519,7 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
                       <button
                         onClick={() => setDeleteTarget(cat)}
                         disabled={deletingId === cat.id}
-                        className="p-2 rounded-[10px] transition-all min-h-[40px] min-w-[40px] flex items-center justify-center disabled:opacity-40"
+                        className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-40"
                         style={{ color: "var(--expense)" }}
                         title={t("categories.delete", lang)}
                       >

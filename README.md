@@ -56,7 +56,11 @@ the language of each message independently.
 
 ### Telegram bot
 - Text and voice input (production uses ElevenLabs Scribe v2 STT for Uzbek; Groq/OpenAI are swappable via `STT_PROVIDER`)
-- Language auto-detection: Uzbek, Russian, English per message
+- **Receipt photo:** send a photo of a receipt — Claude vision reads the grand total and the expense
+  category and auto-logs it as an expense (5 MB cap, rate-limited like other AI calls); edit or delete
+  it from the inline buttons under the confirmation
+- Language picker at `/start` (Uzbek / Russian / English) — the bot then replies **only** in the chosen
+  language (the brain still understands all three); `/help` and `/language` commands available
 - Amount shorthand expansion: `ming` ×1 000, `mln`/`млн` ×1 000 000, `mlrd` ×10⁹, `yarim` = 0.5
 - Intent detection via Claude forced tool-use: log income/expense, log debts, query totals/reports,
   correct or delete the last transaction, add custom categories
@@ -66,7 +70,9 @@ the language of each message independently.
 - Custom categories (canonical lowercased, cross-language reuse)
 - Proactive budget alerts when a category's monthly spend reaches the limit (once per category per
   month; fires at 100% or above)
-- Finance query and report: "hisobot" returns income, expense, and "Sof (kirim−chiqim)" net
+- Finance query and report: a finance question returns income, expense, and "Sof (kirim−chiqim)" net
+- **Excel report:** `/hisobot` builds a styled monthly `.xlsx` (summary + category breakdown +
+  transactions sheet) and sends it as a Telegram document
 
 ### Web dashboard
 - **Overview** — "Bu oy natijasi" hero (this month's net income minus expense), income/expense

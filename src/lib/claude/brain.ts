@@ -57,14 +57,21 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
   // Find the tool use block
   const toolUse = response.content.find((b) => b.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") {
+    const userLang = (input.user.language as "uz" | "ru" | "en") ?? "uz";
+    const unknownReply =
+      userLang === "ru"
+        ? "Извините, не понял."
+        : userLang === "en"
+        ? "Sorry, I didn't understand."
+        : "Kechirasiz, tushunmadim.";
     // Fallback: return unknown intent
     return {
       intent: {
         intent: "unknown",
-        language: (input.user.language as "uz" | "ru" | "en") ?? "uz",
+        language: userLang,
         confidence: 0,
         currency: "UZS" as const,
-        reply_text: "Kechirasiz, tushunmadim.",
+        reply_text: unknownReply,
         missing_fields: [],
       },
       raw: response.content,
@@ -75,13 +82,20 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
   const parsed = RecordIntentSchema.safeParse(toolUse.input);
   if (!parsed.success) {
     console.error("Brain schema validation failed:", parsed.error.format());
+    const userLang2 = (input.user.language as "uz" | "ru" | "en") ?? "uz";
+    const clarifyReply =
+      userLang2 === "ru"
+        ? "Пожалуйста, напишите точнее."
+        : userLang2 === "en"
+        ? "Please write more clearly."
+        : "Iltimos, qaytadan aniqroq yozing.";
     return {
       intent: {
         intent: "clarify_needed",
-        language: (input.user.language as "uz" | "ru" | "en") ?? "uz",
+        language: userLang2,
         confidence: 0.3,
         currency: "UZS" as const,
-        reply_text: "Iltimos, qaytadan aniqroq yozing.",
+        reply_text: clarifyReply,
         missing_fields: [],
       },
       raw: toolUse.input,

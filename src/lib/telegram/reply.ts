@@ -1,8 +1,9 @@
 import { issueMagicToken } from "../auth/token";
 import { getEnv } from "../env";
 
-/** Formats a BigInt so'm amount as a readable string (space-grouped, reliable on Vercel/Node) */
-export function formatAmount(amount: bigint): string {
+/** Formats a BigInt amount as a readable string (space-grouped, reliable on Vercel/Node).
+ *  Pass `lang` to get the localized currency suffix (ru → "сум", others → "so'm"). */
+export function formatAmount(amount: bigint, lang: string = "uz"): string {
   const parts: string[] = [];
   let n = amount < 0n ? -amount : amount;
   while (n >= 1000n) {
@@ -10,7 +11,8 @@ export function formatAmount(amount: bigint): string {
     n = n / 1000n;
   }
   parts.unshift(String(n));
-  return (amount < 0n ? "−" : "") + parts.join(" ") + " so'm";
+  const suffix = lang === "ru" ? " сум" : " so'm";
+  return (amount < 0n ? "−" : "") + parts.join(" ") + suffix;
 }
 
 export type InlineKeyboardButton =
@@ -33,6 +35,23 @@ export function getBotLabels(lang: string): {
   otherCategoryBtn: string;
   typeCategoryPrompt: string;
   categoryExpiredMsg: string;
+  // Error / edge-case messages
+  botErrorMsg: string;
+  rateLimitMsg: string;
+  audioTooLongMsg: string;
+  voiceDownloadErrMsg: string;
+  voiceTranscribeErrMsg: string;
+  photoTooLargeMsg: string;
+  photoDownloadErrMsg: string;
+  photoProcessErrMsg: string;
+  receiptHeader: string;
+  receiptNoAmountMsg: string;
+  audioDownloadErrMsg: string;
+  audioTranscribeErrMsg: string;
+  // Edit-UI labels
+  editAmountLabel: string;
+  editFixWhatPrompt: string;
+  editAmountPrompt: string;
 } {
   if (lang === "ru") {
     return {
@@ -49,6 +68,21 @@ export function getBotLabels(lang: string): {
       otherCategoryBtn: "✏️ Другое",
       typeCategoryPrompt: "Напишите название категории (например: еда)",
       categoryExpiredMsg: "Время вышло, напишите заново.",
+      botErrorMsg: "Извините, произошла ошибка. Пожалуйста, попробуйте ещё раз.",
+      rateLimitMsg: "⏳ Подождите немного — слишком много запросов. Попробуйте через 10 минут.",
+      audioTooLongMsg: "🎤 Аудио слишком длинное. Пожалуйста, отправьте запись короче 60 секунд или напишите сообщение.",
+      voiceDownloadErrMsg: "Не удалось загрузить голосовое сообщение.",
+      voiceTranscribeErrMsg: "Не удалось распознать голос. Пожалуйста, напишите сообщение или попробуйте ещё раз.",
+      photoTooLargeMsg: "🖼 Фото слишком большое (более 5 МБ). Пожалуйста, отправьте фото меньшего размера.",
+      photoDownloadErrMsg: "Не удалось загрузить фото. Попробуйте ещё раз.",
+      photoProcessErrMsg: "Произошла ошибка при обработке фото. Пожалуйста, попробуйте ещё раз.",
+      receiptHeader: "🧾 Прочитал чек:",
+      receiptNoAmountMsg: "Не смог определить сумму из чека. Напишите вручную или пришлите более чёткое фото.",
+      audioDownloadErrMsg: "Не удалось загрузить аудиофайл.",
+      audioTranscribeErrMsg: "Не удалось распознать аудио. Напишите сообщение.",
+      editAmountLabel: "💰 Сумма",
+      editFixWhatPrompt: "Что исправить?",
+      editAmountPrompt: "Напишите новую сумму (напр. 50 000):",
     };
   } else if (lang === "en") {
     return {
@@ -65,6 +99,21 @@ export function getBotLabels(lang: string): {
       otherCategoryBtn: "✏️ Other",
       typeCategoryPrompt: "Type the category name (e.g. food)",
       categoryExpiredMsg: "Expired, please write again.",
+      botErrorMsg: "Sorry, something went wrong. Please try again.",
+      rateLimitMsg: "⏳ Please wait — too many requests. Try again in 10 minutes.",
+      audioTooLongMsg: "🎤 Audio is too long. Please send a voice message under 60 seconds or type a message.",
+      voiceDownloadErrMsg: "Could not download the voice file.",
+      voiceTranscribeErrMsg: "Could not transcribe the voice message. Please send a text message or try again.",
+      photoTooLargeMsg: "🖼 Photo is too large (over 5 MB). Please send a smaller photo.",
+      photoDownloadErrMsg: "Could not download photo. Please try again.",
+      photoProcessErrMsg: "An error occurred while processing the photo. Please try again.",
+      receiptHeader: "🧾 Read receipt:",
+      receiptNoAmountMsg: "Could not read the total from the receipt. Please type it manually or send a clearer photo.",
+      audioDownloadErrMsg: "Could not download the audio file.",
+      audioTranscribeErrMsg: "Could not transcribe the audio. Please send a text message.",
+      editAmountLabel: "💰 Amount",
+      editFixWhatPrompt: "Fix what?",
+      editAmountPrompt: "Write the new amount (e.g. 50 000):",
     };
   } else {
     return {
@@ -81,6 +130,21 @@ export function getBotLabels(lang: string): {
       otherCategoryBtn: "✏️ Boshqa",
       typeCategoryPrompt: "Kategoriya nomini yozing (masalan: ovqat)",
       categoryExpiredMsg: "Muddati tugadi, qaytadan yozing.",
+      botErrorMsg: "Kechirasiz, xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.",
+      rateLimitMsg: "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring.",
+      audioTooLongMsg: "🎤 Audio juda uzun. Iltimos, 60 soniyadan qisqaroq ovozli xabar yuboring yoki yozma xabar kiriting.",
+      voiceDownloadErrMsg: "Ovozli faylni yuklab bo'lmadi.",
+      voiceTranscribeErrMsg: "Ovozni tanib bo'lmadi. Iltimos, yozma xabar yuboring yoki qaytadan urinib ko'ring.",
+      photoTooLargeMsg: "🖼 Rasm juda katta (5 MB dan oshiq). Iltimos, kichikroq rasm yuboring.",
+      photoDownloadErrMsg: "Rasmni yuklab bo'lmadi. Qaytadan urinib ko'ring.",
+      photoProcessErrMsg: "Rasmni qayta ishlashda xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.",
+      receiptHeader: "🧾 Chekdan o'qidim:",
+      receiptNoAmountMsg: "Chekdan summani aniqlay olmadim. Iltimos qo'lda yozing yoki aniqroq rasm yuboring.",
+      audioDownloadErrMsg: "Audio faylni yuklab bo'lmadi.",
+      audioTranscribeErrMsg: "Ovozni tanib bo'lmadi. Yozma xabar yuboring.",
+      editAmountLabel: "💰 Summa",
+      editFixWhatPrompt: "Nimani to'g'irlaymiz?",
+      editAmountPrompt: "Yangi summani yozing (masalan 50 000):",
     };
   }
 }
@@ -120,8 +184,8 @@ export function formatBudgetAlert(params: {
   language: string;
 }): string {
   const { categoryName, spentUzs, limitUzs, language } = params;
-  const spent = formatAmount(spentUzs);
-  const limit = formatAmount(limitUzs);
+  const spent = formatAmount(spentUzs, language);
+  const limit = formatAmount(limitUzs, language);
 
   if (language === "ru") {
     return `⚠️ Внимание: по категории "${categoryName}" в этом месяце потрачено ${spent} — превышен лимит ${limit}.`;
@@ -141,7 +205,7 @@ export function formatConfirmation(params: {
   language: string;
 }): string {
   const { amount, type, categoryName, date, language } = params;
-  const amountStr = formatAmount(amount);
+  const amountStr = formatAmount(amount, language);
 
   let dateLabel: string;
   if (date === "today") {

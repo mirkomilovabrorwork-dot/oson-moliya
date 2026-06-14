@@ -339,7 +339,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
           <button
             key={v || "all"}
             onClick={() => { setTypeFilter(v); setPage(1); }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all min-h-[36px]"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all min-h-[44px]"
             style={
               typeFilter === v
                 ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
@@ -355,7 +355,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
           <select
             value={catFilter}
             onChange={(e) => { setCatFilter(e.target.value); setPage(1); }}
-            className="appearance-none pl-3.5 pr-8 py-2 rounded-full text-xs font-medium min-h-[36px] transition-all cursor-pointer"
+            className="appearance-none pl-3.5 pr-8 py-2 rounded-full text-xs font-medium min-h-[44px] transition-all cursor-pointer"
             style={
               catFilter
                 ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
@@ -382,7 +382,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
         {/* Date chip with caret */}
         <button
           onClick={() => setShowDatePanel((v) => !v)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all min-h-[36px]"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all min-h-[44px]"
           style={
             hasDateFilter
               ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
@@ -401,7 +401,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
         {hasFilters && (
           <button
             onClick={resetFilters}
-            className="flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-semibold transition-all min-h-[36px]"
+            className="flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-semibold transition-all min-h-[44px]"
             style={{ background: "var(--expense-wash)", color: "var(--expense)" }}
           >
             ✕ {t("transactions.filter.reset", lang)}
@@ -422,7 +422,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
             type="date"
             value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className="rounded-[10px] px-3 py-2 text-sm min-h-[40px] focus:outline-none"
+            className="rounded-[10px] px-3 py-2 text-sm min-h-[44px] focus:outline-none"
             style={inputStyle}
           />
           <label className="text-xs font-medium" style={{ color: "var(--fg-subtle)" }}>
@@ -432,7 +432,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
             type="date"
             value={dateTo}
             onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className="rounded-[10px] px-3 py-2 text-sm min-h-[40px] focus:outline-none"
+            className="rounded-[10px] px-3 py-2 text-sm min-h-[44px] focus:outline-none"
             style={inputStyle}
           />
         </div>
@@ -701,7 +701,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                       <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openEdit(tx)}
-                          className="p-1.5 rounded-[10px] transition-all min-h-[36px] min-w-[36px] flex items-center justify-center"
+                          className="p-1.5 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
                           style={{ color: "var(--accent)" }}
                           title={t("common.edit", lang)}
                           aria-label={t("common.edit", lang)}
@@ -713,7 +713,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                         <button
                           onClick={() => setDeleteTarget(tx)}
                           disabled={deletingId === tx.id}
-                          className="p-1.5 rounded-[10px] transition-all min-h-[36px] min-w-[36px] flex items-center justify-center disabled:opacity-40"
+                          className="p-1.5 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-40"
                           style={{ color: "var(--expense)" }}
                           title={t("common.delete", lang)}
                           aria-label={t("common.delete", lang)}
@@ -749,7 +749,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] disabled:opacity-40"
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[44px] disabled:opacity-40"
                 style={{
                   border: "1px solid var(--border)",
                   color: "var(--fg-muted)",
@@ -760,7 +760,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] disabled:opacity-40"
+                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[44px] disabled:opacity-40"
                 style={{
                   border: "1px solid var(--border)",
                   color: "var(--fg-muted)",
