@@ -167,7 +167,7 @@ const uz: Dictionary = {
   "more.accounts": "Hisoblar",
   "more.accounts_sub": "Hisoblarni boshqarish",
   "more.categories_sub": "Kategoriyalarni boshqarish",
-  "more.currency": "Bosh valyuta",
+  "more.currency": "Asosiy valyuta",
   "more.currency_sub": "Jami summalar shu valyutada ko'rsatiladi",
   "more.currency_only": "Barcha summalar tanlangan valyutada ko'rsatiladi",
   "more.currency_original": "Asl valyutada",
@@ -184,6 +184,8 @@ const uz: Dictionary = {
   "common.soon": "Tez orada",
   // ── Home page
   "home.balance": "Bu oy natijasi",
+  "home.total_balance": "Umumiy balans",
+  "home.this_month_context": "Bu oy: +{income} −{expense}",
   "home.expense_overview": "Xarajatlar sharhi",
   "home.total": "Jami",
   "home.more": "Ko'proq",
@@ -447,6 +449,8 @@ const ru: Dictionary = {
   "common.soon": "Скоро",
   // ── Home page
   "home.balance": "Итог за месяц",
+  "home.total_balance": "Общий баланс",
+  "home.this_month_context": "Этот месяц: +{income} −{expense}",
   "home.expense_overview": "Обзор расходов",
   "home.total": "Всего",
   "home.more": "Подробнее",
@@ -710,6 +714,8 @@ const en: Dictionary = {
   "common.soon": "Coming soon",
   // ── Home page
   "home.balance": "This month's result",
+  "home.total_balance": "Total balance",
+  "home.this_month_context": "This month: +{income} −{expense}",
   "home.expense_overview": "Expense overview",
   "home.total": "Total",
   "home.more": "More",

@@ -68,45 +68,46 @@
 }
 
 [data-theme="dark"] {
-  --bg: #0f1412;
-  --bg-ambient: radial-gradient(circle at 50% -14%, rgba(21, 116, 73, .24) 0, rgba(15, 20, 18, 0) 30rem), #0f1412;
-  --surface: #1a201d;
-  --surface-elevated: rgba(26, 32, 29, .94);
-  --surface-sunken: #121714;
-  --surface-hover: #222a25;
+  /* Neutral charcoal canvas (GitHub-style) — NO green tint. Green is a SIGNAL only. */
+  --bg: #0d1117;
+  --bg-ambient: #0d1117;
+  --surface: #161b22;
+  --surface-elevated: #1b222c;
+  --surface-sunken: #0a0e14;
+  --surface-hover: #1d242e;
 
-  --fg: #f4f7f3;
-  --fg-muted: #a4b0aa;
-  --fg-subtle: #74827b;
+  --fg: #e6e8eb;
+  --fg-muted: #9aa3ad;
+  --fg-subtle: #6a727c;
   --fg-on-accent: #ffffff;
 
-  --border: #2b342f;
-  --border-strong: #3b4841;
+  --border: #262d36;
+  --border-strong: #343c46;
 
-  --accent: #36d087;
-  --accent-hover: #56df9f;
-  --accent-fg: #062e1d;
-  --accent-ring: rgba(54, 208, 135, .34);
-  --accent-wash: rgba(54, 208, 135, .14);
-  --accent-gradient: linear-gradient(135deg, #24b56d 0%, #08704b 100%);
+  --accent: #2fbe76;
+  --accent-hover: #46cf86;
+  --accent-fg: #052e1c;
+  --accent-ring: rgba(47, 190, 118, .30);
+  --accent-wash: rgba(47, 190, 118, .12);
+  --accent-gradient: linear-gradient(135deg, #1f9d5d 0%, #0b6b43 100%);
 
-  --income: #44d995;
-  --income-fg: #062e1d;
-  --income-wash: rgba(68, 217, 149, .15);
+  --income: #34c785;
+  --income-fg: #052e1c;
+  --income-wash: rgba(52, 199, 133, .13);
 
-  --expense: #ff7b85;
-  --expense-fg: #450a0f;
-  --expense-wash: rgba(255, 123, 133, .15);
+  --expense: #f3737e;
+  --expense-fg: #2a0508;
+  --expense-wash: rgba(243, 115, 126, .13);
 
-  --warning: #f4ad3d;
-  --warning-wash: rgba(244, 173, 61, .14);
+  --warning: #f0a73a;
+  --warning-wash: rgba(240, 167, 58, .13);
 
-  --chart-1: #36d087;
-  --chart-2: #73e4ae;
-  --chart-3: #f4ad3d;
-  --chart-4: #5fb5a7;
-  --chart-5: #a4b0aa;
-  --chart-grid: rgba(255, 255, 255, .07);
+  --chart-1: #2fbe76;
+  --chart-2: #5fd3a0;
+  --chart-3: #f0a73a;
+  --chart-4: #5aa9bd;
+  --chart-5: #9aa3ad;
+  --chart-grid: rgba(255, 255, 255, .06);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);

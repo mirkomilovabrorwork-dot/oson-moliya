@@ -113,62 +113,102 @@ export default async function OverviewPage() {
     }))
     .filter((d) => d.amount > 0);
 
-  // ── Per-currency breakdown for home overview ──────────────────────────────
-  // Fetch this-month transactions with originalCurrency so we can group by native currency.
-  const thisMonthTxs = await prisma.transaction.findMany({
-    where: {
-      userId: user.id,
-      deletedAt: null,
-      occurredAt: { gte: monthStart, lt: monthEnd },
-    },
-    select: {
-      type: true,
-      amountUzs: true,
-      originalCurrency: true,
-      originalAmount: true,
-    },
+  // ── ALL-TIME totals (aggregation, no row fetch) ───────────────────────────
+  const [allTimeIncomeAgg, allTimeExpenseAgg] = await Promise.all([
+    prisma.transaction.aggregate({
+      where: { userId: user.id, type: "income", deletedAt: null },
+      _sum: { amountUzs: true },
+    }),
+    prisma.transaction.aggregate({
+      where: { userId: user.id, type: "expense", deletedAt: null },
+      _sum: { amountUzs: true },
+    }),
+  ]);
+  const allTimeIncomeUzs = allTimeIncomeAgg._sum.amountUzs ?? 0n;
+  const allTimeExpenseUzs = allTimeExpenseAgg._sum.amountUzs ?? 0n;
+  const allTimeBalanceUzs = allTimeIncomeUzs - allTimeExpenseUzs;
+
+  // Convert all-time balance to main display currency
+  const allTimeBalanceMain = formatMoneyFn(
+    allTimeBalanceUzs < 0n ? -allTimeBalanceUzs : allTimeBalanceUzs,
+    currency,
+    rates,
+    lang
+  );
+  const allTimeBalancePositive = allTimeBalanceUzs >= 0n;
+
+  // ── ALL-TIME per-currency breakdown (groupBy, no row fetch) ──────────────
+  // Group by (originalCurrency, type) — sum both amountUzs and originalAmount.
+  // For rows where originalCurrency IS NULL (plain UZS), Prisma groupBy returns null.
+  const allTimeCurrencyGroupsRaw = await prisma.transaction.groupBy({
+    by: ["originalCurrency", "type"],
+    where: { userId: user.id, deletedAt: null },
+    _sum: { amountUzs: true, originalAmount: true },
   });
+  // Cast to a simpler shape; TxType enum values === string literals "income"/"expense"
+  const allTimeCurrencyGroups = allTimeCurrencyGroupsRaw as Array<{
+    originalCurrency: string | null;
+    type: "income" | "expense";
+    _sum: { amountUzs: bigint | null; originalAmount: bigint | null };
+  }>;
 
-  // Group: effectiveCurrency → { income, expense } in native units
-  // For UZS rows: native = amountUzs (BigInt). For foreign rows: native = originalAmount / 100.
+  // Build per-currency net in native units
   interface CurrencyGroup {
-    income: number; // in native units (float)
-    expense: number; // in native units (float)
+    income: number;
+    expense: number;
   }
-  const currencyGroups = new Map<string, CurrencyGroup>();
+  const currencyGroupMap = new Map<string, CurrencyGroup>();
 
-  for (const tx of thisMonthTxs) {
-    const cur = tx.originalCurrency ?? "UZS";
-    if (!currencyGroups.has(cur)) currencyGroups.set(cur, { income: 0, expense: 0 });
-    const grp = currencyGroups.get(cur)!;
+  for (const row of allTimeCurrencyGroups) {
+    const cur = row.originalCurrency ?? "UZS";
+    if (!currencyGroupMap.has(cur)) currencyGroupMap.set(cur, { income: 0, expense: 0 });
+    const grp = currencyGroupMap.get(cur)!;
 
+    // For foreign currencies use summed originalAmount (whole units, as stored).
+    // For UZS rows use summed amountUzs.
     let nativeAmt: number;
-    if (tx.originalCurrency && tx.originalAmount != null) {
-      // originalAmount is stored as Math.round(nativeFloat) — whole units
-      // (consistent with bot.ts and formatTxMoney convention)
-      nativeAmt = Number(tx.originalAmount);
+    if (row.originalCurrency && row._sum.originalAmount != null) {
+      nativeAmt = Number(row._sum.originalAmount);
     } else {
-      nativeAmt = Number(tx.amountUzs);
+      nativeAmt = Number(row._sum.amountUzs ?? 0n);
     }
 
-    if (tx.type === "income") {
+    if (row.type === "income") {
       grp.income += nativeAmt;
     } else {
       grp.expense += nativeAmt;
     }
   }
 
+  // Ensure the main currency row is always present (even at 0)
+  const mainCurrencyKey = currency === "UZS" ? "UZS" : currency;
+  if (!currencyGroupMap.has(mainCurrencyKey)) {
+    currencyGroupMap.set(mainCurrencyKey, { income: 0, expense: 0 });
+  }
+  // UZS is always shown
+  if (!currencyGroupMap.has("UZS")) {
+    currencyGroupMap.set("UZS", { income: 0, expense: 0 });
+  }
+
   // Build sorted currency rows: UZS first, then others alphabetically
   interface CurrencyRow {
     currency: string;
-    netNative: number;  // income - expense in native units
-    netInMain: number;  // converted to main display currency
+    netNative: number;   // income - expense in native units
+    incomeNative: number;
+    expenseNative: number;
+    netInMain: number;   // converted to main display currency
   }
   const currencyRows: CurrencyRow[] = [];
-  for (const [cur, grp] of currencyGroups.entries()) {
+  for (const [cur, grp] of currencyGroupMap.entries()) {
     const netNative = grp.income - grp.expense;
     const netInMain = convertNativeToMain(netNative, cur, currency, rates);
-    currencyRows.push({ currency: cur, netNative, netInMain });
+    currencyRows.push({
+      currency: cur,
+      netNative,
+      incomeNative: grp.income,
+      expenseNative: grp.expense,
+      netInMain,
+    });
   }
   currencyRows.sort((a, b) => {
     if (a.currency === "UZS") return -1;
@@ -178,56 +218,17 @@ export default async function OverviewPage() {
 
   // Grand total in main currency = sum of all netInMain
   const grandTotalInMain = currencyRows.reduce((s, r) => s + r.netInMain, 0);
-  const showPerCurrency = currencyRows.length > 0;
   // Only show CBU note when there are foreign currencies OR when main != UZS
   const showCbuNote = currencyRows.some((r) => r.currency !== "UZS") || currency !== "UZS";
 
   const isEmpty = recent.length === 0;
 
-  // Net sign/color
-  const net = overview.net;
-  const netPositive = net >= 0n;
-
-  // Period comparison helpers (P0-A2) — net delta shown on hero
-  const prevNet = overview.prevNet;
-
-  function buildDeltaLine(
-    current: bigint,
-    prev: bigint,
-    metricType: "income" | "expense" | "net"
-  ): { text: string; color: string } | null {
-    if (prev === 0n) {
-      return {
-        text: t("home.delta.no_prev", lang),
-        color: "var(--fg-subtle)",
-      };
-    }
-    const sameSign = (current >= 0n) === (prev >= 0n);
-    if (!sameSign) {
-      // Show absolute movement
-      const fmtPrev = fmt(prev < 0n ? -prev : prev);
-      const fmtCurr = fmt(current < 0n ? -current : current);
-      const tpl = t("home.delta.sign_change", lang)
-        .replace("{prev}", (prev < 0n ? "−" : "+") + fmtPrev)
-        .replace("{curr}", (current < 0n ? "−" : "+") + fmtCurr);
-      return { text: tpl, color: "var(--fg-muted)" };
-    }
-    const diff = current - prev;
-    const base = prev < 0n ? -prev : prev;
-    const rawPct = Number((diff * 100n) / base);
-    const absPct = Math.abs(rawPct);
-    const sign = diff >= 0n ? "+" : "";
-    const pctStr = absPct > 999 ? `${sign}>999%` : `${sign}${Math.round(rawPct)}%`;
-    // Direction: income/net up = good (green); expense up = bad (red)
-    const good = metricType === "expense" ? diff <= 0n : diff >= 0n;
-    const arrow = diff >= 0n ? "▲" : "▼";
-    return {
-      text: `${arrow} ${pctStr} ${t("overview.vs_last_month", lang)}`,
-      color: good ? "var(--income)" : "var(--expense)",
-    };
-  }
-
-  const netDelta = buildDeltaLine(net, prevNet, "net");
+  // This-month secondary context line
+  const monthIncomeStr = fmt(overview.income);
+  const monthExpenseStr = fmt(overview.expense);
+  const thisMonthContext = t("home.this_month_context", lang)
+    .replace("{income}", monthIncomeStr)
+    .replace("{expense}", monthExpenseStr);
 
   return (
     <div className="min-h-screen" style={{ background: "transparent" }}>
@@ -237,7 +238,7 @@ export default async function OverviewPage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-5 sm:py-7 pb-32 space-y-5">
 
-        {/* 1 — Balance hero card */}
+        {/* 1 — UMUMIY BALANS hero card (all-time) */}
         <div
           className="p-5 sm:p-6 rounded-[var(--radius-lg)]"
           style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-md)" }}
@@ -246,136 +247,102 @@ export default async function OverviewPage() {
             className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-1"
             style={{ color: "var(--fg-subtle)" }}
           >
-            {t("home.balance", lang)}
-          </p>
-          <p
-            className="text-[10px] font-medium mb-2 pl-0.5"
-            style={{ color: "var(--fg-subtle)", opacity: 0.7 }}
-          >
-            {t("home.scope_hero", lang)}
+            {t("home.total_balance", lang)}
           </p>
           <p
             className="text-4xl font-bold tabular tracking-normal"
-            style={{ color: netPositive ? "var(--fg)" : "var(--expense)" }}
+            style={{ color: allTimeBalancePositive ? "var(--fg)" : "var(--expense)" }}
           >
-            {netPositive ? "+" : "−"}
-            {fmt(net < 0n ? -net : net)}
+            {allTimeBalancePositive ? "+" : "−"}
+            {allTimeBalanceMain}
           </p>
-          {netDelta && (
-            <p
-              className="text-xs font-medium mt-1.5 pl-0.5"
-              style={{ color: netDelta.color }}
-            >
-              {netDelta.text}
-            </p>
-          )}
-          <div className="flex items-center gap-5 mt-3">
-            <div className="flex items-center gap-1.5">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ background: "var(--income)" }}
-              />
-              <span
-                className="text-sm font-medium tabular"
-                style={{ color: "var(--income)" }}
-              >
-                +{fmt(overview.income)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ background: "var(--expense)" }}
-              />
-              <span
-                className="text-sm font-medium tabular"
-                style={{ color: "var(--expense)" }}
-              >
-                −{fmt(overview.expense)}
-              </span>
-            </div>
-          </div>
+          {/* This-month context: smaller, muted */}
+          <p
+            className="text-xs font-medium mt-2 pl-0.5"
+            style={{ color: "var(--fg-subtle)", opacity: 0.75 }}
+          >
+            {thisMonthContext}
+          </p>
         </div>
 
-        {/* 2 — Per-currency breakdown (Revolut-style) */}
-        {showPerCurrency && (
-          <div
-            className="p-4 sm:p-5 rounded-[var(--radius-lg)]"
-            style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
+        {/* 2 — Per-currency breakdown — ALWAYS visible */}
+        <div
+          className="p-4 sm:p-5 rounded-[var(--radius-lg)]"
+          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-3"
+            style={{ color: "var(--fg-subtle)" }}
           >
-            <p
-              className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-3"
-              style={{ color: "var(--fg-subtle)" }}
-            >
-              {t("home.per_currency_title", lang)}
-            </p>
+            {t("home.per_currency_title", lang)}
+          </p>
 
-            <div className="space-y-3">
-              {currencyRows.map((row) => {
-                const isPositive = row.netNative >= 0;
-                const nativeFormatted = formatNative(Math.abs(row.netNative), row.currency, lang);
-                // Main-currency equivalent (only show if main != native currency)
-                const showEquiv = row.currency !== currency;
-                const mainAmt = Math.abs(row.netInMain);
-                const mainFormatted = formatMoneyFn(BigInt(Math.round(mainAmt)), currency, rates, lang);
+          <div className="space-y-3">
+            {currencyRows.map((row) => {
+              const isPositive = row.netNative >= 0;
+              const nativeFormatted = formatNative(Math.abs(row.netNative), row.currency, lang);
+              // Main-currency equivalent (only show if main != native currency)
+              const showEquiv = row.currency !== currency;
+              const mainAmt = Math.abs(row.netInMain);
+              // netInMain is ALREADY in the main currency — format natively (do NOT re-convert via formatMoneyFn, which assumes UZS input)
+              const mainFormatted = formatNative(mainAmt, currency, lang);
 
-                return (
-                  <div key={row.currency} className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 text-xs font-bold"
-                        style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
-                      >
-                        {row.currency === "UZS" ? "S" : row.currency === "USD" ? "$" : row.currency === "EUR" ? "€" : row.currency === "RUB" ? "₽" : row.currency.slice(0, 1)}
-                      </span>
-                      <span className="text-sm font-medium" style={{ color: "var(--fg-muted)" }}>
-                        {row.currency}
-                      </span>
-                    </div>
-                    <div className="text-right min-w-0">
-                      <p
-                        className="text-sm font-semibold tabular"
-                        style={{ color: isPositive ? "var(--income)" : "var(--expense)" }}
-                      >
-                        {isPositive ? "+" : "−"}{nativeFormatted}
-                      </p>
-                      {showEquiv && (
-                        <p className="text-[11px] tabular" style={{ color: "var(--fg-subtle)" }}>
-                          ≈ {isPositive ? "+" : "−"}{mainFormatted}
-                        </p>
-                      )}
-                    </div>
+              return (
+                <div key={row.currency} className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 text-xs font-bold"
+                      style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
+                    >
+                      {row.currency === "UZS" ? "S" : row.currency === "USD" ? "$" : row.currency === "EUR" ? "€" : row.currency === "RUB" ? "₽" : row.currency.slice(0, 1)}
+                    </span>
+                    <span className="text-sm font-medium" style={{ color: "var(--fg-muted)" }}>
+                      {row.currency}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-
-            {/* Grand total row */}
-            {currencyRows.length > 1 && (
-              <div
-                className="mt-3 pt-3 flex items-center justify-between"
-                style={{ borderTop: "1px solid var(--border)" }}
-              >
-                <span className="text-sm font-bold" style={{ color: "var(--fg)" }}>
-                  {t("home.grand_total", lang)}
-                </span>
-                <span
-                  className="text-sm font-bold tabular"
-                  style={{ color: grandTotalInMain >= 0 ? "var(--income)" : "var(--expense)" }}
-                >
-                  {grandTotalInMain >= 0 ? "+" : "−"}{formatMoneyFn(BigInt(Math.round(Math.abs(grandTotalInMain))), currency, rates, lang)}
-                </span>
-              </div>
-            )}
-
-            {/* CBU rate note */}
-            {showCbuNote && (
-              <p className="text-[11px] mt-2" style={{ color: "var(--fg-subtle)", opacity: 0.8 }}>
-                {t("home.cbu_rate_note", lang)}
-              </p>
-            )}
+                  <div className="text-right min-w-0">
+                    <p
+                      className="text-sm font-semibold tabular"
+                      style={{ color: isPositive ? "var(--income)" : "var(--expense)" }}
+                    >
+                      {isPositive ? "+" : "−"}{nativeFormatted}
+                    </p>
+                    {showEquiv && (
+                      <p className="text-[11px] tabular" style={{ color: "var(--fg-subtle)" }}>
+                        ≈ {isPositive ? "+" : "−"}{mainFormatted}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+
+          {/* Grand total row — only when >1 currency row */}
+          {currencyRows.length > 1 && (
+            <div
+              className="mt-3 pt-3 flex items-center justify-between"
+              style={{ borderTop: "1px solid var(--border)" }}
+            >
+              <span className="text-sm font-bold" style={{ color: "var(--fg)" }}>
+                {t("home.grand_total", lang)}
+              </span>
+              <span
+                className="text-sm font-bold tabular"
+                style={{ color: grandTotalInMain >= 0 ? "var(--income)" : "var(--expense)" }}
+              >
+                {grandTotalInMain >= 0 ? "+" : "−"}{formatNative(Math.abs(grandTotalInMain), currency, lang)}
+              </span>
+            </div>
+          )}
+
+          {/* CBU rate note */}
+          {showCbuNote && (
+            <p className="text-[11px] mt-2" style={{ color: "var(--fg-subtle)", opacity: 0.8 }}>
+              {t("home.cbu_rate_note", lang)}
+            </p>
+          )}
+        </div>
 
         {/* 3 — Expense overview card */}
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)]">
@@ -406,7 +373,7 @@ export default async function OverviewPage() {
           />
         </div>
 
-        {/* 3 — Recent transactions card */}
+        {/* 4 — Recent transactions card */}
           </div>
           <div className="space-y-5">
         <div
@@ -512,7 +479,7 @@ export default async function OverviewPage() {
           )}
         </div>
 
-        {/* 4 — Budget bars card (only when budgets exist) */}
+        {/* 5 — Budget bars card (only when budgets exist) */}
         {budgetDTOs.length > 0 && (
           <div
             className="rounded-[var(--radius-lg)] p-4 sm:p-5 space-y-4"
