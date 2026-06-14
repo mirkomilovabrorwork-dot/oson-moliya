@@ -22,6 +22,7 @@ import { getSttProvider } from "../stt";
 import { downloadTelegramFile } from "./download";
 import { runAggregation } from "../services/analytics";
 import type { FinanceQuery } from "../types";
+import { extractReceipt } from "../claude/receipt";
 
 // ── Per-user rate limiter (in-memory, sliding window) ────────────────────────
 // Guards STT + brain calls: 20 AI messages per 10 minutes per Telegram user.
@@ -1463,6 +1464,120 @@ export function createBot(): Bot {
       } catch {
         // swallow
       }
+    }
+  });
+
+  // Photo message handler — receipt scanning via vision
+  bot.on("message:photo", async (ctx) => {
+    const from = ctx.from;
+    if (!from) return;
+
+    // Rate limit (same guard as voice/audio)
+    if (isRateLimited(from.id)) {
+      await ctx.reply(
+        "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring."
+      );
+      return;
+    }
+
+    try {
+      // Pick the largest photo variant (Telegram sends multiple sizes; last = largest)
+      const photos = ctx.message.photo;
+      const largest = photos[photos.length - 1];
+      const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
+
+      if (largest.file_size !== undefined && largest.file_size > MAX_PHOTO_BYTES) {
+        await ctx.reply(
+          "🖼 Rasm juda katta (5 MB dan oshiq). Iltimos, kichikroq rasm yuboring."
+        );
+        return;
+      }
+
+      await ctx.replyWithChatAction("typing");
+
+      // Resolve user (same upsert pattern as voice handler)
+      const photoUser = await prisma.user.upsert({
+        where: { telegramId: BigInt(from.id) },
+        create: {
+          telegramId: BigInt(from.id),
+          firstName: from.first_name ?? null,
+          username: from.username ?? null,
+          language: "uz",
+        },
+        update: {
+          firstName: from.first_name ?? null,
+          username: from.username ?? null,
+        },
+      });
+      const lang = (photoUser.language ?? "uz") as "uz" | "ru" | "en";
+
+      await ensureDefaultCategories(photoUser.id);
+
+      // Load user's categories for vision context
+      const userCategories = await prisma.category.findMany({
+        where: { userId: photoUser.id },
+        select: { name: true },
+      });
+      const categoryNames = userCategories.map((c) => c.name);
+
+      // Download the photo and convert to base64
+      const fileInfo = await ctx.api.getFile(largest.file_id);
+      if (!fileInfo.file_path) {
+        const errMsg =
+          lang === "ru"
+            ? "Не удалось загрузить фото. Попробуйте ещё раз."
+            : lang === "en"
+            ? "Could not download photo. Please try again."
+            : "Rasmni yuklab bo'lmadi. Qaytadan urinib ko'ring.";
+        await ctx.reply(errMsg);
+        return;
+      }
+
+      const photoBuffer = await downloadTelegramFile(fileInfo.file_path);
+      const imageBase64 = photoBuffer.toString("base64");
+
+      // Vision extraction — one call per photo
+      const result = await extractReceipt(imageBase64, "image/jpeg", {
+        categoryNames,
+        lang,
+      });
+
+      if (result.found && result.amountUzs && result.amountUzs > 0) {
+        // Prepend a receipt header then delegate to the shared finalizeLog
+        const receiptPrefix =
+          lang === "ru"
+            ? "🧾 Прочитал чек:"
+            : lang === "en"
+            ? "🧾 Read receipt:"
+            : "🧾 Chekdan o'qidim:";
+        await ctx.reply(receiptPrefix);
+        await finalizeLog(
+          { reply: (text, opts) => ctx.reply(text, opts) },
+          photoUser,
+          prisma,
+          {
+            amount: result.amountUzs,
+            txType: TxType.expense,
+            category: result.category ?? null,
+            dateStr: "today",
+            note: result.note ?? null,
+          },
+          lang
+        );
+      } else {
+        const noSumMsg =
+          lang === "ru"
+            ? "Не смог определить сумму из чека. Напишите вручную или пришлите более чёткое фото."
+            : lang === "en"
+            ? "Could not read the total from the receipt. Please type it manually or send a clearer photo."
+            : "Chekdan summani aniqlay olmadim. Iltimos qo'lda yozing yoki aniqroq rasm yuboring.";
+        await ctx.reply(noSumMsg);
+      }
+    } catch (err) {
+      console.error("Photo handling error:", err);
+      const errMsg =
+        "Rasmni qayta ishlashda xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.";
+      await ctx.reply(errMsg);
     }
   });
 
