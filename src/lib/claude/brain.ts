@@ -31,7 +31,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
   const todayStr = getTashkentDateString();
   const categories = input.categoryNames ?? [];
 
-  const systemPrompt = buildSystemPrompt(todayStr, categories);
+  const systemPrompt = buildSystemPrompt(todayStr, categories, input.user.language);
 
   // Inject pending context only when waiting for a user answer (clarify_needed).
   // Do NOT inject for intent:"logged" — it carries an empty question and would
@@ -105,7 +105,11 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
           language: (input.user.language as "uz" | "ru" | "en") ?? "uz",
           confidence: 0.5,
           reply_text:
-            "Qaysi valyutada? Iltimos, so'mda miqdorni yozing (masalan: 500 ming so'm).",
+            input.user.language === "ru"
+              ? "В какой валюте? Пожалуйста, введите сумму в сумах (например: 500 000 сум)."
+              : input.user.language === "en"
+              ? "Which currency? Please enter the amount in so'm (e.g. 500,000 so'm)."
+              : "Qaysi valyutada? Iltimos, so'mda miqdorni yozing (masalan: 500 ming so'm).",
           missing_fields: ["amount"],
         },
         raw: toolUse.input,

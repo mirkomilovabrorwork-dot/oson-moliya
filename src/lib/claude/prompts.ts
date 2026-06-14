@@ -5,7 +5,8 @@
  */
 export function buildSystemPrompt(
   todayTashkent: string,
-  categories: string[]
+  categories: string[],
+  replyLang: string = "uz"
 ): string {
   const catList =
     categories.length > 0
@@ -30,10 +31,10 @@ If the user mentions a non-UZS currency in their amount (dollar, $, €, euro, �
 - Set reply_text asking them to enter the amount in so'm.
 - Example: "100 dollar" → clarify "Iltimos, summani so'mda kiriting." / "Пожалуйста, введите сумму в сумах." / "Please enter the amount in so'm."
 
-## Language detection
-Detect the language (uz/ru/en) from the message and reply in that same language.
-If the language is ambiguous or there is no clear signal (a slash command like "/login", digits only,
-a single ambiguous word, a greeting), DEFAULT to Uzbek (uz). NEVER default to English.
+## Reply language (STRICT)
+The user has chosen their interface language: ${replyLang} (uz = Uzbek, ru = Russian, en = English).
+ALWAYS write reply_text in ${replyLang}, no matter what language the incoming message is written in.
+Still parse the message correctly whatever language the user typed in. Set the "language" field to "${replyLang}".
 
 ## Amount parsing rules (Uzbek/Russian shorthands)
 Expand amounts BEFORE emitting the "amount" field:

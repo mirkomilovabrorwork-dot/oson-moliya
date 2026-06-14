@@ -233,15 +233,9 @@ async function handleMessage(
 
   const { intent } = brainResult;
 
-  // Update user language preference
-  if (intent.language && intent.language !== user.language) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { language: intent.language },
-    });
-  }
-
-  const lang = intent.language ?? (user.language as "uz" | "ru" | "en") ?? "uz";
+  // Reply ONLY in the user's chosen language (set via the /start language picker).
+  // Do NOT auto-switch based on the detected input language.
+  const lang = (user.language as "uz" | "ru" | "en") ?? "uz";
 
   // ── log_income / log_expense ──────────────────────────────────────────────
   if (intent.intent === "log_income" || intent.intent === "log_expense") {
@@ -613,6 +607,17 @@ export function createBot(): Bot {
     }
   });
 
+  // Localized welcome shown after the user picks a language.
+  const welcomeText = (l: "uz" | "ru" | "en", name: string): string => {
+    if (l === "ru") {
+      return `Привет, ${name}! 👋\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\nНапишите о расходе или доходе — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"`;
+    }
+    if (l === "en") {
+      return `Hi, ${name}! 👋\n\nOson Moliya — a bot to track your business finances.\n\nTell me about an expense or income and I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"`;
+    }
+    return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\nXarajat yoki daromad haqida yozing, men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"`;
+  };
+
   // /start handler
   bot.command("start", async (ctx) => {
     const from = ctx.from;
@@ -634,12 +639,17 @@ export function createBot(): Bot {
 
     await ensureDefaultCategories(user.id);
 
-    const name = from.first_name ?? "Do'stim";
-    const dashStart = await dashboardReplyOptions(user.id);
-    await ctx.reply(
-      `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\nXarajat yoki daromad haqida yozing, men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"` + dashStart.extraText,
-      { reply_markup: dashStart.reply_markup }
-    );
+    await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:", {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🇺🇿 O'zbekcha", callback_data: "lang:uz" },
+            { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+            { text: "🇬🇧 English", callback_data: "lang:en" },
+          ],
+        ],
+      },
+    });
   });
 
   // /dashboard and /login — issue a fresh dashboard magic-link
@@ -782,6 +792,23 @@ export function createBot(): Bot {
 
       const lang = (user.language as "uz" | "ru" | "en") ?? "uz";
       const labels = getBotLabels(lang);
+
+      // ── lang:uz / lang:ru / lang:en — set the bot's reply language ─────────
+      if (data === "lang:uz" || data === "lang:ru" || data === "lang:en") {
+        const chosen = data.slice(5) as "uz" | "ru" | "en";
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { language: chosen },
+        });
+        await ctx.answerCallbackQuery();
+        const name =
+          from.first_name ?? (chosen === "ru" ? "друг" : chosen === "en" ? "friend" : "Do'stim");
+        const dashStart = await dashboardReplyOptions(user.id);
+        await ctx.reply(welcomeText(chosen, name) + dashStart.extraText, {
+          reply_markup: dashStart.reply_markup,
+        });
+        return;
+      }
 
       // ── t:income / t:expense — complete a type-clarify pending action ──────
       if (data === "t:income" || data === "t:expense") {
