@@ -6,6 +6,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { AddSheet } from "@/components/AddSheet";
 import { TransactionsClient } from "./TransactionsClient";
 import { redirect } from "next/navigation";
+import { getRates } from "@/lib/rates";
+import type { DisplayCurrency, Rates } from "@/lib/rates";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,8 @@ export default async function TransactionsPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
+  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const rates: Rates = await getRates();
   const prisma = db as import("@prisma/client").PrismaClient;
 
   const categories = await prisma.category.findMany({
@@ -60,7 +64,7 @@ export default async function TransactionsPage() {
         >
           {t("transactions.title", lang)}
         </h1>
-        <TransactionsClient transactions={txList} categories={catList} lang={lang} />
+        <TransactionsClient transactions={txList} categories={catList} lang={lang} currency={currency} rates={rates} />
       </main>
     </div>
   );

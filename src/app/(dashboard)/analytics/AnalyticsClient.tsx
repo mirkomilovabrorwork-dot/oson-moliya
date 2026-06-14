@@ -6,6 +6,8 @@ import { t } from "@/lib/i18n/translate";
 import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
 import { CategoryPie } from "@/components/charts/CategoryPie";
 import { TrendLine } from "@/components/charts/TrendLine";
+import type { DisplayCurrency, Rates } from "@/lib/rates";
+import { formatMoney as formatMoneyFn } from "@/lib/currency";
 
 type Period = "this_month" | "last_month" | "this_year" | "custom";
 
@@ -26,21 +28,12 @@ interface TrendData {
 interface Props {
   userId: string;
   lang: LangCode;
+  currency: DisplayCurrency;
+  rates: Rates;
   defaultIncome: number;
   defaultExpense: number;
   defaultByCategory: CatData[];
   defaultTrend: TrendData[];
-}
-
-function formatMoney(n: number): string {
-  const parts: string[] = [];
-  let rem = Math.abs(Math.round(n));
-  while (rem >= 1000) {
-    parts.unshift(String(rem % 1000).padStart(3, "0"));
-    rem = Math.floor(rem / 1000);
-  }
-  parts.unshift(String(rem));
-  return (n < 0 ? "−" : "") + parts.join(" ") + " so'm";
 }
 
 function getTashkentMonth(offset = 0) {
@@ -65,11 +58,16 @@ function getThisYear() {
 
 export function AnalyticsClient({
   lang,
+  currency,
+  rates,
   defaultIncome,
   defaultExpense,
   defaultByCategory,
   defaultTrend,
 }: Props) {
+  // Currency-aware money formatter (amounts are stored as UZS numbers)
+  const formatMoney = (n: number) =>
+    formatMoneyFn(BigInt(Math.round(n)), currency, rates, lang);
   const [period, setPeriod] = useState<Period>("this_month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");

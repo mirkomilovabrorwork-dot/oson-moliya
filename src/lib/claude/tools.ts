@@ -40,6 +40,7 @@ export const RecordIntentSchema = z.object({
   language: z.enum(["uz", "ru", "en"]),
   confidence: z.number().min(0).max(1),
   amount: z.number().int().nullable().optional(),
+  currency: z.enum(["UZS", "USD", "EUR", "RUB"]).default("UZS"),
   type: z.enum(["income", "expense"]).nullable().optional(),
   category: z.string().nullable().optional(),
   date: z.string().nullable().optional(),
@@ -88,7 +89,13 @@ export const RECORD_INTENT_TOOL = {
       amount: {
         type: ["integer", "null"],
         description:
-          "Whole so'm amount (expanded from shorthands). Null if unknown.",
+          "Whole amount (expanded from shorthands) in the detected currency. Null if unknown.",
+      },
+      currency: {
+        type: "string",
+        enum: ["UZS", "USD", "EUR", "RUB"],
+        description:
+          "Currency of the amount field. Default UZS. Set to USD/EUR/RUB when the user mentions a foreign currency.",
       },
       type: {
         type: ["string", "null"],

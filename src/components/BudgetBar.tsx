@@ -19,9 +19,12 @@ interface BudgetBarProps {
   budget: BudgetDTO;
   lang: LangCode;
   compact?: boolean;
+  /** Pre-formatted display strings (passed by server when currency != UZS). */
+  displaySpent?: string;
+  displayLimit?: string;
 }
 
-export function BudgetBar({ budget, lang, compact = false }: BudgetBarProps) {
+export function BudgetBar({ budget, lang, compact = false, displaySpent, displayLimit }: BudgetBarProps) {
   const pct = Math.min(budget.percent, 100);
   const over = budget.percent >= 100;
   const warn = budget.percent >= 70;
@@ -31,6 +34,9 @@ export function BudgetBar({ budget, lang, compact = false }: BudgetBarProps) {
     : warn
     ? "var(--chart-3)"
     : "var(--income)";
+
+  const spentLabel = displaySpent ?? `${formatMoney(budget.spentUzs)} so'm`;
+  const limitLabel = displayLimit ?? `${formatMoney(budget.limitUzs)} so'm`;
 
   return (
     <div className="space-y-1.5">
@@ -46,7 +52,7 @@ export function BudgetBar({ budget, lang, compact = false }: BudgetBarProps) {
           className="text-xs tabular shrink-0"
           style={{ color: over ? "var(--expense)" : "var(--fg-muted)" }}
         >
-          {formatMoney(budget.spentUzs)} / {formatMoney(budget.limitUzs)} so'm
+          {spentLabel} / {limitLabel}
           {over && <span className="ml-1 font-semibold">⚠</span>}
         </span>
       </div>

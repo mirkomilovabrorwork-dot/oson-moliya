@@ -40,7 +40,8 @@ export function proxy(request: NextRequest): NextResponse {
   const isProtectedApi =
     pathname.startsWith("/api/transactions") ||
     pathname.startsWith("/api/categories") ||
-    pathname.startsWith("/api/budgets");
+    pathname.startsWith("/api/budgets") ||
+    pathname.startsWith("/api/currency");
 
   if (isProtectedApi && !hasSessionCookie(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

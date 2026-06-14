@@ -4,6 +4,8 @@ import { RECORD_INTENT_TOOL, RecordIntentSchema, type RecordIntent } from "./too
 import { buildSystemPrompt } from "./prompts";
 import { parseAmountUzs } from "./amount";
 import { getEnv } from "../env";
+import { getRates } from "../rates";
+import { convertToUzs } from "../currency";
 
 // Asia/Tashkent = UTC+5, no DST
 function getTashkentDateString(): string {
@@ -61,6 +63,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
         intent: "unknown",
         language: (input.user.language as "uz" | "ru" | "en") ?? "uz",
         confidence: 0,
+        currency: "UZS" as const,
         reply_text: "Kechirasiz, tushunmadim.",
         missing_fields: [],
       },
@@ -77,6 +80,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
         intent: "clarify_needed",
         language: (input.user.language as "uz" | "ru" | "en") ?? "uz",
         confidence: 0.3,
+        currency: "UZS" as const,
         reply_text: "Iltimos, qaytadan aniqroq yozing.",
         missing_fields: [],
       },
@@ -86,38 +90,40 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
 
   const intent = parsed.data;
 
-  // Foreign-currency guard (R10): if the text mentions a foreign currency
-  // token, do NOT run the UZS amount fallback — force clarification instead.
-  // This prevents "100 dollar" from being silently logged as 100 so'm.
-  const FOREIGN_CURRENCY_RE =
-    /dollar|do['']llar|do['']lr|\$|евро|euro|€|rubl|рубль|₽|£|¥/i;
-
-  // Amount fallback: if model returned null but text has parseable amount
+  // Amount fallback: if model returned null but text has parseable UZS amount
   if (
     (intent.intent === "log_income" || intent.intent === "log_expense") &&
     (intent.amount === null || intent.amount === undefined)
   ) {
-    if (FOREIGN_CURRENCY_RE.test(input.text)) {
-      // Foreign currency detected — skip UZS fallback, force clarification
-      return {
-        intent: {
-          intent: "clarify_needed",
-          language: (input.user.language as "uz" | "ru" | "en") ?? "uz",
-          confidence: 0.5,
-          reply_text:
-            input.user.language === "ru"
-              ? "В какой валюте? Пожалуйста, введите сумму в сумах (например: 500 000 сум)."
-              : input.user.language === "en"
-              ? "Which currency? Please enter the amount in so'm (e.g. 500,000 so'm)."
-              : "Qaysi valyutada? Iltimos, so'mda miqdorni yozing (masalan: 500 ming so'm).",
-          missing_fields: ["amount"],
-        },
-        raw: toolUse.input,
-      };
+    const detectedCurrency = intent.currency ?? "UZS";
+    if (detectedCurrency === "UZS") {
+      // Only run UZS text fallback for UZS amounts
+      const fallbackAmount = parseAmountUzs(input.text);
+      if (fallbackAmount !== null) {
+        intent.amount = Number(fallbackAmount);
+      }
     }
-    const fallbackAmount = parseAmountUzs(input.text);
-    if (fallbackAmount !== null) {
-      intent.amount = Number(fallbackAmount);
+    // For foreign currencies: let the amount be null → bot will ask "how much?"
+  }
+
+  // Foreign-currency conversion: if intent has a foreign currency amount, convert to UZS.
+  // This means "100 dollar" becomes amountUzs = 100 * rate, stored as UZS in DB.
+  const detectedCurrency = intent.currency ?? "UZS";
+  if (
+    (intent.intent === "log_income" || intent.intent === "log_expense") &&
+    detectedCurrency !== "UZS" &&
+    intent.amount != null &&
+    intent.amount > 0
+  ) {
+    try {
+      const rates = await getRates();
+      const uzs = convertToUzs(intent.amount, detectedCurrency, rates);
+      // Keep original amount for the bot confirmation; store converted in a special field
+      (intent as Record<string, unknown>)._originalAmount = intent.amount;
+      (intent as Record<string, unknown>)._originalCurrency = detectedCurrency;
+      intent.amount = Number(uzs);
+    } catch {
+      // If conversion fails, leave amount as-is (will be treated as raw UZS)
     }
   }
 

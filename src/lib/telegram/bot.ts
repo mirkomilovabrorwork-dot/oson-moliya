@@ -75,6 +75,9 @@ interface FinalizeLogParams {
   category?: string | null;
   dateStr: string;
   note?: string | null;
+  /** Original foreign-currency amount before UZS conversion (for bot confirmation display). */
+  originalAmount?: number | null;
+  originalCurrency?: string | null;
 }
 
 async function finalizeLog(
@@ -86,7 +89,7 @@ async function finalizeLog(
   params: FinalizeLogParams,
   lang: string
 ): Promise<void> {
-  const { amount, txType, category, dateStr, note } = params;
+  const { amount, txType, category, dateStr, note, originalAmount, originalCurrency } = params;
 
   let categoryId: string | null = null;
   if (category) {
@@ -131,13 +134,25 @@ async function finalizeLog(
     ? await prisma.category.findUnique({ where: { id: categoryId } })
     : null;
 
-  const confirmation = formatConfirmation({
+  let confirmation = formatConfirmation({
     amount: tx.amountUzs,
     type: txType,
     categoryName: catRecord?.name ?? category ?? null,
     date: dateStr,
     language: lang,
   });
+
+  // Append original foreign-currency info so user sees what was entered
+  if (originalAmount != null && originalCurrency && originalCurrency !== "UZS") {
+    const origStr = `${originalAmount} ${originalCurrency}`;
+    const convNote =
+      lang === "ru"
+        ? ` (конвертировано из ${origStr})`
+        : lang === "en"
+        ? ` (converted from ${origStr})`
+        : ` (${origStr} dan konvertatsiya qilindi)`;
+    confirmation = confirmation + convNote;
+  }
 
   // Proactive budget alert
   let budgetWarning = "";
@@ -377,7 +392,16 @@ async function handleMessage(
 
     // We have enough to log — delegate to finalizeLog
     const dateStr = intent.date ?? "today";
-    await finalizeLog(ctx, user, prisma, { amount, txType, category, dateStr, note: intent.note ?? null }, lang);
+    const intentAny = intent as Record<string, unknown>;
+    await finalizeLog(ctx, user, prisma, {
+      amount,
+      txType,
+      category,
+      dateStr,
+      note: intent.note ?? null,
+      originalAmount: (intentAny._originalAmount as number | undefined) ?? null,
+      originalCurrency: (intentAny._originalCurrency as string | undefined) ?? null,
+    }, lang);
     return;
   }
 

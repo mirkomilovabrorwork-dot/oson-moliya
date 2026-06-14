@@ -10,6 +10,9 @@ import { HomeExpenseDonut } from "@/components/charts/HomeExpenseDonut";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { BudgetDTO } from "@/lib/types";
+import { getRates } from "@/lib/rates";
+import type { DisplayCurrency } from "@/lib/rates";
+import { formatMoney as formatMoneyFn } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -28,33 +31,14 @@ function formatDate(date: Date, lang: string): string {
   return `${String(day).padStart(2, "0")} ${months[monthIdx]}`;
 }
 
-function formatMoney(val: bigint): string {
-  const parts: string[] = [];
-  let n = val < 0n ? -val : val;
-  while (n >= 1000n) {
-    parts.unshift(String(n % 1000n).padStart(3, "0"));
-    n = n / 1000n;
-  }
-  parts.unshift(String(n));
-  return (val < 0n ? "−" : "") + parts.join(" ") + " so'm";
-}
-
-function formatMoneyShort(val: bigint): string {
-  const parts: string[] = [];
-  let n = val < 0n ? -val : val;
-  while (n >= 1000n) {
-    parts.unshift(String(n % 1000n).padStart(3, "0"));
-    n = n / 1000n;
-  }
-  parts.unshift(String(n));
-  return parts.join(" ") + " so'm";
-}
-
 export default async function OverviewPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
+  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const rates = await getRates();
+  const fmt = (val: bigint) => formatMoneyFn(val, currency, rates, lang);
   const overview = await getOverview(user.id, "this_month");
 
   const prisma = db as import("@prisma/client").PrismaClient;
@@ -148,8 +132,8 @@ export default async function OverviewPage() {
     const sameSign = (current >= 0n) === (prev >= 0n);
     if (!sameSign) {
       // Show absolute movement
-      const fmtPrev = formatMoney(prev < 0n ? -prev : prev);
-      const fmtCurr = formatMoney(current < 0n ? -current : current);
+      const fmtPrev = fmt(prev < 0n ? -prev : prev);
+      const fmtCurr = fmt(current < 0n ? -current : current);
       const tpl = t("home.delta.sign_change", lang)
         .replace("{prev}", (prev < 0n ? "−" : "+") + fmtPrev)
         .replace("{curr}", (current < 0n ? "−" : "+") + fmtCurr);
@@ -202,7 +186,7 @@ export default async function OverviewPage() {
             style={{ color: netPositive ? "var(--fg)" : "var(--expense)" }}
           >
             {netPositive ? "+" : "−"}
-            {formatMoneyShort(net < 0n ? -net : net)}
+            {fmt(net < 0n ? -net : net)}
           </p>
           {netDelta && (
             <p
@@ -222,7 +206,7 @@ export default async function OverviewPage() {
                 className="text-sm font-medium tabular"
                 style={{ color: "var(--income)" }}
               >
-                +{formatMoneyShort(overview.income)}
+                +{fmt(overview.income)}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -234,7 +218,7 @@ export default async function OverviewPage() {
                 className="text-sm font-medium tabular"
                 style={{ color: "var(--expense)" }}
               >
-                −{formatMoneyShort(overview.expense)}
+                −{fmt(overview.expense)}
               </span>
             </div>
           </div>
@@ -265,7 +249,7 @@ export default async function OverviewPage() {
           <HomeExpenseDonut
             data={donutData}
             lang={lang}
-            totalLabel={formatMoneyShort(overview.expense)}
+            totalLabel={fmt(overview.expense)}
           />
         </div>
 
@@ -367,7 +351,7 @@ export default async function OverviewPage() {
                     }}
                   >
                     {tx.type === "income" ? "+" : "−"}
-                    {formatMoney(tx.amountUzs)}
+                    {fmt(tx.amountUzs)}
                   </span>
                 </div>
               ))}
@@ -395,7 +379,14 @@ export default async function OverviewPage() {
             </div>
             <div className="space-y-4">
               {budgetDTOs.map((b) => (
-                <BudgetBar key={b.categoryId} budget={b} lang={lang} compact />
+                <BudgetBar
+                  key={b.categoryId}
+                  budget={b}
+                  lang={lang}
+                  compact
+                  displaySpent={fmt(BigInt(b.spentUzs))}
+                  displayLimit={fmt(BigInt(b.limitUzs))}
+                />
               ))}
             </div>
           </div>

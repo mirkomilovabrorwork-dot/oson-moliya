@@ -6,6 +6,8 @@ import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
 import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
+import type { DisplayCurrency, Rates } from "@/lib/rates";
+import { formatMoney as formatMoneyFn } from "@/lib/currency";
 
 interface CategoryRow {
   id: string;
@@ -20,22 +22,13 @@ interface CategoryRow {
 interface Props {
   categories: CategoryRow[];
   lang: LangCode;
+  currency: DisplayCurrency;
+  rates: Rates;
 }
 
-function formatMoney(s: string): string {
-  const n = Number(s);
-  if (isNaN(n)) return s;
-  const parts: string[] = [];
-  let rem = Math.abs(Math.round(n));
-  while (rem >= 1000) {
-    parts.unshift(String(rem % 1000).padStart(3, "0"));
-    rem = Math.floor(rem / 1000);
-  }
-  parts.unshift(String(rem));
-  return parts.join(" ");
-}
-
-export function CategoriesClient({ categories: initial, lang }: Props) {
+export function CategoriesClient({ categories: initial, lang, currency, rates }: Props) {
+  const formatMoney = (s: string) =>
+    formatMoneyFn(BigInt(Math.round(Math.abs(Number(s)))), currency, rates, lang);
   const router = useRouter();
   const [cats, setCats] = useState<CategoryRow[]>(initial);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
@@ -465,7 +458,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                         <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
                           {cat.txCount} {t("categories.tx_count", lang)}
                           {cat.type === "expense" && cat.budgetLimit
-                            ? ` · ${formatMoney(cat.budgetLimit)} so'm ${t("categories.budget_progress", lang)}`
+                            ? ` · ${formatMoney(cat.budgetLimit)} ${t("categories.budget_progress", lang)}`
                             : ""}
                         </p>
                       </>
@@ -480,7 +473,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                         <button
                           onClick={() => {
                             setEditBudgetId(cat.id);
-                            setBudgetVal(cat.budgetLimit ? formatMoney(cat.budgetLimit) : "");
+                            setBudgetVal(cat.budgetLimit ?? "");
                           }}
                           className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all"
                           style={{
@@ -556,7 +549,7 @@ export function CategoriesClient({ categories: initial, lang }: Props) {
                       style={inputStyle}
                     />
                     <span className="text-xs" style={{ color: "var(--fg-subtle)" }}>
-                      so&apos;m
+                      UZS
                     </span>
                     <button
                       onClick={() => handleBudgetSave(cat.id)}

@@ -6,6 +6,8 @@ import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
 import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
+import type { DisplayCurrency, Rates } from "@/lib/rates";
+import { formatMoney as formatMoneyFn } from "@/lib/currency";
 
 interface TxRow {
   id: string;
@@ -30,22 +32,13 @@ interface Props {
   transactions: TxRow[];
   categories: CatOption[];
   lang: LangCode;
+  currency: DisplayCurrency;
+  rates: Rates;
 }
 
 const PAGE_SIZE = 20;
 
-function formatMoney(s: string): string {
-  const n = Number(s);
-  if (isNaN(n)) return s;
-  const parts: string[] = [];
-  let rem = Math.abs(Math.round(n));
-  while (rem >= 1000) {
-    parts.unshift(String(rem % 1000).padStart(3, "0"));
-    rem = Math.floor(rem / 1000);
-  }
-  parts.unshift(String(rem));
-  return parts.join(" ");
-}
+// formatMoney is defined as an instance function inside TransactionsClient (currency-aware)
 
 // Deterministic date formatter — same output on server and client (no Intl locale dependency).
 // Month names sourced inline; do NOT move to shared helpers or dictionaries.
@@ -86,8 +79,10 @@ interface EditState {
   occurredAt: string;
 }
 
-export function TransactionsClient({ transactions: initial, categories, lang }: Props) {
+export function TransactionsClient({ transactions: initial, categories, lang, currency, rates }: Props) {
   const router = useRouter();
+  const formatMoney = (s: string) =>
+    formatMoneyFn(BigInt(Math.round(Number(s))), currency, rates, lang);
 
   // Filter state
   const [typeFilter, setTypeFilter] = useState<"" | "income" | "expense">("");
@@ -274,7 +269,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
         description={t("transactions.delete.confirm", lang)}
         targetLabel={
           deleteTarget
-            ? `${deleteTarget.type === "income" ? "+" : "-"}${formatMoney(deleteTarget.amountUzs)} so'm · ${
+            ? `${deleteTarget.type === "income" ? "+" : "-"}${formatMoney(deleteTarget.amountUzs)} · ${
                 deleteTarget.categoryName ?? t("form.category_none", lang)
               }`
             : undefined
@@ -442,7 +437,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             className="text-lg font-semibold tabular"
             style={{ color: "var(--income)" }}
           >
-            +{formatMoney(String(summaryIncome))} <span className="text-xs font-normal opacity-70">so&apos;m</span>
+            +{formatMoney(String(summaryIncome))}
           </p>
         </div>
         <div
@@ -459,7 +454,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
             className="text-lg font-semibold tabular"
             style={{ color: "var(--expense)" }}
           >
-            −{formatMoney(String(summaryExpense))} <span className="text-xs font-normal opacity-70">so&apos;m</span>
+            −{formatMoney(String(summaryExpense))}
           </p>
         </div>
       </div>
@@ -549,7 +544,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                     }}
                   >
                     {tx.type === "income" ? "+" : "−"}
-                    {formatMoney(tx.amountUzs)} so&apos;m
+                    {formatMoney(tx.amountUzs)}
                   </span>
                   <div className="flex items-center gap-1">
                     <button
@@ -677,7 +672,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
                       }}
                     >
                       {tx.type === "income" ? "+" : "−"}
-                      {formatMoney(tx.amountUzs)} so&apos;m
+                      {formatMoney(tx.amountUzs)}
                     </td>
                     <td
                       className="px-4 py-3.5 text-xs hidden sm:table-cell"
@@ -835,7 +830,7 @@ export function TransactionsClient({ transactions: initial, categories, lang }: 
               <input
                 type="text"
                 inputMode="numeric"
-                value={formatMoney(editing.amountUzs)}
+                value={editing.amountUzs}
                 onChange={(e) =>
                   setEditing((s) =>
                     s ? { ...s, amountUzs: e.target.value.replace(/\s/g, "") } : s

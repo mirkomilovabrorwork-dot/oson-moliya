@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { LangSwitcher } from "@/components/LangSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 
+type DisplayCurrency = "UZS" | "USD" | "EUR" | "RUB";
+
 interface MoreClientProps {
   lang: LangCode;
+  displayCurrency: DisplayCurrency;
 }
 
 function IconTile({
@@ -86,12 +90,55 @@ const LANG_LABELS: Record<LangCode, string> = {
   en: "English",
 };
 
+/** Currency labels in three languages */
+const CURRENCY_LABELS: Record<DisplayCurrency, Record<LangCode, string>> = {
+  UZS: { uz: "So'm (UZS)", ru: "Сум (UZS)", en: "UZS (So'm)" },
+  USD: { uz: "Dollar (USD)", ru: "Доллар (USD)", en: "Dollar (USD)" },
+  EUR: { uz: "Evro (EUR)", ru: "Евро (EUR)", en: "Euro (EUR)" },
+  RUB: { uz: "Rubl (RUB)", ru: "Рубль (RUB)", en: "Ruble (RUB)" },
+};
+
 type RowKey = "currency" | "lang" | "theme";
 
-export function MoreClient({ lang }: MoreClientProps) {
+export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClientProps) {
+  const router = useRouter();
   // Accordion: only one row's options open at a time.
   const [open, setOpen] = useState<RowKey | null>(null);
   const toggle = (k: RowKey) => setOpen((cur) => (cur === k ? null : k));
+
+  const [currency, setCurrency] = useState<DisplayCurrency>(initialCurrency);
+  const [currencyLoading, setCurrencyLoading] = useState(false);
+  const [currencyError, setCurrencyError] = useState<string | null>(null);
+
+  const handleCurrencySelect = async (cur: DisplayCurrency) => {
+    if (cur === currency) {
+      setOpen(null);
+      return;
+    }
+    setCurrencyLoading(true);
+    setCurrencyError(null);
+    try {
+      const res = await fetch("/api/currency", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currency: cur }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      setCurrency(cur);
+      setOpen(null);
+      router.refresh();
+    } catch {
+      setCurrencyError(
+        lang === "ru"
+          ? "Ошибка сохранения"
+          : lang === "en"
+          ? "Save failed"
+          : "Saqlash muvaffaqiyatsiz"
+      );
+    } finally {
+      setCurrencyLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -104,6 +151,8 @@ export function MoreClient({ lang }: MoreClientProps) {
 
   const rowClass =
     "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--surface-sunken)] focus-visible:outline-none";
+
+  const CURRENCIES: DisplayCurrency[] = ["UZS", "USD", "EUR", "RUB"];
 
   return (
     <>
@@ -124,7 +173,7 @@ export function MoreClient({ lang }: MoreClientProps) {
             className={rowClass}
             style={{ minHeight: 56, background: "transparent" }}
             aria-expanded={open === "currency"}
-            aria-label={`${t("more.currency", lang)}: UZS`}
+            aria-label={`${t("more.currency", lang)}: ${currency}`}
           >
             <IconTile bg="var(--surface-sunken)" color="var(--fg-muted)">
               <IconCurrency />
@@ -138,21 +187,39 @@ export function MoreClient({ lang }: MoreClientProps) {
               </div>
             </div>
             <span className="text-sm mr-1 tabular" style={{ color: "var(--fg-muted)" }}>
-              UZS
+              {currency}
             </span>
             <Chevron open={open === "currency"} />
           </button>
           {open === "currency" && (
-            <div className="px-4 pb-4 pt-1">
-              <span
-                className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold"
-                style={{ background: "var(--accent)", color: "var(--accent-fg)" }}
-              >
-                UZS
-              </span>
-              <p className="text-xs mt-2" style={{ color: "var(--fg-subtle)" }}>
-                {t("more.currency_only", lang)}
-              </p>
+            <div className="px-4 pb-4 pt-1 space-y-2">
+              {currencyError && (
+                <p className="text-xs" style={{ color: "var(--expense)" }}>
+                  {currencyError}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {CURRENCIES.map((cur) => (
+                  <button
+                    key={cur}
+                    type="button"
+                    disabled={currencyLoading}
+                    onClick={() => handleCurrencySelect(cur)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-60"
+                    style={
+                      cur === currency
+                        ? { background: "var(--accent)", color: "var(--accent-fg, #fff)" }
+                        : {
+                            background: "var(--surface-sunken)",
+                            color: "var(--fg-muted)",
+                            border: "1px solid var(--border)",
+                          }
+                    }
+                  >
+                    {CURRENCY_LABELS[cur][lang]}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

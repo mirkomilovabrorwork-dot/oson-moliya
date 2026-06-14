@@ -6,6 +6,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { AddSheet } from "@/components/AddSheet";
 import { AnalyticsClient } from "./AnalyticsClient";
 import { redirect } from "next/navigation";
+import { getRates } from "@/lib/rates";
+import type { DisplayCurrency, Rates } from "@/lib/rates";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,8 @@ export default async function AnalyticsPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
+  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const rates: Rates = await getRates();
 
   // Default: this month — half-open window [monthStart, monthEnd) to match
   // Home/getOverview and the bot's "bu oy" window (P0-A3).
@@ -95,6 +99,8 @@ export default async function AnalyticsPage() {
         <AnalyticsClient
           userId={user.id}
           lang={lang}
+          currency={currency}
+          rates={rates}
           defaultIncome={incomeTotal}
           defaultExpense={expenseTotal}
           defaultByCategory={byCategory}

@@ -6,6 +6,8 @@ import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
 import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
+import type { DisplayCurrency, Rates } from "@/lib/rates";
+import { formatMoney as formatMoneyFn } from "@/lib/currency";
 
 // Local types — all BigInt fields are serialized to string
 interface AccountRow {
@@ -21,6 +23,8 @@ interface Props {
   accounts: AccountRow[];
   totalBalance: string;
   lang: LangCode;
+  currency: DisplayCurrency;
+  rates: Rates;
 }
 
 function formatMoney(s: string): string {
@@ -51,8 +55,10 @@ const inputStyle = {
 const inputCls =
   "w-full rounded-[12px] px-3 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 min-h-[44px]";
 
-export function AccountsClient({ accounts: initial, totalBalance: initialTotal, lang }: Props) {
+export function AccountsClient({ accounts: initial, totalBalance: initialTotal, lang, currency, rates }: Props) {
   const router = useRouter();
+  const fmtBig = (s: string) =>
+    formatMoneyFn(BigInt(Math.round(Math.abs(Number(s)))), currency, rates, lang);
   const [accounts, setAccounts] = useState<AccountRow[]>(initial);
   const [totalBalance, setTotalBalance] = useState(initialTotal);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
@@ -237,8 +243,7 @@ export function AccountsClient({ accounts: initial, totalBalance: initialTotal, 
           style={{ color: totalN >= 0 ? "var(--income)" : "var(--expense)" }}
         >
           {totalN >= 0 ? "+" : "−"}
-          {formatMoney(String(Math.abs(totalN)))}{" "}
-          <span className="text-base font-normal opacity-70">so&apos;m</span>
+          {fmtBig(totalBalance)}
         </p>
       </div>
 
@@ -301,13 +306,7 @@ export function AccountsClient({ accounts: initial, totalBalance: initialTotal, 
                     style={{ color: bal >= 0 ? "var(--income)" : "var(--expense)" }}
                   >
                     {bal >= 0 ? "+" : "−"}
-                    {formatMoney(String(Math.abs(bal)))}
-                  </p>
-                  <p
-                    className="text-[11px]"
-                    style={{ color: "var(--fg-subtle)" }}
-                  >
-                    so&apos;m
+                    {fmtBig(acc.balance)}
                   </p>
                 </div>
 

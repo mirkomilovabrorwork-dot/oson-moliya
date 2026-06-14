@@ -6,6 +6,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { AddSheet } from "@/components/AddSheet";
 import { CategoriesClient } from "./CategoriesClient";
 import { redirect } from "next/navigation";
+import { getRates } from "@/lib/rates";
+import type { DisplayCurrency, Rates } from "@/lib/rates";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,8 @@ export default async function CategoriesPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
+  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const rates: Rates = await getRates();
   const prisma = db as import("@prisma/client").PrismaClient;
 
   const categories = await prisma.category.findMany({
@@ -65,7 +69,7 @@ export default async function CategoriesPage() {
         >
           {t("categories.title", lang)}
         </h1>
-        <CategoriesClient categories={cats} lang={lang} />
+        <CategoriesClient categories={cats} lang={lang} currency={currency} rates={rates} />
       </main>
     </div>
   );

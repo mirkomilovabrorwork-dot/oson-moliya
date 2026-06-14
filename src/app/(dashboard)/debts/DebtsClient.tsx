@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
+import type { DisplayCurrency, Rates } from "@/lib/rates";
+import { formatMoney as formatMoneyFn } from "@/lib/currency";
 
 // Local interface — amountUzs is serialized as string by serializeBigInt
 interface DebtRow {
@@ -27,23 +29,13 @@ interface Props {
   debts: DebtRow[];
   totals: DebtTotals;
   lang: LangCode;
+  currency: DisplayCurrency;
+  rates: Rates;
 }
 
 type Tab = "all" | "given" | "taken";
 
-function formatMoney(s: string): string {
-  const n = Number(s);
-  if (isNaN(n)) return s;
-  const parts: string[] = [];
-  let rem = Math.abs(Math.round(n));
-  if (rem === 0) return "0";
-  while (rem >= 1000) {
-    parts.unshift(String(rem % 1000).padStart(3, "0"));
-    rem = Math.floor(rem / 1000);
-  }
-  parts.unshift(String(rem));
-  return parts.join(" ");
-}
+// formatMoney is defined as instance method inside DebtsClient (currency-aware)
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -62,8 +54,10 @@ const inputStyle = {
 const inputCls =
   "w-full rounded-[12px] px-3 py-2.5 text-sm transition-all focus:outline-none focus:ring-2 min-h-[44px]";
 
-export function DebtsClient({ debts: initial, totals: initialTotals, lang }: Props) {
+export function DebtsClient({ debts: initial, totals: initialTotals, lang, currency, rates }: Props) {
   const router = useRouter();
+  const formatMoney = (s: string) =>
+    formatMoneyFn(BigInt(Math.round(Math.abs(Number(s)))), currency, rates, lang);
   const [debts, setDebts] = useState<DebtRow[]>(initial);
   const [totals, setTotals] = useState<DebtTotals>(initialTotals);
   const [tab, setTab] = useState<Tab>("all");
@@ -145,7 +139,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang }: Pro
   const openEdit = useCallback((debt: DebtRow) => {
     setEditTarget(debt);
     setEditCounterparty(debt.counterparty);
-    setEditAmount(formatMoney(debt.amountUzs));
+    setEditAmount(debt.amountUzs);
     setEditNote(debt.note ?? "");
     setEditDate(debt.occurredAt.slice(0, 10));
     setEditError(null);
@@ -505,9 +499,6 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang }: Pro
           <p className="text-xl font-bold tabular-nums" style={{ color: "var(--income)" }}>
             {formatMoney(totals.givenOpen)}
           </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
-            {t("common.currency", lang)}
-          </p>
         </div>
         {/* Taken (borrowed) */}
         <div
@@ -519,9 +510,6 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang }: Pro
           </p>
           <p className="text-xl font-bold tabular-nums" style={{ color: "var(--expense)" }}>
             {formatMoney(totals.takenOpen)}
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
-            {t("common.currency", lang)}
           </p>
         </div>
       </div>

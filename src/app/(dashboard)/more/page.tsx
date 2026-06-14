@@ -62,6 +62,7 @@ export default async function MorePage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
+  const displayCurrency = (user.displayCurrency ?? "UZS") as "UZS" | "USD" | "EUR" | "RUB";
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
@@ -134,7 +135,7 @@ export default async function MorePage() {
 
         {/* Client section: Til (Language) + Mavzu (Theme) rows + Logout button
             MoreClient renders a second card for Til/Mavzu and the logout button below */}
-        <MoreClient lang={lang} />
+        <MoreClient lang={lang} displayCurrency={displayCurrency} />
       </main>
     </div>
   );

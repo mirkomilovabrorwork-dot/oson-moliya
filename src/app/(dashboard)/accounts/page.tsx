@@ -7,6 +7,8 @@ import { AddSheet } from "@/components/AddSheet";
 import { listAccounts, getTotalBalance } from "@/lib/services/accounts";
 import { serializeBigInt } from "@/lib/serialize";
 import { AccountsClient } from "./AccountsClient";
+import { getRates } from "@/lib/rates";
+import type { DisplayCurrency, Rates } from "@/lib/rates";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,8 @@ export default async function AccountsPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
+  const currency = (user.displayCurrency ?? "UZS") as DisplayCurrency;
+  const rates: Rates = await getRates();
 
   const [accounts, totalBalance] = await Promise.all([
     listAccounts(user.id),
@@ -48,6 +52,8 @@ export default async function AccountsPage() {
           accounts={serializedAccounts}
           totalBalance={serializedTotal}
           lang={lang}
+          currency={currency}
+          rates={rates}
         />
       </main>
     </div>
