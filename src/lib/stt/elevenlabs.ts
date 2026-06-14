@@ -12,20 +12,6 @@ import { audioBufferToBlob } from "./blob";
  * API reference: https://elevenlabs.io/docs/api-reference/speech-to-text/convert
  */
 
-/** Uzbek finance vocabulary list to bias Scribe accuracy. */
-const UZBEK_FINANCE_KEYTERMS = [
-  "pul",
-  "oylik",
-  "xarajat",
-  "kirim",
-  "chiqim",
-  "to'lov",
-  "sotuv",
-  "ijara",
-  "soliq",
-  "logistika",
-];
-
 /** Maps opts.language (ISO-639-1 or short code) to ElevenLabs ISO-639-3 codes. */
 function toLanguageCode(lang?: string): string {
   switch (lang) {
@@ -56,13 +42,10 @@ export class ElevenLabsScribeProvider implements SttProvider {
     const form = new FormData();
     const blob = audioBufferToBlob(audio, "audio/ogg");
     form.append("file", blob, filename);
-    form.append("model_id", "scribe_v2");
+    form.append("model_id", "scribe_v1");
 
     const languageCode = toLanguageCode(opts?.language);
     form.append("language_code", languageCode);
-
-    // Bias accuracy toward Uzbek finance vocabulary
-    form.append("keyterms", JSON.stringify(UZBEK_FINANCE_KEYTERMS));
 
     const response = await fetch(
       "https://api.elevenlabs.io/v1/speech-to-text",
