@@ -5,7 +5,7 @@ export type Dictionary = Record<string, string>;
 const uz: Dictionary = {
   // ── Navigation
   "nav.overview": "Umumiy",
-  "nav.transactions": "Harakatlar",
+  "nav.transactions": "Tranzaksiyalar",
   "nav.analytics": "Tahlil",
   "nav.categories": "Kategoriyalar",
   "nav.logout": "Chiqish",
@@ -25,7 +25,7 @@ const uz: Dictionary = {
   "overview.this_month": "Bu oy",
   "overview.vs_last_month": "o'tgan oyga nisbatan",
   "overview.quick_add": "Tez qo'shish",
-  "overview.recent": "So'nggi harakatlar",
+  "overview.recent": "So'nggi tranzaksiyalar",
   "overview.budget_alerts": "Byudjet holati",
   "overview.view_all": "Barchasini ko'rish",
   // ── Quick add form
@@ -41,9 +41,9 @@ const uz: Dictionary = {
   "form.success": "Muvaffaqiyatli saqlandi!",
   "form.category_none": "Kategoriyasiz",
   // ── Transactions page
-  "transactions.title": "Barcha harakatlar",
+  "transactions.title": "Barcha tranzaksiyalar",
   "transactions.empty": "Hozircha hech narsa yo'q",
-  "transactions.empty.hint": "Telegram botga birinchi harakatni yuboring",
+  "transactions.empty.hint": "Telegram botga birinchi tranzaksiyani yuboring",
   "transactions.date": "Sana",
   "transactions.type": "Turi",
   "transactions.category": "Kategoriya",
@@ -63,10 +63,10 @@ const uz: Dictionary = {
   "transactions.summary.expense": "Xarajat",
   "transactions.page": "Sahifa",
   "transactions.of": "dan",
-  "transactions.edit.title": "Harakatni tahrirlash",
-  "transactions.delete.confirm": "Bu harakatni o'chirishni tasdiqlaysizmi?",
-  "transactions.deleted": "Harakatlar o'chirildi",
-  "transactions.updated": "Harakatlar yangilandi",
+  "transactions.edit.title": "Tranzaksiyani tahrirlash",
+  "transactions.delete.confirm": "Bu tranzaksiyani o'chirishni tasdiqlaysizmi?",
+  "transactions.deleted": "Tranzaksiya o'chirildi",
+  "transactions.updated": "Tranzaksiya yangilandi",
   "transactions.no_results": "Hech qanday natija topilmadi",
   // ── Analytics page
   "analytics.title": "Tahlil",
@@ -101,7 +101,7 @@ const uz: Dictionary = {
   "categories.rename": "Nomini o'zgartirish",
   "categories.delete": "O'chirish",
   "categories.delete.confirm":
-    "Kategoriyani o'chirishni tasdiqlaysizmi? Ushbu kategoriyaga tegishli harakatlar kategoriyasiz qoladi.",
+    "Kategoriyani o'chirishni tasdiqlaysizmi? Ushbu kategoriyaga tegishli tranzaksiyalar kategoriyasiz qoladi.",
   "categories.delete.budget_confirm":
     "Bu kategoriyada byudjet bor. O'chirsangiz byudjet ham o'chadi. Davom etasizmi?",
   "categories.deleted": "Kategoriya o'chirildi",
@@ -109,7 +109,7 @@ const uz: Dictionary = {
   "categories.budget_saved": "Byudjet saqlandi",
   "categories.empty": "Hozircha kategoriyalar yo'q",
   "categories.default_badge": "Standart",
-  "categories.tx_count": "ta harakat",
+  "categories.tx_count": "ta tranzaksiya",
   "categories.budget_progress": "Byudjet",
   "categories.spent_of": "sarflandi",
   // ── Budget progress
@@ -132,9 +132,9 @@ const uz: Dictionary = {
   "onboarding.hint": "Ma'lumotlar avtomatik ravishda bu yerda paydo bo'ladi.",
   "onboarding.go_dashboard": "Dashboardga o'tish",
   // ── Empty states
-  "empty.overview": "Hozircha hech qanday harakat yo'q",
+  "empty.overview": "Hozircha hech qanday tranzaksiya yo'q",
   "empty.overview.hint": "Botga birinchi xarajat yoki daromadni yuboring",
-  "empty.transactions": "Harakatlar topilmadi",
+  "empty.transactions": "Tranzaksiyalar topilmadi",
   "empty.analytics": "Tahlil uchun ma'lumot yo'q",
   "empty.categories": "Kategoriyalar mavjud emas",
   "empty.budgets": "Byudjet belgilanmagan",
