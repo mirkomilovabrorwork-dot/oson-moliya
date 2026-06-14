@@ -5,6 +5,16 @@
 > Specs: `docs/tasks/NNN-*.md`.
 
 ## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus — task-015 Kissa IA redesign deployed)
+- **CODEX TASK-017 UI/UX + FINANCE REVIEW PLAN (2026-06-14, local only; NOT implemented/deployed):**
+  User wants the product to stay **sodda va yoqimli** and asked Claude to follow a durable design/fix plan
+  even for future updates. Full Codex review found P0 UI bugs (/transactions hydration/theme mismatch,
+  money spacing), mobile analytics clutter, unfinished primary-nav routes, ambiguous "Umumiy balans" finance
+  wording, fake-looking currency settings, small touch targets, chart hardcoded colors, plus broader product
+  risks (voice bot UX, Telegram WebApp/auth verification, overloaded bot state, webhook timeout risk,
+  missing rate limits/observability/data recovery, local/prod DB separation, incomplete finance model).
+  Short Claude execution plan is saved at `docs/tasks/017-claude-execution-plan.md`.
+  Full audit/reference appendix is `docs/tasks/017-ui-ux-finance-design-plan.md`.
+  Claude should read the short plan first before any UI/dashboard update.
 - **HOZIRGI:** LIVE & WORKING. Bot @oson_moliya_bot + dashboard https://oson-moliya.vercel.app.
   **Assessment full-audit (3 Explore agent + Opus) = barcha talab bajarilgan:** bot 9/9, dashboard
   6/6, topshirish hujjatlari to'liq. Yagona ochiq qolgan kamchilik — proactive budget alert — **HOZIR
