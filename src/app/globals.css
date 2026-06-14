@@ -36,8 +36,8 @@
   --expense-fg: #ffffff;
   --expense-wash: #fff1f2;
 
-  --warning: #d98407;
-  --warning-wash: #fff5dd;
+  --warning: #dd8a2a;
+  --warning-wash: #fbead0;
 
   --chart-1: #0e663c;
   --chart-2: #0b8f5a;
@@ -50,6 +50,8 @@
   --radius-md: 16px;
   --radius-lg: 20px;
   --radius-full: 9999px;
+
+  --font-serif: var(--font-lora), Georgia, "Times New Roman", serif;
 
   --shadow-sm: 0 1px 2px rgba(21, 32, 28, .05);
   --shadow-md: 0 8px 26px rgba(21, 32, 28, .08), 0 1px 3px rgba(21, 32, 28, .05);
@@ -167,6 +169,12 @@ body {
   font-family: var(--font-geist-sans), -apple-system, system-ui, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Serif display headings — matches the reference Telegram Mini-App look */
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.01em;
 }
 
 :where(button, a, input, textarea, select, [role="tab"], [tabindex]):focus-visible {
