@@ -3,6 +3,7 @@ import { TxType } from "@prisma/client";
 import { getEnv } from "../env";
 import { db } from "../db";
 import { runBrain } from "../claude/brain";
+import { parseAmountUzs } from "../claude/amount";
 import {
   ensureDefaultCategories,
   resolveOrCreateCategory,
@@ -14,7 +15,7 @@ import {
   upsertPendingAction,
   clearPendingAction,
 } from "../services/pending";
-import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, getBotLabels, type InlineKeyboardButton } from "./reply";
+import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, formatAmount, getBotLabels, type InlineKeyboardButton } from "./reply";
 import { checkExpenseBudgetBreach } from "../services/budgets";
 import { getSttProvider } from "../stt";
 import { downloadTelegramFile } from "./download";
@@ -161,16 +162,53 @@ async function finalizeLog(
   // Build keyboard: dashboard row (if any) + 🗑 delete row
   const dashConfirm = await dashboardReplyOptions(user.id);
   const labels = getBotLabels(lang);
-  const deleteRow: InlineKeyboardButton[] = [
+  const actionRow: InlineKeyboardButton[] = [
+    { text: labels.editBtn, callback_data: `e:${tx.id}` },
     { text: labels.deleteBtn, callback_data: `d:${tx.id}` },
   ];
   const keyboardRows: InlineKeyboardButton[][] = [
     ...dashConfirm.dashRows,
-    deleteRow,
+    actionRow,
   ];
 
   await ctx.reply(confirmation + budgetWarning + dashConfirm.extraText, {
     reply_markup: { inline_keyboard: keyboardRows },
+  });
+}
+
+// Re-show a transaction after an edit, with the same edit/delete keyboard.
+async function showUpdatedTx(
+  ctx: { reply: (text: string, opts?: Parameters<Bot["api"]["sendMessage"]>[2]) => Promise<unknown> },
+  prisma: import("@prisma/client").PrismaClient,
+  user: { id: string },
+  txId: string,
+  lang: string
+): Promise<void> {
+  const labels = getBotLabels(lang);
+  const tx = await prisma.transaction.findFirst({
+    where: { id: txId, userId: user.id, deletedAt: null },
+    include: { category: true },
+  });
+  if (!tx) {
+    await ctx.reply(labels.notFoundMsg);
+    return;
+  }
+  const typeLabel =
+    tx.type === TxType.income
+      ? lang === "ru" ? "доход" : lang === "en" ? "income" : "kirim"
+      : lang === "ru" ? "расход" : lang === "en" ? "expense" : "chiqim";
+  const catPart = tx.category ? `, ${tx.category.name}` : "";
+  const head = lang === "ru" ? "✏️ Изменено" : lang === "en" ? "✏️ Updated" : "✏️ Yangilandi";
+  const dash = await dashboardReplyOptions(user.id);
+  const rows: InlineKeyboardButton[][] = [
+    ...dash.dashRows,
+    [
+      { text: labels.editBtn, callback_data: `e:${tx.id}` },
+      { text: labels.deleteBtn, callback_data: `d:${tx.id}` },
+    ],
+  ];
+  await ctx.reply(`${head}: ${formatAmount(tx.amountUzs)}, ${typeLabel}${catPart}.` + dash.extraText, {
+    reply_markup: { inline_keyboard: rows },
   });
 }
 
@@ -213,6 +251,43 @@ async function handleMessage(
 
   // Load pending action
   const pending = await getPendingAction(user.id);
+
+  // Editing a transaction's AMOUNT via typed text (covers STT mistakes)
+  if (pending && pending.intent === "edit_tx") {
+    const ed = pending.draft as Record<string, unknown>;
+    if (ed.field === "amount" && typeof ed.txId === "string") {
+      const elang = (user.language as "uz" | "ru" | "en") ?? "uz";
+      const tx = await prisma.transaction.findFirst({
+        where: { id: ed.txId, userId: user.id, deletedAt: null },
+      });
+      if (!tx) {
+        await clearPendingAction(user.id);
+        await ctx.reply(getBotLabels(elang).notFoundMsg);
+        return;
+      }
+      const newAmt = parseAmountUzs(text);
+      if (newAmt === null || newAmt <= 0n) {
+        await ctx.reply(
+          elang === "ru"
+            ? "Не понял сумму. Напишите числом, напр. 50 000."
+            : elang === "en"
+            ? "Couldn't read the amount. Write a number, e.g. 50 000."
+            : "Summani tushunmadim. Raqamda yozing, masalan 50 000."
+        );
+        return;
+      }
+      await prisma.transaction.update({ where: { id: ed.txId, userId: user.id }, data: { amountUzs: newAmt } });
+      await clearPendingAction(user.id);
+      await upsertPendingAction(user.id, {
+        intent: "logged",
+        draft: { lastTransactionId: ed.txId },
+        question: "",
+        lastTransactionId: ed.txId,
+      });
+      await showUpdatedTx({ reply: (t, o) => ctx.reply(t, o) }, prisma, user, ed.txId, elang);
+      return;
+    }
+  }
 
   // Run brain
   let brainResult;
@@ -946,15 +1021,15 @@ export function createBot(): Bot {
       if (data.startsWith("dy:")) {
         const txId = data.slice(3);
         const tx = await prisma.transaction.findFirst({
-          where: { id: txId, deletedAt: null },
+          where: { id: txId, userId: user.id, deletedAt: null },
         });
-        if (!tx || tx.userId !== user.id) {
+        if (!tx) {
           await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
           await ctx.reply(labels.notFoundMsg);
           return;
         }
         await prisma.transaction.update({
-          where: { id: txId },
+          where: { id: txId, userId: user.id },
           data: { deletedAt: new Date() },
         });
         await ctx.answerCallbackQuery({ text: labels.deletedMsg });
@@ -965,6 +1040,164 @@ export function createBot(): Bot {
       // ── dn — cancel (dismiss) ─────────────────────────────────────────────
       if (data === "dn") {
         await ctx.answerCallbackQuery({ text: labels.cancelledMsg });
+        return;
+      }
+
+      // ── e:<txId> — open the edit menu for a transaction ───────────────────
+      if (data.startsWith("e:")) {
+        const txId = data.slice(2);
+        const tx = await prisma.transaction.findFirst({
+          where: { id: txId, userId: user.id, deletedAt: null },
+          select: { id: true },
+        });
+        if (!tx) {
+          await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
+          await ctx.reply(labels.notFoundMsg);
+          return;
+        }
+        await clearPendingAction(user.id);
+        await upsertPendingAction(user.id, { intent: "edit_tx", draft: { txId }, question: "" });
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Что изменить?" : lang === "en" ? "What to change?" : "Nimani o'zgartiramiz?",
+          {
+            reply_markup: {
+              inline_keyboard: [[
+                { text: lang === "ru" ? "💰 Сумма" : lang === "en" ? "💰 Amount" : "💰 Summa", callback_data: "ef:amt" },
+                { text: lang === "ru" ? "🏷 Категория" : lang === "en" ? "🏷 Category" : "🏷 Kategoriya", callback_data: "ef:cat" },
+                { text: lang === "ru" ? "🔄 Тип" : lang === "en" ? "🔄 Type" : "🔄 Turi", callback_data: "ef:typ" },
+              ]],
+            },
+          }
+        );
+        return;
+      }
+
+      // ── ef:amt / ef:cat / ef:typ — an edit field was chosen ───────────────
+      if (data === "ef:amt" || data === "ef:cat" || data === "ef:typ") {
+        const p = await getPendingAction(user.id);
+        if (!p || p.intent !== "edit_tx") {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+        const txId = (p.draft as Record<string, unknown>).txId as string;
+        const tx = await prisma.transaction.findFirst({
+          where: { id: txId, userId: user.id, deletedAt: null },
+        });
+        if (!tx) {
+          await clearPendingAction(user.id);
+          await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
+          await ctx.reply(labels.notFoundMsg);
+          return;
+        }
+
+        if (data === "ef:amt") {
+          await upsertPendingAction(user.id, { intent: "edit_tx", draft: { txId, field: "amount" }, question: "" });
+          await ctx.answerCallbackQuery();
+          await ctx.reply(
+            lang === "ru" ? "Напишите новую сумму (напр. 50 000):" : lang === "en" ? "Write the new amount (e.g. 50 000):" : "Yangi summani yozing (masalan 50 000):",
+            { reply_markup: { force_reply: true, input_field_placeholder: lang === "ru" ? "Сумма" : lang === "en" ? "Amount" : "Summa" } }
+          );
+          return;
+        }
+
+        if (data === "ef:typ") {
+          await ctx.answerCallbackQuery();
+          await ctx.reply(
+            lang === "ru" ? "Тип:" : lang === "en" ? "Type:" : "Turi:",
+            {
+              reply_markup: {
+                inline_keyboard: [[
+                  { text: labels.incomeBtn, callback_data: "et:income" },
+                  { text: labels.expenseBtn, callback_data: "et:expense" },
+                ]],
+              },
+            }
+          );
+          return;
+        }
+
+        // ef:cat — show category buttons of the transaction's current type
+        const editCats = await prisma.category.findMany({
+          where: { userId: user.id, type: tx.type },
+          select: { id: true, name: true },
+          take: 8,
+        });
+        if (editCats.length === 0) {
+          await ctx.answerCallbackQuery();
+          await ctx.reply(lang === "ru" ? "Нет категорий." : lang === "en" ? "No categories." : "Kategoriya yo'q.");
+          return;
+        }
+        const editBtns: InlineKeyboardButton[] = editCats.map((c) => ({ text: c.name, callback_data: `ec:${c.id}` }));
+        const editRows: InlineKeyboardButton[][] = [];
+        for (let i = 0; i < editBtns.length; i += 2) editRows.push(editBtns.slice(i, i + 2));
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Выберите категорию:" : lang === "en" ? "Choose a category:" : "Kategoriyani tanlang:",
+          { reply_markup: { inline_keyboard: editRows } }
+        );
+        return;
+      }
+
+      // ── ec:<categoryId> — edit: set the transaction's category ────────────
+      if (data.startsWith("ec:")) {
+        const catId = data.slice(3);
+        const p = await getPendingAction(user.id);
+        if (!p || p.intent !== "edit_tx") {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+        const txId = (p.draft as Record<string, unknown>).txId as string;
+        const tx = await prisma.transaction.findFirst({
+          where: { id: txId, userId: user.id, deletedAt: null },
+          select: { id: true },
+        });
+        const cat = await prisma.category.findFirst({
+          where: { id: catId, userId: user.id },
+          select: { id: true },
+        });
+        if (!tx || !cat) {
+          await clearPendingAction(user.id);
+          await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
+          await ctx.reply(labels.notFoundMsg);
+          return;
+        }
+        await prisma.transaction.update({ where: { id: txId, userId: user.id }, data: { categoryId: catId } });
+        await clearPendingAction(user.id);
+        await upsertPendingAction(user.id, { intent: "logged", draft: { lastTransactionId: txId }, question: "", lastTransactionId: txId });
+        await ctx.answerCallbackQuery();
+        await showUpdatedTx({ reply: (t, o) => ctx.reply(t, o) }, prisma, user, txId, lang);
+        return;
+      }
+
+      // ── et:income / et:expense — edit: set the transaction's type ─────────
+      if (data === "et:income" || data === "et:expense") {
+        const p = await getPendingAction(user.id);
+        if (!p || p.intent !== "edit_tx") {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+        const txId = (p.draft as Record<string, unknown>).txId as string;
+        const tx = await prisma.transaction.findFirst({
+          where: { id: txId, userId: user.id, deletedAt: null },
+          select: { id: true },
+        });
+        if (!tx) {
+          await clearPendingAction(user.id);
+          await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
+          await ctx.reply(labels.notFoundMsg);
+          return;
+        }
+        const newType = data === "et:income" ? TxType.income : TxType.expense;
+        // Category is type-scoped — clear it so it can't mismatch the new type.
+        await prisma.transaction.update({ where: { id: txId, userId: user.id }, data: { type: newType, categoryId: null } });
+        await clearPendingAction(user.id);
+        await upsertPendingAction(user.id, { intent: "logged", draft: { lastTransactionId: txId }, question: "", lastTransactionId: txId });
+        await ctx.answerCallbackQuery();
+        await showUpdatedTx({ reply: (t, o) => ctx.reply(t, o) }, prisma, user, txId, lang);
         return;
       }
 

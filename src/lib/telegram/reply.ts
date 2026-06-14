@@ -23,6 +23,7 @@ export function getBotLabels(lang: string): {
   incomeBtn: string;
   expenseBtn: string;
   deleteBtn: string;
+  editBtn: string;
   confirmDeleteBtn: string;
   cancelBtn: string;
   deletedMsg: string;
@@ -38,6 +39,7 @@ export function getBotLabels(lang: string): {
       incomeBtn: "🟢 Доход",
       expenseBtn: "🔴 Расход",
       deleteBtn: "🗑 Удалить",
+      editBtn: "✏️ Изменить",
       confirmDeleteBtn: "✅ Да, удалить",
       cancelBtn: "Нет",
       deletedMsg: "🗑 Удалено.",
@@ -53,6 +55,7 @@ export function getBotLabels(lang: string): {
       incomeBtn: "🟢 Income",
       expenseBtn: "🔴 Expense",
       deleteBtn: "🗑 Delete",
+      editBtn: "✏️ Edit",
       confirmDeleteBtn: "✅ Yes, delete",
       cancelBtn: "No",
       deletedMsg: "🗑 Deleted.",
@@ -68,6 +71,7 @@ export function getBotLabels(lang: string): {
       incomeBtn: "🟢 Kirim",
       expenseBtn: "🔴 Chiqim",
       deleteBtn: "🗑 O'chirish",
+      editBtn: "✏️ Tahrirlash",
       confirmDeleteBtn: "✅ Ha, o'chir",
       cancelBtn: "Yo'q",
       deletedMsg: "🗑 O'chirildi.",
