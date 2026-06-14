@@ -6,6 +6,7 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1),
   CLAUDE_MODEL: z.string().default("claude-haiku-4-5-20251001"),
   GROQ_API_KEY: z.string().optional(),
+  ELEVENLABS_API_KEY: z.string().optional(),
   STT_PROVIDER: z.string().default("groq"),
   TELEGRAM_BOT_TOKEN: z.string().min(1),
   TELEGRAM_WEBHOOK_SECRET: z.string().min(1),

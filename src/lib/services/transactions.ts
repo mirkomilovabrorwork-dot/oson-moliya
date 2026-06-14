@@ -22,6 +22,7 @@ function getMonthBoundaries(year: number, month: number): { start: Date; end: Da
 export interface CreateTransactionInput {
   userId: string;
   categoryId?: string | null;
+  accountId?: string | null;
   type: TxType;
   amountUzs: bigint;
   note?: string | null;
@@ -35,6 +36,7 @@ export async function createTransaction(input: CreateTransactionInput) {
     data: {
       userId: input.userId,
       categoryId: input.categoryId ?? null,
+      accountId: input.accountId ?? null,
       type: input.type,
       amountUzs: input.amountUzs,
       note: input.note ?? null,
@@ -48,6 +50,7 @@ export async function createTransaction(input: CreateTransactionInput) {
 export interface ListTransactionsFilter {
   type?: TxType;
   categoryId?: string;
+  accountId?: string;
   from?: Date;
   to?: Date;
 }
@@ -65,6 +68,7 @@ export async function listTransactions(
       deletedAt: null,
       type: filters.type,
       categoryId: filters.categoryId,
+      accountId: filters.accountId,
       occurredAt:
         filters.from || filters.to
           ? { gte: filters.from, lt: filters.to }

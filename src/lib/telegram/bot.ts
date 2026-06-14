@@ -7,6 +7,7 @@ import {
   ensureDefaultCategories,
   resolveOrCreateCategory,
 } from "../services/categories";
+import { ensureDefaultAccount } from "../services/accounts";
 import { createTransaction } from "../services/transactions";
 import {
   getPendingAction,
@@ -95,11 +96,20 @@ async function finalizeLog(
     }
   }
 
+  // Attach the bot transaction to the user's default account (safe: try/catch)
+  let defaultAccountId: string | null = null;
+  try {
+    defaultAccountId = await ensureDefaultAccount(user.id);
+  } catch {
+    // Default account seeding must never block transaction logging
+  }
+
   const occurredAt = dateStringToUtc(dateStr);
 
   const tx = await createTransaction({
     userId: user.id,
     categoryId,
+    accountId: defaultAccountId,
     type: txType,
     amountUzs: BigInt(amount),
     note: note ?? null,

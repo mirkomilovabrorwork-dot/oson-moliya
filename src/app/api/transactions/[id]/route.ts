@@ -26,6 +26,7 @@ const PatchSchema = z.object({
   categoryId: z.string().nullable().optional(),
   note: z.string().nullable().optional(),
   occurredAt: z.string().optional(),
+  accountId: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -88,6 +89,23 @@ export async function PATCH(
     }
   }
 
+  // Validate accountId if provided
+  let resolvedAccountId: string | null | undefined = undefined;
+  if (data.accountId !== undefined) {
+    if (data.accountId === null) {
+      resolvedAccountId = null;
+    } else {
+      const acc = await prisma.account.findFirst({
+        where: { id: data.accountId, userId: user.id },
+        select: { id: true },
+      });
+      if (!acc) {
+        return Response.json({ error: "Account not found" }, { status: 422 });
+      }
+      resolvedAccountId = acc.id;
+    }
+  }
+
   const updated = await prisma.transaction.update({
     where: { id },
     data: {
@@ -96,6 +114,7 @@ export async function PATCH(
       categoryId: nextCategoryId,
       note: data.note,
       occurredAt: data.occurredAt ? new Date(data.occurredAt) : undefined,
+      ...(resolvedAccountId !== undefined ? { accountId: resolvedAccountId } : {}),
     },
     include: { category: true },
   });

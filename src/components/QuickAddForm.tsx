@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
+
+interface AccountOption {
+  id: string;
+  name: string;
+  type: string;
+}
 
 interface QuickAddFormProps {
   lang: LangCode;
@@ -17,6 +23,8 @@ export function QuickAddForm({ lang, categories, onSuccess, bare = false }: Quic
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [accountId, setAccountId] = useState("");
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [note, setNote] = useState("");
   const [occurredAt, setOccurredAt] = useState(
     new Date().toISOString().slice(0, 10)
@@ -24,6 +32,26 @@ export function QuickAddForm({ lang, categories, onSuccess, bare = false }: Quic
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Lazy-load accounts once on mount
+  useEffect(() => {
+    fetch("/api/accounts")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: unknown) => {
+        if (Array.isArray(data)) {
+          setAccounts(
+            (data as AccountOption[]).map((a) => ({
+              id: a.id,
+              name: a.name,
+              type: a.type,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        // Accounts are optional — silently ignore failures
+      });
+  }, []);
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
@@ -41,6 +69,7 @@ export function QuickAddForm({ lang, categories, onSuccess, bare = false }: Quic
           type,
           amountUzs: amount.replace(/[\s ]/g, ""),
           categoryId: categoryId || undefined,
+          accountId: accountId || undefined,
           note: note || undefined,
           occurredAt: new Date(occurredAt + "T00:00:00+05:00").toISOString(),
         }),
@@ -55,6 +84,7 @@ export function QuickAddForm({ lang, categories, onSuccess, bare = false }: Quic
 
       setAmount("");
       setCategoryId("");
+      setAccountId("");
       setNote("");
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -195,6 +225,31 @@ export function QuickAddForm({ lang, categories, onSuccess, bare = false }: Quic
           ))}
         </select>
       </div>
+
+      {/* Account (optional) — only shown when accounts exist */}
+      {accounts.length > 0 && (
+        <div>
+          <label
+            className="block text-xs font-medium mb-1.5"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            {t("account.select", lang)}
+          </label>
+          <select
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            className={inputCls}
+            style={inputStyle}
+          >
+            <option value="">{t("account.none", lang)}</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Date */}
       <div>

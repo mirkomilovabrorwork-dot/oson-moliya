@@ -36,12 +36,13 @@ export async function GET(request: NextRequest): Promise<Response> {
   const limit = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 50, 1), 100);
   const offset = Math.max(Number.isFinite(rawOffset) ? rawOffset : 0, 0);
 
-  // Filters: type, category, from, to, search
+  // Filters: type, category, from, to, search, accountId
   const typeParam = url.searchParams.get("type");
   const categoryParam = url.searchParams.get("category");
   const fromParam = url.searchParams.get("from");
   const toParam = url.searchParams.get("to");
   const searchParam = url.searchParams.get("search");
+  const accountIdParam = url.searchParams.get("accountId");
 
   // Validate date filters — return 422 instead of letting Prisma 500 (R11)
   if (fromParam && isNaN(new Date(fromParam).getTime())) {
@@ -55,6 +56,21 @@ export async function GET(request: NextRequest): Promise<Response> {
   let typeFilter: TxType | undefined;
   if (typeParam === "income") typeFilter = TxType.income;
   else if (typeParam === "expense") typeFilter = TxType.expense;
+
+  // Resolve accountId filter — validate it belongs to the user
+  let accountIdFilter: string | undefined | null;
+  if (accountIdParam) {
+    const prismaCheck = db as import("@prisma/client").PrismaClient;
+    const acc = await prismaCheck.account.findFirst({
+      where: { id: accountIdParam, userId: user.id },
+      select: { id: true },
+    });
+    if (!acc) {
+      // No matching account for this user → return empty
+      return Response.json([]);
+    }
+    accountIdFilter = acc.id;
+  }
 
   // Resolve category filter via name lookup
   let categoryIdFilter: string | undefined;
@@ -88,6 +104,7 @@ export async function GET(request: NextRequest): Promise<Response> {
         categoryId: categoryIdFilter,
         from: fromFilter,
         to: toFilter,
+        accountId: accountIdFilter ?? undefined,
       },
     });
     const q = searchParam.toLowerCase();
@@ -107,6 +124,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       categoryId: categoryIdFilter,
       from: fromFilter,
       to: toFilter,
+      accountId: accountIdFilter ?? undefined,
     },
   });
   return Response.json(serializeBigInt(txs));
@@ -119,6 +137,7 @@ const CreateTransactionSchema = z.object({
   categoryName: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
   occurredAt: z.string().optional().nullable(),
+  accountId: z.string().optional().nullable(),
 });
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -164,9 +183,26 @@ export async function POST(request: NextRequest): Promise<Response> {
     categoryId = await resolveOrCreateCategory(user.id, data.categoryName, txType);
   }
 
+  // Validate accountId if provided
+  let resolvedAccountId: string | null = null;
+  if (data.accountId) {
+    const acc = await prisma.account.findFirst({
+      where: { id: data.accountId, userId: user.id },
+      select: { id: true },
+    });
+    if (!acc) {
+      return Response.json(
+        { error: "Account not found" },
+        { status: 422 }
+      );
+    }
+    resolvedAccountId = acc.id;
+  }
+
   const tx = await createTransaction({
     userId: user.id,
     categoryId,
+    accountId: resolvedAccountId,
     type: txType,
     amountUzs: data.amountUzs,
     note: data.note ?? null,
