@@ -4,7 +4,18 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus 1M — currency-original DEPLOYED; Codex work reviewed GOOD)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus 1M — FINAL REVIEW done + fixed + deployed; production-ready)
+- **FINAL PRODUCTION REVIEW DONE + ALL FIXES LIVE (2026-06-14, commit `93bab02`):** 6-agent audit
+  (bot / dashboard / API-security / i18n / data-consistency / docs+cost). Bot + data-consistency = CLEAN.
+  Findings fixed + deployed: (1) localized ALL bot error/edge messages uz/ru/en + `formatAmount(lang)`
+  (happy path was already localized; this covers error/limit/voice/photo/receipt messages); (2) 44px touch
+  targets across transactions/categories/debts/accounts; (3) atomic magic-token consume — race fix
+  (`token.ts` updateMany); (4) proxy-protect accounts/analytics/debts; (5) README adds receipt-photo +
+  `/hisobot` + corrects the stale "per-message language auto-detect" → /start language picker. Verified each
+  agent finding before acting (e.g. skipped MoreClient logout = already ~48px; confirmed prod
+  STT=elevenlabs so README was accurate). Gates green (typecheck 0, 104 tests, `next build` OK). **Code-side
+  = production-ready / ideal.** Remaining = USER-ONLY: real Uzbek voice test on @oson_moliya_bot, provider
+  spend caps (Anthropic/Groq/ElevenLabs), demo video, rotate GitHub PAT.
 - **CURRENCY-ORIGINAL DEPLOYED + CODEX WORK VERIFIED (2026-06-14):** Codex committed+pushed `0a7b1b2`
   (feat(currency): preserve original transaction currency) + README/docs updates, but its Vercel token was
   invalid → deploy blocked. Opus re-reviewed: Codex work is GOOD — gates green (typecheck 0, 104 tests), the
