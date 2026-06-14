@@ -62,13 +62,15 @@ export default async function MorePage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
-  const displayCurrency = (user.displayCurrency ?? "ORIGINAL") as "ORIGINAL" | "UZS" | "USD" | "EUR" | "RUB";
+  // Treat any unknown/legacy value (e.g. "ORIGINAL") as "UZS"
+  const raw = user.displayCurrency ?? "UZS";
+  const displayCurrency = (["UZS", "USD", "EUR", "RUB"].includes(raw) ? raw : "UZS") as "UZS" | "USD" | "EUR" | "RUB";
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
-      <AddSheet lang={lang} />
+      <AddSheet lang={lang} mainCurrency={displayCurrency} />
 
       <main className="max-w-2xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
         {/* Page heading */}

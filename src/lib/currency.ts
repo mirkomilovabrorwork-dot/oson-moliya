@@ -17,7 +17,7 @@ export function convertFromUzs(
   currency: DisplayCurrency,
   rates: Rates
 ): number {
-  if (currency === "UZS" || currency === "ORIGINAL") return Number(amountUzs);
+  if (currency === "UZS") return Number(amountUzs);
   const rate = rates[currency as keyof Rates];
   if (!rate || rate <= 0) return Number(amountUzs);
   return Number(amountUzs) / rate;
@@ -26,13 +26,12 @@ export function convertFromUzs(
 /**
  * Per-transaction display helper.
  *
- * - displayCurrency === "ORIGINAL":
- *     If the row has originalCurrency (a foreign row), format using originalAmount + that
- *     currency's symbol (e.g. "$100", "₽5 000").
- *     Otherwise (a plain UZS row), format amountUzs as so'm — identical to formatMoney UZS.
- * - displayCurrency === "UZS" | "USD" | "EUR" | "RUB":
- *     Delegate to formatMoney (convert-all behavior, same as before).
+ * Always shows the transaction in its OWN currency:
+ *   - If tx.originalCurrency is set (a foreign row), format using originalAmount + that
+ *     currency's symbol (e.g. "€2.01", "₽5 000", "$100.00").
+ *   - Otherwise (a plain UZS row), format amountUzs as so'm — identical to formatMoney UZS.
  *
+ * The displayCurrency parameter is ignored here — rows always show their own currency.
  * Negative values: leading "−" (U+2212).
  */
 export function formatTxMoney(
@@ -41,43 +40,39 @@ export function formatTxMoney(
     originalCurrency?: string | null;
     originalAmount?: bigint | null;
   },
-  displayCurrency: DisplayCurrency,
-  rates: Rates,
+  _displayCurrency: DisplayCurrency,
+  _rates: Rates,
   lang: string
 ): string {
-  if (displayCurrency === "ORIGINAL") {
-    if (tx.originalCurrency && tx.originalAmount != null) {
-      // Foreign row — show in original currency
-      const oc = tx.originalCurrency.toUpperCase();
-      const amt = tx.originalAmount < 0n ? -tx.originalAmount : tx.originalAmount;
-      const negative = tx.originalAmount < 0n;
-      const sign = negative ? "−" : "";
-      if (oc === "USD" || oc === "EUR") {
-        const symbol = oc === "USD" ? "$" : "€";
-        const n = Number(amt);
-        const formatted = n.toFixed(2);
-        const [intPart, decPart] = formatted.split(".");
-        if (lang === "ru") {
-          const groupedInt = spaceGroup(parseInt(intPart, 10));
-          return sign + groupedInt + "," + decPart + " " + symbol;
-        }
-        const usInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        return sign + symbol + usInt + "." + decPart;
+  if (tx.originalCurrency && tx.originalAmount != null) {
+    // Foreign row — show in original currency
+    const oc = tx.originalCurrency.toUpperCase();
+    const amt = tx.originalAmount < 0n ? -tx.originalAmount : tx.originalAmount;
+    const negative = tx.originalAmount < 0n;
+    const sign = negative ? "−" : "";
+    if (oc === "USD" || oc === "EUR") {
+      const symbol = oc === "USD" ? "$" : "€";
+      const n = Number(amt);
+      const formatted = n.toFixed(2);
+      const [intPart, decPart] = formatted.split(".");
+      if (lang === "ru") {
+        const groupedInt = spaceGroup(parseInt(intPart, 10));
+        return sign + groupedInt + "," + decPart + " " + symbol;
       }
-      if (oc === "RUB") {
-        const rounded = Math.round(Number(amt));
-        const grouped = spaceGroup(rounded);
-        if (lang === "ru") return sign + grouped + " ₽";
-        return sign + "₽" + grouped;
-      }
-      // Generic fallback: number + currency code
-      return sign + spaceGroup(Number(amt)) + " " + oc;
+      const usInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return sign + symbol + usInt + "." + decPart;
     }
-    // Plain UZS row — format as so'm (same as formatMoney with UZS)
-    return formatMoney(tx.amountUzs, "UZS", rates, lang);
+    if (oc === "RUB") {
+      const rounded = Math.round(Number(amt));
+      const grouped = spaceGroup(rounded);
+      if (lang === "ru") return sign + grouped + " ₽";
+      return sign + "₽" + grouped;
+    }
+    // Generic fallback: number + currency code
+    return sign + spaceGroup(Number(amt)) + " " + oc;
   }
-  // Convert-all mode: delegate to formatMoney
-  return formatMoney(tx.amountUzs, displayCurrency, rates, lang);
+  // Plain UZS row — format as so'm
+  return formatMoney(tx.amountUzs, "UZS", _rates, lang);
 }
 
 /** Convert a foreign-currency float amount to UZS BigInt. */
@@ -170,4 +165,88 @@ export function formatMoney(
 
   // Fallback (should not reach)
   return sign + spaceGroup(converted) + " " + currency;
+}
+
+/**
+ * Format a native amount in its own currency symbol (for per-currency overview rows).
+ *
+ * nativeAmount: the amount already in `currency` units (not UZS).
+ * For UZS, pass the amountUzs directly.
+ */
+export function formatNative(
+  nativeAmount: number,
+  currency: string,
+  lang: string
+): string {
+  const oc = currency.toUpperCase();
+  const abs = Math.abs(nativeAmount);
+  const sign = nativeAmount < 0 ? "−" : "";
+
+  if (oc === "USD" || oc === "EUR") {
+    const symbol = oc === "USD" ? "$" : "€";
+    const formatted = abs.toFixed(2);
+    const [intPart, decPart] = formatted.split(".");
+    if (lang === "ru") {
+      const groupedInt = spaceGroup(parseInt(intPart, 10));
+      return sign + groupedInt + "," + decPart + " " + symbol;
+    }
+    const usInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return sign + symbol + usInt + "." + decPart;
+  }
+  if (oc === "RUB") {
+    const rounded = Math.round(abs);
+    const grouped = spaceGroup(rounded);
+    if (lang === "ru") return sign + grouped + " ₽";
+    return sign + "₽" + grouped;
+  }
+  // UZS
+  if (oc === "UZS") {
+    const parts: string[] = [];
+    let n = Math.round(abs);
+    if (n === 0) {
+      const label = lang === "ru" ? "сум" : "so'm";
+      return sign + "0 " + label;
+    }
+    while (n >= 1000) {
+      parts.unshift(String(n % 1000).padStart(3, "0"));
+      n = Math.floor(n / 1000);
+    }
+    parts.unshift(String(n));
+    const label = lang === "ru" ? "сум" : "so'm";
+    return sign + parts.join(" ") + " " + label;
+  }
+  return sign + spaceGroup(abs) + " " + oc;
+}
+
+/**
+ * Convert a native amount in currency C to the main/base currency.
+ *
+ * Math:
+ *   C → UZS:   nativeAmount * rates[C]
+ *   UZS → main: mainCurrency === "UZS" ? same; else divide by rates[main]
+ *
+ * For UZS amounts, pass currency = "UZS" and nativeAmount = amountUzs in number form.
+ */
+export function convertNativeToMain(
+  nativeAmount: number,
+  currency: string,
+  mainCurrency: DisplayCurrency,
+  rates: Rates
+): number {
+  const oc = currency.toUpperCase();
+
+  // Step 1: convert to UZS
+  let amountUzs: number;
+  if (oc === "UZS") {
+    amountUzs = nativeAmount;
+  } else {
+    const rate = rates[oc as keyof Rates];
+    amountUzs = rate && rate > 0 ? nativeAmount * rate : nativeAmount;
+  }
+
+  // Step 2: convert UZS to main
+  if (mainCurrency === "UZS") return amountUzs;
+  const mainRate = rates[mainCurrency as keyof Rates];
+  if (!mainRate || mainRate <= 0) return amountUzs;
+  return amountUzs / mainRate;
 }

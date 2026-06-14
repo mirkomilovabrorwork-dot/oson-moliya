@@ -6,8 +6,11 @@ import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { QuickAddForm } from "@/components/QuickAddForm";
 
+type SupportedCurrency = "UZS" | "USD" | "EUR" | "RUB";
+
 interface AddSheetProps {
   lang: LangCode;
+  mainCurrency?: SupportedCurrency;
 }
 
 interface CategoryRaw {
@@ -17,7 +20,7 @@ interface CategoryRaw {
   emoji: string | null;
 }
 
-export function AddSheet({ lang }: AddSheetProps) {
+export function AddSheet({ lang, mainCurrency = "UZS" }: AddSheetProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryRaw[] | null>(null);
@@ -139,6 +142,7 @@ export function AddSheet({ lang }: AddSheetProps) {
                   bare
                   lang={lang}
                   categories={categories}
+                  mainCurrency={mainCurrency}
                   onSuccess={() => {
                     close();
                     router.refresh();

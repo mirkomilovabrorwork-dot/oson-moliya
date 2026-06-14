@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 
+type SupportedCurrency = "UZS" | "USD" | "EUR" | "RUB";
+
 interface AccountOption {
   id: string;
   name: string;
@@ -14,14 +16,26 @@ interface QuickAddFormProps {
   lang: LangCode;
   categories: Array<{ id: string; name: string; type: string; emoji: string | null }>;
   onSuccess?: () => void;
+  /** Default main currency for the currency picker (from user settings). Defaults to UZS. */
+  mainCurrency?: SupportedCurrency;
   /** When true, renders without the outer card chrome (background/border/rounded/padding)
    *  and without the inner <h3> title. Use inside AddSheet which already provides a header. */
   bare?: boolean;
 }
 
-export function QuickAddForm({ lang, categories, onSuccess, bare = false }: QuickAddFormProps) {
+const CURRENCIES: SupportedCurrency[] = ["UZS", "USD", "EUR", "RUB"];
+
+const CURRENCY_LABELS: Record<SupportedCurrency, Record<LangCode, string>> = {
+  UZS: { uz: "So'm", ru: "Сум", en: "So'm" },
+  USD: { uz: "USD $", ru: "USD $", en: "USD $" },
+  EUR: { uz: "EUR €", ru: "EUR €", en: "EUR €" },
+  RUB: { uz: "RUB ₽", ru: "RUB ₽", en: "RUB ₽" },
+};
+
+export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS", bare = false }: QuickAddFormProps) {
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState<SupportedCurrency>(mainCurrency);
   const [categoryId, setCategoryId] = useState("");
   const [accountId, setAccountId] = useState("");
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -62,17 +76,30 @@ export function QuickAddForm({ lang, categories, onSuccess, bare = false }: Quic
     setLoading(true);
 
     try {
+      const cleanAmount = amount.replace(/[\s ,]/g, "");
+
+      // Build request body based on currency
+      const body: Record<string, unknown> = {
+        type,
+        categoryId: categoryId || undefined,
+        accountId: accountId || undefined,
+        note: note || undefined,
+        occurredAt: new Date(occurredAt + "T00:00:00+05:00").toISOString(),
+      };
+
+      if (currency === "UZS") {
+        // Legacy path: send amountUzs as integer string
+        body.amountUzs = cleanAmount;
+      } else {
+        // Multi-currency path: send nativeAmount + currency
+        body.nativeAmount = cleanAmount;
+        body.currency = currency;
+      }
+
       const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          amountUzs: amount.replace(/[\s ]/g, ""),
-          categoryId: categoryId || undefined,
-          accountId: accountId || undefined,
-          note: note || undefined,
-          occurredAt: new Date(occurredAt + "T00:00:00+05:00").toISOString(),
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -112,6 +139,13 @@ export function QuickAddForm({ lang, categories, onSuccess, bare = false }: Quic
   const formStyle = bare
     ? undefined
     : { background: "var(--surface)", border: "1px solid var(--border)" };
+
+  // Amount placeholder: show currency-appropriate hint
+  const amountPlaceholder = currency === "UZS"
+    ? "500 000"
+    : currency === "RUB"
+    ? "5 000"
+    : "100.00";
 
   return (
     <form
@@ -182,25 +216,54 @@ export function QuickAddForm({ lang, categories, onSuccess, bare = false }: Quic
         ))}
       </div>
 
-      {/* Amount */}
-      <div>
-        <label
-          className="block text-xs font-medium mb-1.5"
-          style={{ color: "var(--fg-muted)" }}
-        >
-          {t("form.amount", lang)}
-        </label>
-        <input
-          type="text"
-          inputMode="numeric"
-          required
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="500 000"
-          className={`${inputCls} tabular`}
-          style={inputStyle}
-        />
+      {/* Amount + Currency — side by side */}
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <label
+            className="block text-xs font-medium mb-1.5"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            {t("form.amount", lang)}
+          </label>
+          <input
+            type="text"
+            inputMode="decimal"
+            required
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={amountPlaceholder}
+            className={`${inputCls} tabular`}
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ minWidth: 100 }}>
+          <label
+            className="block text-xs font-medium mb-1.5"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            {t("form.currency", lang)}
+          </label>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value as SupportedCurrency)}
+            className={inputCls}
+            style={inputStyle}
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c} value={c}>
+                {CURRENCY_LABELS[c][lang]}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
+
+      {/* CBU note when foreign currency is selected */}
+      {currency !== "UZS" && (
+        <p className="text-xs -mt-2" style={{ color: "var(--fg-subtle)" }}>
+          {t("more.currency_cbu_note", lang)}
+        </p>
+      )}
 
       {/* Category */}
       <div>

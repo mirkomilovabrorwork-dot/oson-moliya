@@ -12,7 +12,8 @@ import { redirect } from "next/navigation";
 import type { BudgetDTO } from "@/lib/types";
 import { getRates } from "@/lib/rates";
 import type { DisplayCurrency } from "@/lib/rates";
-import { formatMoney as formatMoneyFn } from "@/lib/currency";
+import { formatMoney as formatMoneyFn, formatNative, convertNativeToMain } from "@/lib/currency";
+import type { Rates } from "@/lib/rates";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +37,11 @@ export default async function OverviewPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
-  const currency = (user.displayCurrency ?? "ORIGINAL") as DisplayCurrency;
+  // Treat any unknown/legacy value (e.g. "ORIGINAL") as "UZS"
+  const rawCurrency = user.displayCurrency ?? "UZS";
+  const currency = (["UZS", "USD", "EUR", "RUB"].includes(rawCurrency) ? rawCurrency : "UZS") as DisplayCurrency;
   const rates = await getRates();
-  // For aggregates/totals: ORIGINAL mode shows so'm (amountUzs is the common base)
-  const aggregateCurrency = currency === "ORIGINAL" ? "UZS" : currency;
-  const fmt = (val: bigint) => formatMoneyFn(val, aggregateCurrency, rates, lang);
+  const fmt = (val: bigint) => formatMoneyFn(val, currency, rates, lang);
   const overview = await getOverview(user.id, "this_month");
 
   const prisma = db as import("@prisma/client").PrismaClient;
@@ -111,6 +112,75 @@ export default async function OverviewPage() {
     }))
     .filter((d) => d.amount > 0);
 
+  // ── Per-currency breakdown for home overview ──────────────────────────────
+  // Fetch this-month transactions with originalCurrency so we can group by native currency.
+  const thisMonthTxs = await prisma.transaction.findMany({
+    where: {
+      userId: user.id,
+      deletedAt: null,
+      occurredAt: { gte: monthStart, lt: monthEnd },
+    },
+    select: {
+      type: true,
+      amountUzs: true,
+      originalCurrency: true,
+      originalAmount: true,
+    },
+  });
+
+  // Group: effectiveCurrency → { income, expense } in native units
+  // For UZS rows: native = amountUzs (BigInt). For foreign rows: native = originalAmount / 100.
+  interface CurrencyGroup {
+    income: number; // in native units (float)
+    expense: number; // in native units (float)
+  }
+  const currencyGroups = new Map<string, CurrencyGroup>();
+
+  for (const tx of thisMonthTxs) {
+    const cur = tx.originalCurrency ?? "UZS";
+    if (!currencyGroups.has(cur)) currencyGroups.set(cur, { income: 0, expense: 0 });
+    const grp = currencyGroups.get(cur)!;
+
+    let nativeAmt: number;
+    if (tx.originalCurrency && tx.originalAmount != null) {
+      // originalAmount is stored as Math.round(nativeFloat) — whole units
+      // (consistent with bot.ts and formatTxMoney convention)
+      nativeAmt = Number(tx.originalAmount);
+    } else {
+      nativeAmt = Number(tx.amountUzs);
+    }
+
+    if (tx.type === "income") {
+      grp.income += nativeAmt;
+    } else {
+      grp.expense += nativeAmt;
+    }
+  }
+
+  // Build sorted currency rows: UZS first, then others alphabetically
+  interface CurrencyRow {
+    currency: string;
+    netNative: number;  // income - expense in native units
+    netInMain: number;  // converted to main display currency
+  }
+  const currencyRows: CurrencyRow[] = [];
+  for (const [cur, grp] of currencyGroups.entries()) {
+    const netNative = grp.income - grp.expense;
+    const netInMain = convertNativeToMain(netNative, cur, currency, rates);
+    currencyRows.push({ currency: cur, netNative, netInMain });
+  }
+  currencyRows.sort((a, b) => {
+    if (a.currency === "UZS") return -1;
+    if (b.currency === "UZS") return 1;
+    return a.currency.localeCompare(b.currency);
+  });
+
+  // Grand total in main currency = sum of all netInMain
+  const grandTotalInMain = currencyRows.reduce((s, r) => s + r.netInMain, 0);
+  const showPerCurrency = currencyRows.length > 0;
+  // Only show CBU note when there are foreign currencies OR when main != UZS
+  const showCbuNote = currencyRows.some((r) => r.currency !== "UZS") || currency !== "UZS";
+
   const isEmpty = recent.length === 0;
 
   // Net sign/color
@@ -162,7 +232,7 @@ export default async function OverviewPage() {
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
-      <AddSheet lang={lang} />
+      <AddSheet lang={lang} mainCurrency={currency} />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
 
@@ -226,7 +296,87 @@ export default async function OverviewPage() {
           </div>
         </div>
 
-        {/* 2 — Expense overview card */}
+        {/* 2 — Per-currency breakdown (Revolut-style) */}
+        {showPerCurrency && (
+          <div
+            className="p-4 sm:p-5 rounded-[18px]"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          >
+            <p
+              className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-3"
+              style={{ color: "var(--fg-subtle)" }}
+            >
+              {t("home.per_currency_title", lang)}
+            </p>
+
+            <div className="space-y-3">
+              {currencyRows.map((row) => {
+                const isPositive = row.netNative >= 0;
+                const nativeFormatted = formatNative(Math.abs(row.netNative), row.currency, lang);
+                // Main-currency equivalent (only show if main != native currency)
+                const showEquiv = row.currency !== currency;
+                const mainAmt = Math.abs(row.netInMain);
+                const mainFormatted = formatMoneyFn(BigInt(Math.round(mainAmt)), currency, rates, lang);
+
+                return (
+                  <div key={row.currency} className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 text-xs font-bold"
+                        style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
+                      >
+                        {row.currency === "UZS" ? "S" : row.currency === "USD" ? "$" : row.currency === "EUR" ? "€" : row.currency === "RUB" ? "₽" : row.currency.slice(0, 1)}
+                      </span>
+                      <span className="text-sm font-medium" style={{ color: "var(--fg-muted)" }}>
+                        {row.currency}
+                      </span>
+                    </div>
+                    <div className="text-right min-w-0">
+                      <p
+                        className="text-sm font-semibold tabular"
+                        style={{ color: isPositive ? "var(--income)" : "var(--expense)" }}
+                      >
+                        {isPositive ? "+" : "−"}{nativeFormatted}
+                      </p>
+                      {showEquiv && (
+                        <p className="text-[11px] tabular" style={{ color: "var(--fg-subtle)" }}>
+                          ≈ {isPositive ? "+" : "−"}{mainFormatted}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Grand total row */}
+            {currencyRows.length > 1 && (
+              <div
+                className="mt-3 pt-3 flex items-center justify-between"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
+                <span className="text-sm font-bold" style={{ color: "var(--fg)" }}>
+                  {t("home.grand_total", lang)}
+                </span>
+                <span
+                  className="text-sm font-bold tabular"
+                  style={{ color: grandTotalInMain >= 0 ? "var(--income)" : "var(--expense)" }}
+                >
+                  {grandTotalInMain >= 0 ? "+" : "−"}{formatMoneyFn(BigInt(Math.round(Math.abs(grandTotalInMain))), currency, rates, lang)}
+                </span>
+              </div>
+            )}
+
+            {/* CBU rate note */}
+            {showCbuNote && (
+              <p className="text-[11px] mt-2" style={{ color: "var(--fg-subtle)", opacity: 0.8 }}>
+                {t("home.cbu_rate_note", lang)}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* 3 — Expense overview card */}
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)]">
           <div className="space-y-5">
         <div

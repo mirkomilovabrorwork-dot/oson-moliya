@@ -10,7 +10,7 @@ import { assertSameOrigin } from "@/lib/http/origin";
 import { db } from "@/lib/db";
 
 const Schema = z.object({
-  currency: z.enum(["ORIGINAL", "UZS", "USD", "EUR", "RUB"]),
+  currency: z.enum(["UZS", "USD", "EUR", "RUB"]),
 });
 
 export async function PUT(request: NextRequest) {
@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest) {
   const parsed = Schema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid currency. Allowed: ORIGINAL, UZS, USD, EUR, RUB" },
+      { error: "Invalid currency. Allowed: UZS, USD, EUR, RUB" },
       { status: 422 }
     );
   }

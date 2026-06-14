@@ -157,10 +157,10 @@ async function finalizeLog(
     const origStr = `${originalAmount} ${originalCurrency}`;
     const convNote =
       lang === "ru"
-        ? ` (конвертировано из ${origStr})`
+        ? ` (конвертировано из ${origStr}, ЦБ курс)`
         : lang === "en"
-        ? ` (converted from ${origStr})`
-        : ` (${origStr} dan konvertatsiya qilindi)`;
+        ? ` (converted from ${origStr}, CBU rate)`
+        : ` (${origStr} dan konvertatsiya qilindi, CBU kursi bo'yicha)`;
     confirmation = confirmation + convNote;
   }
 

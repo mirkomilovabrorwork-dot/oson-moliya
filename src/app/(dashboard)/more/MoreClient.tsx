@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 
-type DisplayCurrency = "ORIGINAL" | "UZS" | "USD" | "EUR" | "RUB";
+type DisplayCurrency = "UZS" | "USD" | "EUR" | "RUB";
 
 interface MoreClientProps {
   lang: LangCode;
@@ -92,8 +92,7 @@ const LANG_LABELS: Record<LangCode, string> = {
 
 /** Currency labels in three languages */
 const CURRENCY_LABELS: Record<DisplayCurrency, Record<LangCode, string>> = {
-  ORIGINAL: { uz: "Asl valyutada", ru: "В исходной валюте", en: "Original currency" },
-  UZS: { uz: "So'mda (UZS)", ru: "В сумах (UZS)", en: "In UZS (So'm)" },
+  UZS: { uz: "So'm (UZS)", ru: "Сум (UZS)", en: "So'm (UZS)" },
   USD: { uz: "Dollar (USD)", ru: "Доллар (USD)", en: "Dollar (USD)" },
   EUR: { uz: "Evro (EUR)", ru: "Евро (EUR)", en: "Euro (EUR)" },
   RUB: { uz: "Rubl (RUB)", ru: "Рубль (RUB)", en: "Ruble (RUB)" },
@@ -153,7 +152,7 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
   const rowClass =
     "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--surface-sunken)] focus-visible:outline-none";
 
-  const CURRENCIES: DisplayCurrency[] = ["ORIGINAL", "UZS", "USD", "EUR", "RUB"];
+  const CURRENCIES: DisplayCurrency[] = ["UZS", "USD", "EUR", "RUB"];
 
   return (
     <>
@@ -166,7 +165,7 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
           overflow: "hidden",
         }}
       >
-        {/* Asosiy valyuta (Currency) */}
+        {/* Bosh valyuta (Main currency) */}
         <div>
           <button
             type="button"
@@ -221,6 +220,9 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
                   </button>
                 ))}
               </div>
+              <p className="text-xs pt-1" style={{ color: "var(--fg-subtle)" }}>
+                {t("more.currency_cbu_note", lang)}
+              </p>
             </div>
           )}
         </div>

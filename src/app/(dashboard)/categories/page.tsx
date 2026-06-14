@@ -16,9 +16,9 @@ export default async function CategoriesPage() {
   if (!user) redirect("/login");
 
   const lang = await resolveLang(user.language);
-  const rawCurrency = (user.displayCurrency ?? "ORIGINAL") as DisplayCurrency;
-  // Categories/budgets show aggregates only — ORIGINAL maps to UZS
-  const currency: DisplayCurrency = rawCurrency === "ORIGINAL" ? "UZS" : rawCurrency;
+  // Treat any unknown/legacy value (e.g. "ORIGINAL") as "UZS"
+  const rawCurrency = user.displayCurrency ?? "UZS";
+  const currency: DisplayCurrency = (["UZS", "USD", "EUR", "RUB"].includes(rawCurrency) ? rawCurrency : "UZS") as DisplayCurrency;
   const rates: Rates = await getRates();
   const prisma = db as import("@prisma/client").PrismaClient;
 
@@ -63,7 +63,7 @@ export default async function CategoriesPage() {
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <TopNav lang={lang} />
       <BottomNav lang={lang} />
-      <AddSheet lang={lang} />
+      <AddSheet lang={lang} mainCurrency={currency} />
       <main className="max-w-2xl mx-auto px-4 sm:px-8 py-6 pb-28 space-y-5">
         <h1
           className="text-xs font-semibold uppercase tracking-wide pl-1"

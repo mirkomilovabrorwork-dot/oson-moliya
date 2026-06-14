@@ -7,6 +7,8 @@ import { serializeBigInt } from "@/lib/serialize";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { assertSameOrigin } from "@/lib/http/origin";
+import { getRates } from "@/lib/rates";
+import { convertToUzs } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -130,15 +132,32 @@ export async function GET(request: NextRequest): Promise<Response> {
   return Response.json(serializeBigInt(txs));
 }
 
+// Native amount schema for multi-currency quick-add: positive integer or decimal string.
+const NativeAmountSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") return value.replace(/\s/g, "");
+    if (typeof value === "number") return String(value);
+    return value;
+  },
+  z.string().regex(/^\d+(\.\d+)?$/)
+);
+
 const CreateTransactionSchema = z.object({
   type: z.enum(["income", "expense"]),
-  amountUzs: AmountUzsSchema,
+  // amountUzs is used when currency is UZS (legacy path)
+  amountUzs: AmountUzsSchema.optional(),
+  // nativeAmount + currency: used for multi-currency quick-add
+  nativeAmount: NativeAmountSchema.optional(),
+  currency: z.enum(["UZS", "USD", "EUR", "RUB"]).optional(),
   categoryId: z.string().optional().nullable(),
   categoryName: z.string().optional().nullable(),
   note: z.string().optional().nullable(),
   occurredAt: z.string().optional().nullable(),
   accountId: z.string().optional().nullable(),
-});
+}).refine(
+  (d) => d.amountUzs != null || d.nativeAmount != null,
+  { message: "Either amountUzs or nativeAmount is required" }
+);
 
 export async function POST(request: NextRequest): Promise<Response> {
   const originError = assertSameOrigin(request);
@@ -167,6 +186,37 @@ export async function POST(request: NextRequest): Promise<Response> {
   const data = parsed.data;
   const txType = data.type === "income" ? TxType.income : TxType.expense;
   const prisma = db as import("@prisma/client").PrismaClient;
+
+  // Resolve amountUzs + originalCurrency/originalAmount from multi-currency input
+  let resolvedAmountUzs: bigint;
+  let resolvedOriginalCurrency: string | null = null;
+  let resolvedOriginalAmount: bigint | null = null;
+
+  if (data.nativeAmount != null && data.currency && data.currency !== "UZS") {
+    // Multi-currency path: fetch live CBU rates, convert to UZS, store original
+    const nativeFloat = parseFloat(data.nativeAmount);
+    if (!isFinite(nativeFloat) || nativeFloat <= 0) {
+      return Response.json({ error: "Invalid nativeAmount" }, { status: 422 });
+    }
+    const rates = await getRates();
+    resolvedAmountUzs = convertToUzs(nativeFloat, data.currency, rates);
+    resolvedOriginalCurrency = data.currency;
+    // Store original amount as the native amount rounded to nearest integer
+    // (consistent with bot.ts convention: BigInt(Math.round(nativeFloat)))
+    resolvedOriginalAmount = BigInt(Math.round(nativeFloat));
+  } else if (data.nativeAmount != null && (!data.currency || data.currency === "UZS")) {
+    // Native UZS path via nativeAmount
+    const nativeFloat = parseFloat(data.nativeAmount);
+    if (!isFinite(nativeFloat) || nativeFloat <= 0) {
+      return Response.json({ error: "Invalid nativeAmount" }, { status: 422 });
+    }
+    resolvedAmountUzs = BigInt(Math.round(nativeFloat));
+  } else if (data.amountUzs != null) {
+    // Legacy path: amountUzs already in UZS
+    resolvedAmountUzs = data.amountUzs;
+  } else {
+    return Response.json({ error: "Amount required" }, { status: 422 });
+  }
 
   let categoryId: string | null = data.categoryId ?? null;
   if (categoryId) {
@@ -204,7 +254,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     categoryId,
     accountId: resolvedAccountId,
     type: txType,
-    amountUzs: data.amountUzs,
+    amountUzs: resolvedAmountUzs,
+    originalCurrency: resolvedOriginalCurrency,
+    originalAmount: resolvedOriginalAmount,
     note: data.note ?? null,
     occurredAt: data.occurredAt ? new Date(data.occurredAt) : new Date(),
     source: "dashboard",

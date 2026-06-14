@@ -83,12 +83,10 @@ interface EditState {
 
 export function TransactionsClient({ transactions: initial, categories, lang, currency, rates }: Props) {
   const router = useRouter();
-  // formatMoney: for aggregated totals (always uses amountUzs, converts to chosen currency)
-  // When displayCurrency is ORIGINAL, totals are shown in so'm (UZS is the common base)
-  const totalsCurrency = currency === "ORIGINAL" ? "UZS" : currency;
+  // formatMoney: for aggregated totals (always uses amountUzs, converts to chosen main currency)
   const formatMoney = (s: string) =>
-    formatMoneyFn(BigInt(Math.round(Number(s))), totalsCurrency, rates, lang);
-  // formatTxMoney: for individual transaction rows (respects ORIGINAL mode)
+    formatMoneyFn(BigInt(Math.round(Number(s))), currency, rates, lang);
+  // formatTxMoney: for individual transaction rows — always shows the row's own currency
   const formatTxMoney = (tx: TxRow) =>
     formatTxMoneyFn(
       {

@@ -38,7 +38,7 @@ model User {
   firstName       String?
   username        String?
   language        String   @default("uz")
-  displayCurrency String   @default("ORIGINAL")
+  displayCurrency String   @default("UZS")
   createdAt       DateTime @default(now())
 
   transactions  Transaction[]
