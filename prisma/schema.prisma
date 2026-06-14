@@ -16,6 +16,22 @@ enum TxType {
   expense
 }
 
+enum DebtDirection {
+  given
+  taken
+}
+
+enum DebtStatus {
+  open
+  settled
+}
+
+enum AccountType {
+  cash
+  card
+  other
+}
+
 model User {
   id          String   @id @default(cuid())
   telegramId  BigInt   @unique
@@ -30,6 +46,8 @@ model User {
   pendingAction PendingAction?
   magicTokens   MagicToken[]
   sessions      Session[]
+  debts         Debt[]
+  accounts      Account[]
 }
 
 model Category {
@@ -54,6 +72,8 @@ model Transaction {
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  accountId  String?
+  account    Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
   type       TxType
   amountUzs  BigInt
   note       String?
@@ -65,6 +85,7 @@ model Transaction {
   @@index([userId, occurredAt])
   @@index([userId, type, occurredAt])
   @@index([userId, categoryId, occurredAt])
+  @@index([userId, accountId])
 }
 
 model Budget {
@@ -106,6 +127,36 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash String   @unique
   expiresAt DateTime
+
+  @@index([userId])
+}
+
+model Debt {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  counterparty String
+  amountUzs    BigInt
+  direction    DebtDirection
+  status       DebtStatus    @default(open)
+  note         String?
+  occurredAt   DateTime
+  settledAt    DateTime?
+  createdAt    DateTime      @default(now())
+
+  @@index([userId, status])
+}
+
+model Account {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  type              AccountType   @default(cash)
+  initialBalanceUzs BigInt        @default(0)
+  createdAt         DateTime      @default(now())
+
+  transactions Transaction[]
 
   @@index([userId])
 }
