@@ -373,7 +373,7 @@ export default async function OverviewPage() {
               { label: t("home.month_income", lang), val: overview.income, color: "var(--income)" },
               { label: t("home.month_expense", lang), val: overview.expense, color: "var(--expense)" },
               {
-                label: t("home.month_net", lang),
+                label: overview.income >= overview.expense ? t("analytics.net_positive", lang) : t("analytics.net_negative", lang),
                 val: overview.income >= overview.expense ? overview.income - overview.expense : overview.expense - overview.income,
                 color: overview.income >= overview.expense ? "var(--income)" : "var(--expense)",
               },
