@@ -279,8 +279,8 @@ export default async function OverviewPage() {
   // ── Diqqat card state ──────────────────────────────────────────────────────
   // State (a): one or more categories are OVER budget this month
   const overBudgetItems = budgetDTOs.filter((b) => BigInt(b.spentUzs) > BigInt(b.limitUzs));
-  // State (b): budgets exist but none are over — no card; OR no budgets at all → nudge
-  const noBudgetSet = budgets.length === 0;
+  // No "set a budget" nudge — the amber Diqqat card shows ONLY for genuine over-budget
+  // alerts, so it never lingers on the Home screen when there is nothing to act on.
 
   // This-month secondary context line
   const monthIncomeStr = fmt(overview.income);
@@ -324,7 +324,7 @@ export default async function OverviewPage() {
           </p>
         </div>
 
-        {/* 1b — Diqqat card: amber attention (over budget OR no budget set) */}
+        {/* 1b — Diqqat card: amber attention — ONLY when a category is over budget */}
         {overBudgetItems.length > 0 ? (
           <div
             className="p-4 sm:p-5 rounded-[var(--radius-lg)]"
@@ -366,44 +366,6 @@ export default async function OverviewPage() {
                     );
                   })}
                 </ul>
-              </div>
-            </div>
-          </div>
-        ) : noBudgetSet ? (
-          <div
-            className="p-4 sm:p-5 rounded-[var(--radius-lg)]"
-            style={{
-              background: "var(--warning-wash)",
-              border: "1px solid var(--warning)",
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            <div className="flex items-start gap-3">
-              {/* Amber sparkle / next-step icon */}
-              <span
-                className="shrink-0 mt-0.5 w-8 h-8 rounded-[10px] flex items-center justify-center"
-                style={{ background: "var(--warning)", color: "var(--warning-fg)" }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 8v4" />
-                  <path d="M12 16h.01" />
-                </svg>
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold mb-1" style={{ color: "var(--warning)" }}>
-                  {t("home.diqqat.title", lang)}
-                </p>
-                <p className="text-xs leading-relaxed mb-2" style={{ color: "var(--fg)" }}>
-                  {t("home.diqqat.no_budget.body", lang)}
-                </p>
-                <Link
-                  href="/categories"
-                  className="text-xs font-semibold underline underline-offset-2"
-                  style={{ color: "var(--warning)" }}
-                >
-                  {t("home.diqqat.no_budget.cta", lang)} &rarr;
-                </Link>
               </div>
             </div>
           </div>
