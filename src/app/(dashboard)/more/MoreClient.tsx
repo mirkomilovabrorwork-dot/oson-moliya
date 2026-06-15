@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { LangSwitcher } from "@/components/LangSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import type { LangCode } from "@/lib/i18n/translate";
@@ -48,6 +49,16 @@ function IconLanguage() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
+
+function IconConverter() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      <path d="M7 9l-3 3 3 3M17 9l3 3-3 3" />
     </svg>
   );
 }
@@ -226,6 +237,30 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
               </p>
             </div>
           )}
+        </div>
+
+        {/* Valyuta kursi (Converter) */}
+        <div style={{ borderTop: "1px solid var(--border)" }}>
+          <Link
+            href="/converter"
+            className={rowClass}
+            style={{ minHeight: 56, display: "flex", textDecoration: "none" }}
+          >
+            <IconTile bg="var(--surface-sunken)" color="var(--fg-muted)">
+              <IconConverter />
+            </IconTile>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium" style={{ color: "var(--fg)" }}>
+                {t("more.converter", lang)}
+              </div>
+              <div className="text-xs" style={{ color: "var(--fg-subtle)" }}>
+                {t("more.converter_sub", lang)}
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)", flexShrink: 0 }}>
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </Link>
         </div>
 
         {/* Til (Language) */}

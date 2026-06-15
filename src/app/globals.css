@@ -6,20 +6,21 @@
  */
 
 :root {
-  --bg: #eef4ec;
-  --bg-ambient: radial-gradient(circle at 50% -8%, rgba(193, 240, 211, .85) 0, rgba(238, 244, 236, 0) 32rem), linear-gradient(180deg, #f3f8f0 0%, #e9f1e8 100%);
+  /* Warm cream canvas — pixel-read from the reference Ramadan Mini-App */
+  --bg: #f5f1e8;
+  --bg-ambient: linear-gradient(180deg, #f7f3eb 0%, #f1ecdf 100%);
   --surface: #ffffff;
-  --surface-elevated: rgba(255, 255, 255, .94);
-  --surface-sunken: #eef6f0;
-  --surface-hover: #f2f8f3;
+  --surface-elevated: rgba(255, 255, 255, .96);
+  --surface-sunken: #efeae0;
+  --surface-hover: #f1ece3;
 
   --fg: #15201c;
   --fg-muted: #65746d;
   --fg-subtle: #98a49e;
   --fg-on-accent: #ffffff;
 
-  --border: #e2e9df;
-  --border-strong: #cbd8d0;
+  --border: #eae3d7;
+  --border-strong: #d9d1c3;
 
   --accent: #0e663c;
   --accent-hover: #0a5332;

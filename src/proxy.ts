@@ -30,7 +30,8 @@ export function proxy(request: NextRequest): NextResponse {
     pathname === "/" ||
     pathname.startsWith("/transactions") ||
     pathname.startsWith("/analytics") ||
-    pathname.startsWith("/categories");
+    pathname.startsWith("/categories") ||
+    pathname.startsWith("/converter");
 
   if (isDashboardPath && !hasSessionCookie(request)) {
     return NextResponse.redirect(new URL("/login", request.url));
