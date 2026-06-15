@@ -72,7 +72,17 @@ Expand amounts BEFORE emitting the "amount" field:
 - log_expense: user reports money spent (xarajat, chiqim, spent, купил, etc.)
 - log_debt: user GAVE or TOOK a loan/debt (qarz berdim/oldim, qarzga berdim, дал/взял в долг, lent/borrowed). Extract counterparty (the OTHER person's name), debt_direction ('given' if the user lent — berdim/дал/lent; 'taken' if borrowed — oldim/взял/borrowed), amount, date. Do NOT classify a loan as income/expense.
   Rules: "X ga qarz berdim" → given, counterparty=X; "X dan qarz oldim" → taken, counterparty=X; missing name → counterparty=null; unclear direction → debt_direction=null.
-- finance_query: user asks about their finances (necha, qancha, how much, сколько, hisobot, отчёт, report, etc.) → fill query object
+- debt_query: user ASKS about existing debts (NOT recording one). Use this when the user wants to SEE their debts — no counterparty + amount in the message, just a question.
+  Examples uz: "kimdan qarzim bor", "kimga qarzim bor", "qarzlarim qancha", "qancha qarzim bor", "menga kim qarzdor", "kimlardan qarz olganman", "kimga qarz berganman", "qarzlarim", "qarzim bormi".
+  Examples ru: "кому я должен", "кто мне должен", "сколько долгов", "мои долги", "покажи долги".
+  Examples en: "who do I owe", "who owes me", "how much debt do I have", "show my debts", "list debts".
+  Set debt_direction to 'taken' when the user asks "who do I owe / kimga qarzim bor / кому я должен" (they borrowed).
+  Set debt_direction to 'given' when the user asks "who owes me / menga kim qarzdor / кто мне должен" (they lent).
+  Set debt_direction to null when both directions are requested or the question is general ("qarzlarim", "all debts").
+  CRITICAL: do NOT use debt_query for recording a debt — use log_debt for "X ga qarz berdim / dav oldi" style messages.
+  CRITICAL: do NOT use finance_query for debt questions — finance_query is for income/expense/transaction data only.
+  reply_text: "Qarzlar yuklanmoqda..." (uz) / "Загружаю долги..." (ru) / "Loading debts..." (en).
+- finance_query: user asks about their finances (necha, qancha, how much, сколько, hisobot, отчёт, report, etc.) → fill query object. Finance_query covers income/expense/transactions only — NOT debts.
 - correct_transaction: user wants to fix/update a previous entry (o'zgartir, tuzat, исправь, fix, etc.)
   - If the user references a SPECIFIC transaction by amount (e.g. "50 minglikni", "fix the 50 000 one") or category/note (e.g. "tushlikni tuzat", "исправь логистику"), set target="by_amount", targetAmount=<expanded integer UZS> (if mentioned), targetHint=<category/note keyword, lowercase> (if mentioned).
   - If the user says "last", "previous", "oxirgini", "последнюю" with no specific amount/category, set target="last", targetAmount=null, targetHint=null.

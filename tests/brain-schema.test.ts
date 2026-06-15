@@ -326,6 +326,72 @@ describe("RecordIntentSchema — clarify_needed", () => {
   });
 });
 
+// ── debt_query ────────────────────────────────────────────────────────────────
+
+describe("RecordIntentSchema — debt_query", () => {
+  it("accepts debt_query without direction (all debts)", () => {
+    const data = parseOk({
+      intent: "debt_query",
+      language: "uz",
+      confidence: 0.95,
+      reply_text: "Qarzlar yuklanmoqda...",
+      missing_fields: [],
+    });
+    expect(data?.intent).toBe("debt_query");
+    expect(data?.debt_direction).toBeUndefined();
+  });
+
+  it("accepts debt_query with debt_direction=taken (who do I owe)", () => {
+    const data = parseOk({
+      intent: "debt_query",
+      language: "uz",
+      confidence: 0.92,
+      reply_text: "Qarzlar yuklanmoqda...",
+      missing_fields: [],
+      debt_direction: "taken",
+    });
+    expect(data?.intent).toBe("debt_query");
+    expect(data?.debt_direction).toBe("taken");
+  });
+
+  it("accepts debt_query with debt_direction=given (who owes me)", () => {
+    const data = parseOk({
+      intent: "debt_query",
+      language: "ru",
+      confidence: 0.9,
+      reply_text: "Загружаю долги...",
+      missing_fields: [],
+      debt_direction: "given",
+    });
+    expect(data?.intent).toBe("debt_query");
+    expect(data?.debt_direction).toBe("given");
+  });
+
+  it("accepts debt_query with null direction explicitly set", () => {
+    const data = parseOk({
+      intent: "debt_query",
+      language: "en",
+      confidence: 0.88,
+      reply_text: "Loading debts...",
+      missing_fields: [],
+      debt_direction: null,
+    });
+    expect(data?.intent).toBe("debt_query");
+    expect(data?.debt_direction).toBeNull();
+  });
+
+  it("rejects debt_query with invalid debt_direction", () => {
+    parseFail({
+      intent: "debt_query",
+      language: "uz",
+      confidence: 0.9,
+      reply_text: "...",
+      missing_fields: [],
+      debt_direction: "both", // not in enum
+    });
+  });
+});
+
 // ── log_income / log_expense ──────────────────────────────────────────────────
 
 describe("RecordIntentSchema — log_income / log_expense", () => {

@@ -1,5 +1,5 @@
 import { Bot } from "grammy";
-import { TxType, DebtDirection } from "@prisma/client";
+import { TxType, DebtDirection, DebtStatus } from "@prisma/client";
 import { issueLoginCode, issueMagicToken } from "../auth/token";
 import { getEnv } from "../env";
 import { db } from "../db";
@@ -18,7 +18,7 @@ import {
 } from "../services/pending";
 import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, formatAmount, getBotLabels, buildPersistentKeyboard, getPersistentKeyboardLabels, type InlineKeyboardButton } from "./reply";
 import { checkExpenseBudgetBreach } from "../services/budgets";
-import { createDebt } from "../services/debts";
+import { createDebt, listDebts, getDebtTotals } from "../services/debts";
 import { getSttProvider } from "../stt";
 import { downloadTelegramFile } from "./download";
 import { runAggregation } from "../services/analytics";
@@ -769,6 +769,105 @@ async function handleMessage(
               : "Javobni yozing",
         },
       });
+    }
+    return;
+  }
+
+  // ── debt_query ────────────────────────────────────────────────────────────
+  if (intent.intent === "debt_query") {
+    try {
+      const intentAny = intent as Record<string, unknown>;
+      const dirFilter = intentAny.debt_direction as "given" | "taken" | null | undefined ?? null;
+
+      // Fetch totals + open debts (optionally filtered by direction)
+      const totals = await getDebtTotals(user.id);
+      const debtFilter: { direction?: DebtDirection; status?: DebtStatus } = {
+        status: DebtStatus.open,
+      };
+      if (dirFilter === "given") debtFilter.direction = DebtDirection.given;
+      else if (dirFilter === "taken") debtFilter.direction = DebtDirection.taken;
+
+      const openDebts = await listDebts(user.id, debtFilter);
+
+      // Cap list at 10 items
+      const MAX_LIST = 10;
+      const shown = openDebts.slice(0, MAX_LIST);
+      const extra = openDebts.length - shown.length;
+
+      // ── Build localized reply ──────────────────────────────────────────────
+      const lines: string[] = [];
+
+      if (lang === "ru") {
+        // Totals section
+        if (dirFilter === null || dirFilter === "taken") {
+          lines.push(`💸 Вы должны (взяли): ${formatAmount(totals.takenOpen, lang)}`);
+        }
+        if (dirFilter === null || dirFilter === "given") {
+          lines.push(`💰 Вам должны (дали): ${formatAmount(totals.givenOpen, lang)}`);
+        }
+
+        if (openDebts.length === 0) {
+          lines.push("\nОткрытых долгов нет.");
+        } else {
+          lines.push("");
+          for (const d of shown) {
+            const arrow = d.direction === DebtDirection.given ? "↗️" : "↙️";
+            const dir = d.direction === DebtDirection.given ? "вы дали" : "вы взяли";
+            lines.push(`${arrow} ${d.counterparty} — ${formatAmount(d.amountUzs, lang)} (${dir})`);
+          }
+          if (extra > 0) lines.push(`...и ещё ${extra}`);
+        }
+      } else if (lang === "en") {
+        if (dirFilter === null || dirFilter === "taken") {
+          lines.push(`💸 You owe (borrowed): ${formatAmount(totals.takenOpen, lang)}`);
+        }
+        if (dirFilter === null || dirFilter === "given") {
+          lines.push(`💰 Owed to you (lent): ${formatAmount(totals.givenOpen, lang)}`);
+        }
+
+        if (openDebts.length === 0) {
+          lines.push("\nNo open debts.");
+        } else {
+          lines.push("");
+          for (const d of shown) {
+            const arrow = d.direction === DebtDirection.given ? "↗️" : "↙️";
+            const dir = d.direction === DebtDirection.given ? "you lent" : "you borrowed";
+            lines.push(`${arrow} ${d.counterparty} — ${formatAmount(d.amountUzs, lang)} (${dir})`);
+          }
+          if (extra > 0) lines.push(`...and ${extra} more`);
+        }
+      } else {
+        // uz (default)
+        if (dirFilter === null || dirFilter === "taken") {
+          lines.push(`💸 Sizning qarzingiz (olgan): ${formatAmount(totals.takenOpen, lang)}`);
+        }
+        if (dirFilter === null || dirFilter === "given") {
+          lines.push(`💰 Sizga qarzdorlar (bergan): ${formatAmount(totals.givenOpen, lang)}`);
+        }
+
+        if (openDebts.length === 0) {
+          lines.push("\nHozircha ochiq qarz yo'q.");
+        } else {
+          lines.push("");
+          for (const d of shown) {
+            const arrow = d.direction === DebtDirection.given ? "↗️" : "↙️";
+            const dir = d.direction === DebtDirection.given ? "siz berdingiz" : "siz oldingiz";
+            lines.push(`${arrow} ${d.counterparty} — ${formatAmount(d.amountUzs, lang)} (${dir})`);
+          }
+          if (extra > 0) lines.push(`...va yana ${extra} ta`);
+        }
+      }
+
+      await ctx.reply(lines.join("\n"));
+    } catch (err) {
+      console.error("Debt query error:", err);
+      const errMsg =
+        lang === "ru"
+          ? "Не удалось загрузить долги. Попробуйте ещё раз."
+          : lang === "en"
+          ? "Could not load debts. Please try again."
+          : "Qarzlarni yuklab bo'lmadi. Qaytadan urinib ko'ring.";
+      await ctx.reply(errMsg);
     }
     return;
   }
