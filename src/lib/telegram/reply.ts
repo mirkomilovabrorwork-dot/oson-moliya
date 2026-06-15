@@ -151,25 +151,22 @@ export function getBotLabels(lang: string): {
 }
 
 /**
- * Build a persistent reply keyboard with 3 buttons:
- *  - 📊 Hisobot  (text button → triggers report path)
- *  - 📈 Grafiklar (web_app button → opens dashboard charts)
- *  - ❓ Yordam   (text button → triggers help)
+ * Build a persistent reply keyboard with 3 text buttons:
+ *  - 📊 Hisobot  → triggers monthly report
+ *  - 🌐 Til      → triggers language picker
+ *  - ❓ Yordam   → triggers help
  *
  * Labels are localized uz/ru/en.
  * Returns a grammY Keyboard object (.resized().persistent()).
- * If appUrl is not https, the web_app button falls back to a plain text button.
+ * The dashboard is now reached via the Moliyachi MENU button (web_app),
+ * so no appUrl / web_app button is needed here.
+ * The appUrl parameter is kept for signature compatibility but unused.
  */
-export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", appUrl: string): Keyboard {
+export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", _appUrl?: string): Keyboard {
   const labels = getPersistentKeyboardLabels(lang);
   const kb = new Keyboard();
   kb.text(labels.report);
-  if (appUrl.startsWith("https://")) {
-    kb.webApp(labels.charts, appUrl);
-  } else {
-    // localhost: can't use web_app; add a plain text placeholder
-    kb.text(labels.charts);
-  }
+  kb.text(labels.lang);
   kb.text(labels.help);
   return kb.resized().persistent();
 }
@@ -177,24 +174,24 @@ export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", appUrl: string
 /** Localized labels for the persistent reply keyboard buttons */
 export function getPersistentKeyboardLabels(lang: "uz" | "ru" | "en"): {
   report: string;
-  charts: string;
+  lang: string;
   help: string;
 } {
   if (lang === "ru") {
-    return { report: "📊 Отчёт", charts: "📈 Графики", help: "❓ Помощь" };
+    return { report: "📊 Отчёт", lang: "🌐 Язык", help: "❓ Помощь" };
   }
   if (lang === "en") {
-    return { report: "📊 Report", charts: "📈 Charts", help: "❓ Help" };
+    return { report: "📊 Report", lang: "🌐 Language", help: "❓ Help" };
   }
-  return { report: "📊 Hisobot", charts: "📈 Grafiklar", help: "❓ Yordam" };
+  return { report: "📊 Hisobot", lang: "🌐 Til", help: "❓ Yordam" };
 }
 
 /**
  * Build the Dashboard reply options.
  *
  * Previously returned an inline "Moliyachi" web_app button attached to replies.
- * Now the persistent reply keyboard handles navigation — this function only
- * returns a magic-link fallback text for localhost (http) environments.
+ * Now the Moliyachi MENU button (set via setup-bot.ts) handles dashboard navigation.
+ * This function only returns a magic-link fallback text for localhost (http) environments.
  */
 export async function dashboardReplyOptions(
   userId: string

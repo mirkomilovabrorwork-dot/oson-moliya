@@ -341,6 +341,7 @@ async function handleMessage(
   // regardless of which language was active when the keyboard was rendered.
   const REPORT_BTNS = ["📊 Hisobot", "📊 Отчёт", "📊 Report"];
   const HELP_BTNS = ["❓ Yordam", "❓ Помощь", "❓ Help"];
+  const LANG_BTNS = ["🌐 Til", "🌐 Язык", "🌐 Language"];
 
   if (REPORT_BTNS.includes(text)) {
     const btnLang = (user.language as "uz" | "ru" | "en") ?? "uz";
@@ -367,6 +368,22 @@ async function handleMessage(
   if (HELP_BTNS.includes(text)) {
     const helpLang = (user.language as "uz" | "ru" | "en") ?? "uz";
     await ctx.reply(helpText(helpLang));
+    return;
+  }
+
+  if (LANG_BTNS.includes(text)) {
+    // Trigger the same language-picker as /til / /language command
+    await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:", {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🇺🇿 O'zbekcha", callback_data: "lang:uz" },
+            { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+            { text: "🇬🇧 English", callback_data: "lang:en" },
+          ],
+        ],
+      },
+    });
     return;
   }
 
@@ -1025,12 +1042,12 @@ export function createBot(): Bot {
   // Localized welcome shown after the user picks a language.
   const welcomeText = (l: "uz" | "ru" | "en", name: string): string => {
     if (l === "ru") {
-      return `Привет, ${name}! 👋\n\nЯ сам запоминаю, сколько ПРИШЛО и сколько УШЛО.\n\n👉 Попробуйте прямо сейчас — напишите или 🎤 скажите:\n• "20 тысяч хлеб"\n• "500 тысяч от продажи"\n\nГотово — я запишу сам. ✅\n\nКнопки внизу 📊 Отчёт и 📈 Графики — для ПРОСМОТРА данных.`;
+      return `Привет, ${name}! 👋\n\nЯ сам запоминаю, сколько ПРИШЛО и сколько УШЛО.\n\n👉 Попробуйте прямо сейчас — напишите или 🎤 скажите:\n• "20 тысяч хлеб"\n• "500 тысяч от продажи"\n\nГотово — я запишу сам. ✅\n\nКнопки внизу: 📊 Отчёт · 🌐 Язык · ❓ Помощь.\n📈 Графики и подробная статистика — кнопка 📊 Молияч в нижнем меню.`;
     }
     if (l === "en") {
-      return `Hi, ${name}! 👋\n\nI keep track of everything coming IN and going OUT.\n\n👉 Try it now — just type or 🎤 say:\n• "20 thousand bread"\n• "500 thousand from sales"\n\nDone — I'll log it myself. ✅\n\nThe buttons below 📊 Report and 📈 Charts are for VIEWING your data.`;
+      return `Hi, ${name}! 👋\n\nI keep track of everything coming IN and going OUT.\n\n👉 Try it now — just type or 🎤 say:\n• "20 thousand bread"\n• "500 thousand from sales"\n\nDone — I'll log it myself. ✅\n\nButtons below: 📊 Report · 🌐 Language · ❓ Help.\nFor charts and full stats — tap the 📊 Moliyachi button in the menu.`;
     }
-    return `Salom, ${name}! 👋\n\nMen pulingiz qancha KIRGAN, qancha CHIQQANINI o'zim eslab boraman.\n\n👉 Hoziroq sinab ko'ring — menga yozing yoki 🎤 ayting:\n• "20 ming non"\n• "500 ming sotuvdan"\n\nBo'ldi — o'zim qayd qilaman. ✅\n\nPastdagi 📊 Hisobot va 📈 Grafiklar tugmalari — hisobotlarni KO'RISH uchun.`;
+    return `Salom, ${name}! 👋\n\nMen pulingiz qancha KIRGAN, qancha CHIQQANINI o'zim eslab boraman.\n\n👉 Hoziroq sinab ko'ring — menga yozing yoki 🎤 ayting:\n• "20 ming non"\n• "500 ming sotuvdan"\n\nBo'ldi — o'zim qayd qilaman. ✅\n\nPastdagi tugmalar: 📊 Hisobot · 🌐 Til · ❓ Yordam.\n📈 Grafik va batafsil ko'rish uchun — menyudagi 📊 Moliyachi tugmasi.`;
   };
 
   const loginAccessText = (
@@ -1040,16 +1057,16 @@ export function createBot(): Bot {
   ): string => {
     if (l === "ru") {
       return hasMiniAppButton
-        ? `Нажмите 📈 Графики внизу, чтобы открыть панель прямо в Telegram.\n\nЕсли сайт просит код — введите: ${code} (действует 10 минут).`
+        ? `Нажмите кнопку 📊 Молияч в нижнем меню, чтобы открыть панель прямо в Telegram.\n\nЕсли сайт просит код — введите: ${code} (действует 10 минут).`
         : `Ссылка для входа: ${code}\n\nОткройте панель по ссылке ниже. Код действует 10 минут.`;
     }
     if (l === "en") {
       return hasMiniAppButton
-        ? `Tap 📈 Charts below to open the dashboard right inside Telegram.\n\nIf the site asks for a code — enter: ${code} (valid 10 minutes).`
+        ? `Tap the 📊 Moliyachi button in the menu to open the dashboard right inside Telegram.\n\nIf the site asks for a code — enter: ${code} (valid 10 minutes).`
         : `Login link: ${code}\n\nOpen the dashboard from the link below. Valid for 10 minutes.`;
     }
     return hasMiniAppButton
-      ? `Pastdagi 📈 Grafiklar tugmasini bosing — Telegram ichida dashboardni ochasiz.\n\nAgar kod so'ralsa — kiriting: ${code} (10 daqiqa amal qiladi).`
+      ? `Menyudagi 📊 Moliyachi tugmasini bosing — Telegram ichida dashboardni ochasiz.\n\nAgar kod so'ralsa — kiriting: ${code} (10 daqiqa amal qiladi).`
       : `Kirish havolasi: ${code}\n\nQuyidagi havola orqali panelni oching. 10 daqiqa amal qiladi.`;
   };
 
