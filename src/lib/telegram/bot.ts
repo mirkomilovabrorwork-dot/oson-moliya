@@ -1,6 +1,6 @@
 import { Bot } from "grammy";
 import { TxType, DebtDirection } from "@prisma/client";
-import { issueLoginCode } from "../auth/token";
+import { issueLoginCode, issueMagicToken } from "../auth/token";
 import { getEnv } from "../env";
 import { db } from "../db";
 import { runBrain } from "../claude/brain";
@@ -1052,22 +1052,15 @@ export function createBot(): Bot {
 
   const loginAccessText = (
     l: "uz" | "ru" | "en",
-    code: string,
-    hasMiniAppButton: boolean
+    code: string
   ): string => {
     if (l === "ru") {
-      return hasMiniAppButton
-        ? `Нажмите кнопку 📊 Молияч в нижнем меню, чтобы открыть панель прямо в Telegram.\n\nЕсли сайт просит код — введите: ${code} (действует 10 минут).`
-        : `Ссылка для входа: ${code}\n\nОткройте панель по ссылке ниже. Код действует 10 минут.`;
+      return `Нажмите кнопку ниже — войдёте автоматически, код вводить не нужно. ✅\n\nИли кнопка 📊 Молияч в нижнем меню — откроется прямо в Telegram.\n\n(С компьютера введите код: ${code} — 10 минут.)`;
     }
     if (l === "en") {
-      return hasMiniAppButton
-        ? `Tap the 📊 Moliyachi button in the menu to open the dashboard right inside Telegram.\n\nIf the site asks for a code — enter: ${code} (valid 10 minutes).`
-        : `Login link: ${code}\n\nOpen the dashboard from the link below. Valid for 10 minutes.`;
+      return `Tap the button below — you'll be logged in automatically, no code needed. ✅\n\nOr tap the 📊 Moliyachi button in the menu — opens right inside Telegram.\n\n(From a desktop browser, enter code: ${code} — valid 10 minutes.)`;
     }
-    return hasMiniAppButton
-      ? `Menyudagi 📊 Moliyachi tugmasini bosing — Telegram ichida dashboardni ochasiz.\n\nAgar kod so'ralsa — kiriting: ${code} (10 daqiqa amal qiladi).`
-      : `Kirish havolasi: ${code}\n\nQuyidagi havola orqali panelni oching. 10 daqiqa amal qiladi.`;
+    return `Pastdagi tugmani bosing — avtomatik kirasiz, kod yozish shart emas. ✅\n\nYoki menyudagi 📊 Moliyachi tugmasi — Telegram ichida kirasiz.\n\n(Kompyuterdan kirsangiz, kod: ${code} — 10 daqiqa.)`;
   };
 
   const buildLoginAccessReply = async (
@@ -1075,13 +1068,17 @@ export function createBot(): Bot {
     lang: "uz" | "ru" | "en"
   ): Promise<{
     text: string;
-    reply_markup?: { inline_keyboard: InlineKeyboardButton[][] };
+    reply_markup: { inline_keyboard: InlineKeyboardButton[][] };
   }> => {
+    const env = getEnv();
+    const rawToken = await issueMagicToken(userId);
+    const loginUrl = `${env.APP_URL}/api/auth/verify?token=${rawToken}`;
     const code = await issueLoginCode(userId);
-    const dash = await dashboardReplyOptions(userId);
+    const buttonLabel =
+      lang === "ru" ? "🔓 Войти на сайт" : lang === "en" ? "🔓 Open & log in" : "🔓 Saytga kirish";
     return {
-      text: loginAccessText(lang, code, Boolean(dash.reply_markup)) + dash.extraText,
-      reply_markup: dash.reply_markup,
+      text: loginAccessText(lang, code),
+      reply_markup: { inline_keyboard: [[{ text: buttonLabel, url: loginUrl }]] },
     };
   };
 
@@ -1379,8 +1376,11 @@ export function createBot(): Bot {
         const access = await buildLoginAccessReply(user.id, chosen);
         const langEnv = getEnv();
         const langKb = buildPersistentKeyboard(chosen, langEnv.APP_URL);
-        await ctx.reply(`${welcomeText(chosen, name)}\n\n${access.text}`, {
+        await ctx.reply(welcomeText(chosen, name), {
           reply_markup: langKb,
+        });
+        await ctx.reply(access.text, {
+          reply_markup: access.reply_markup,
         });
         return;
       }
