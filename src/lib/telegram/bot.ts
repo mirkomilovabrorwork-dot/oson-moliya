@@ -283,6 +283,37 @@ async function buildAndSendReport(
   }
 }
 
+// ── Login access (magic-link button + 6-digit code) — module-level so both
+//    handleMessage (🔗 Sayt button) and createBot (/dashboard) can call it ──────
+function loginAccessText(l: "uz" | "ru" | "en", code: string, siteHost: string): string {
+  if (l === "ru") {
+    return `Нажмите кнопку ниже — сайт откроется сам. ✅\n\n💻 С компьютера: откройте ${siteHost} и введите код ${code} (действителен 10 минут).`;
+  }
+  if (l === "en") {
+    return `Tap the button below — the site opens itself. ✅\n\n💻 From a computer: open ${siteHost} and enter code ${code} (valid 10 minutes).`;
+  }
+  return `Pastdagi tugmani bosing — sayt o'zi ochiladi. ✅\n\n💻 Kompyuterdan: ${siteHost} ni oching va kodni kiriting: ${code} (10 daqiqa amal qiladi).`;
+}
+
+async function buildLoginAccessReply(
+  userId: string,
+  lang: "uz" | "ru" | "en"
+): Promise<{ text: string; reply_markup: { inline_keyboard: InlineKeyboardButton[][] } }> {
+  const env = getEnv();
+  const rawToken = await issueMagicToken(userId);
+  const loginUrl = `${env.APP_URL}/api/auth/verify?token=${rawToken}`;
+  const code = await issueLoginCode(userId);
+  const siteHost = (() => {
+    try { return new URL(env.APP_URL).host; } catch { return env.APP_URL; }
+  })();
+  const buttonLabel =
+    lang === "ru" ? "🔓 Войти на сайт" : lang === "en" ? "🔓 Open & log in" : "🔓 Saytga kirish";
+  return {
+    text: loginAccessText(lang, code, siteHost),
+    reply_markup: { inline_keyboard: [[{ text: buttonLabel, url: loginUrl }]] },
+  };
+}
+
 // ── Localized /help text (module-level so handleMessage can call it) ─────────
 function helpText(l: "uz" | "ru" | "en"): string {
   if (l === "ru") {
@@ -342,6 +373,7 @@ async function handleMessage(
   const REPORT_BTNS = ["📊 Hisobot", "📊 Отчёт", "📊 Report"];
   const HELP_BTNS = ["❓ Yordam", "❓ Помощь", "❓ Help"];
   const LANG_BTNS = ["🌐 Til", "🌐 Язык", "🌐 Language"];
+  const SAYT_BTNS = ["🔗 Sayt", "🔗 Сайт", "🔗 Site"];
 
   if (REPORT_BTNS.includes(text)) {
     const btnLang = (user.language as "uz" | "ru" | "en") ?? "uz";
@@ -384,6 +416,14 @@ async function handleMessage(
         ],
       },
     });
+    return;
+  }
+
+  if (SAYT_BTNS.includes(text)) {
+    // Reply with the same magic-link + 6-digit code as /dashboard — for computer login.
+    const saytLang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    const access = await buildLoginAccessReply(user.id, saytLang);
+    await ctx.reply(access.text, { reply_markup: access.reply_markup });
     return;
   }
 
@@ -1050,37 +1090,8 @@ export function createBot(): Bot {
     return `Salom, ${name}! 👋\n\n👉 Xarajat yoki daromadingizni yozing yoki 🎤 ayting:\n• "20 ming non"\n• "500 ming sotuvdan"\n\nMen avtomatik qayd qilaman. ✅`;
   };
 
-  const loginAccessText = (
-    l: "uz" | "ru" | "en",
-    code: string
-  ): string => {
-    if (l === "ru") {
-      return `Нажмите кнопку ниже — сайт откроется сам. ✅\n\n(С компьютера: код ${code} — 10 минут.)`;
-    }
-    if (l === "en") {
-      return `Tap the button below — the site opens itself. ✅\n\n(From a computer: code ${code} — 10 minutes.)`;
-    }
-    return `Pastdagi tugmani bosing — sayt o'zi ochiladi. ✅\n\n(Kompyuterdan: kod ${code} — 10 daqiqa.)`;
-  };
-
-  const buildLoginAccessReply = async (
-    userId: string,
-    lang: "uz" | "ru" | "en"
-  ): Promise<{
-    text: string;
-    reply_markup: { inline_keyboard: InlineKeyboardButton[][] };
-  }> => {
-    const env = getEnv();
-    const rawToken = await issueMagicToken(userId);
-    const loginUrl = `${env.APP_URL}/api/auth/verify?token=${rawToken}`;
-    const code = await issueLoginCode(userId);
-    const buttonLabel =
-      lang === "ru" ? "🔓 Войти на сайт" : lang === "en" ? "🔓 Open & log in" : "🔓 Saytga kirish";
-    return {
-      text: loginAccessText(lang, code),
-      reply_markup: { inline_keyboard: [[{ text: buttonLabel, url: loginUrl }]] },
-    };
-  };
+  // loginAccessText + buildLoginAccessReply are now module-level (defined above createBot)
+  // so handleMessage's 🔗 Sayt handler can also call them.
 
   // /start handler
   bot.command("start", async (ctx) => {

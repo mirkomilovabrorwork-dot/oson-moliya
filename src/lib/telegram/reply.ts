@@ -151,49 +151,42 @@ export function getBotLabels(lang: string): {
 }
 
 /**
- * Build a persistent reply keyboard with 3 text buttons:
- *  - 📊 Hisobot  → triggers monthly report
- *  - 🌐 Til      → triggers language picker
- *  - ❓ Yordam   → triggers help
+ * Build a persistent reply keyboard with 4 plain TEXT buttons (2 rows):
+ *  Row 1: 📊 Hisobot · 🔗 Sayt
+ *  Row 2: 🌐 Til     · ❓ Yordam
  *
  * Labels are localized uz/ru/en.
  * Returns a grammY Keyboard object (.resized().persistent()).
- * The dashboard is now reached via the Moliyachi MENU button (web_app),
- * so no appUrl / web_app button is needed here.
- * The appUrl parameter is kept for signature compatibility but unused.
+ * All four buttons are plain text — no web_app; tapping 🔗 Sayt sends the
+ * text to the bot, which replies with an inline URL button + 6-digit login code
+ * so the user can log in from a computer browser.
+ * The _appUrl parameter is kept for signature compatibility but is unused.
  */
-export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", appUrl?: string): Keyboard {
+export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", _appUrl?: string): Keyboard {
   const labels = getPersistentKeyboardLabels(lang);
   const kb = new Keyboard();
-  // Row 1: 📊 Hisobot (monthly report) + 📈 Grafiklar (opens the dashboard/site).
-  kb.text(labels.report);
-  // Telegram requires HTTPS for a web_app keyboard button; on localhost fall back to text.
-  if (appUrl && appUrl.startsWith("https://")) {
-    kb.webApp(labels.charts, appUrl);
-  } else {
-    kb.text(labels.charts);
-  }
+  // Row 1: 📊 Hisobot + 🔗 Sayt
+  kb.text(labels.report).text(labels.sayt);
   kb.row();
   // Row 2: 🌐 Til + ❓ Yordam
-  kb.text(labels.lang);
-  kb.text(labels.help);
+  kb.text(labels.lang).text(labels.help);
   return kb.resized().persistent();
 }
 
 /** Localized labels for the persistent reply keyboard buttons */
 export function getPersistentKeyboardLabels(lang: "uz" | "ru" | "en"): {
   report: string;
-  charts: string;
+  sayt: string;
   lang: string;
   help: string;
 } {
   if (lang === "ru") {
-    return { report: "📊 Отчёт", charts: "📈 Графики", lang: "🌐 Язык", help: "❓ Помощь" };
+    return { report: "📊 Отчёт", sayt: "🔗 Сайт", lang: "🌐 Язык", help: "❓ Помощь" };
   }
   if (lang === "en") {
-    return { report: "📊 Report", charts: "📈 Charts", lang: "🌐 Language", help: "❓ Help" };
+    return { report: "📊 Report", sayt: "🔗 Site", lang: "🌐 Language", help: "❓ Help" };
   }
-  return { report: "📊 Hisobot", charts: "📈 Grafiklar", lang: "🌐 Til", help: "❓ Yordam" };
+  return { report: "📊 Hisobot", sayt: "🔗 Sayt", lang: "🌐 Til", help: "❓ Yordam" };
 }
 
 /**
