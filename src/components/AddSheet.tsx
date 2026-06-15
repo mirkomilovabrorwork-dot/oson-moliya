@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { QuickAddForm } from "@/components/QuickAddForm";
@@ -22,6 +22,7 @@ interface CategoryRaw {
 
 export function AddSheet({ lang, mainCurrency = "UZS" }: AddSheetProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryRaw[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,6 +79,9 @@ export function AddSheet({ lang, mainCurrency = "UZS" }: AddSheetProps) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, close]);
+
+  // On /debts the DebtsClient renders its own context-aware FAB — hide this one.
+  if (pathname === "/debts") return null;
 
   return (
     <>

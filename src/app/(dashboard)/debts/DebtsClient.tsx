@@ -87,10 +87,37 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Action sheet
+  const [actionSheetDebt, setActionSheetDebt] = useState<DebtRow | null>(null);
+
   // A4: Set today's date on mount (client-side only) to avoid SSR/hydration mismatch.
   useEffect(() => {
     setAddDate(new Date().toISOString().slice(0, 10));
   }, []);
+
+  // ── Action sheet: pushState for device/Telegram back support ─────────────
+  const openActionSheet = useCallback((debt: DebtRow) => {
+    setActionSheetDebt(debt);
+    window.history.pushState({ debtActionSheet: true }, "");
+  }, []);
+
+  const closeActionSheet = useCallback(() => {
+    setActionSheetDebt(null);
+    // If our pushed history state is still on top, pop it so back-button stays consistent.
+    if (typeof window !== "undefined" && window.history.state?.debtActionSheet) {
+      window.history.back();
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      if (actionSheetDebt) {
+        setActionSheetDebt(null);
+      }
+    };
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, [actionSheetDebt]);
 
   const showToast = (msg: string, type: "success" | "error" = "success") =>
     setToast({ msg, type });
@@ -520,8 +547,8 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         </div>
       </div>
 
-      {/* Header row: tabs + add button */}
-      <div className="flex items-center justify-between gap-3 mb-4">
+      {/* Header row: tabs only (add button replaced by fixed FAB below) */}
+      <div className="flex items-center gap-3 mb-4">
         {/* Segmented tabs */}
         <div
           className="flex rounded-[12px] p-1 gap-1"
@@ -546,16 +573,6 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
             </button>
           ))}
         </div>
-
-        {/* Add button */}
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-[12px] text-sm font-semibold min-h-[44px]"
-          style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
-        >
-          <span className="text-lg leading-none">+</span>
-          <span className="hidden sm:inline">{t("debt.add", lang)}</span>
-        </button>
       </div>
 
       {/* Debt list */}
@@ -600,127 +617,236 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
               const isSettled = debt.status === "settled";
               const isGiven = debt.direction === "given";
               return (
-                <div
+                <button
                   key={debt.id}
-                  className="px-5 py-4 transition-colors"
+                  onClick={() => openActionSheet(debt)}
+                  className="row-hover w-full flex items-center gap-3 px-5 py-4 text-left transition-colors"
                   style={{
                     borderTop: idx === 0 ? undefined : "1px solid var(--border)",
                     opacity: isSettled ? 0.6 : 1,
+                    minHeight: "64px",
                   }}
                 >
-                  <div className="flex items-center gap-3">
-                    {/* Direction icon */}
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
-                      style={{
-                        background: isGiven ? "var(--income-wash)" : "var(--expense-wash)",
-                        color: isGiven ? "var(--income)" : "var(--expense)",
-                      }}
-                    >
-                      {isGiven ? "↑" : "↓"}
-                    </div>
-
-                    {/* Main content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p
-                          className="font-semibold text-sm"
-                          style={{
-                            color: "var(--fg)",
-                            textDecoration: isSettled ? "line-through" : "none",
-                          }}
-                        >
-                          {debt.counterparty}
-                        </p>
-                        {isSettled && (
-                          <span
-                            className="text-xs px-2 py-0.5 rounded-full font-medium"
-                            style={{ background: "var(--surface-sunken)", color: "var(--fg-subtle)" }}
-                          >
-                            {t("debt.status.settled", lang)}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
-                        {formatDate(debt.occurredAt)}
-                        {debt.note ? ` · ${debt.note}` : ""}
-                      </p>
-                    </div>
-
-                    {/* Amount (tabular) */}
-                    <div className="text-right shrink-0">
-                      <p
-                        className="font-bold text-sm tabular-nums"
-                        style={{ color: isGiven ? "var(--income)" : "var(--expense)" }}
-                      >
-                        {isGiven ? "+" : "−"}{formatMoney(debt.amountUzs)}
-                      </p>
-                      <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
-                        {t("common.currency", lang)}
-                      </p>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 shrink-0 ml-1">
-                      {/* Settle */}
-                      {!isSettled && (
-                        <button
-                          onClick={() => handleSettle(debt.id)}
-                          disabled={settlingId === debt.id}
-                          className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-40"
-                          style={{ color: "var(--income)" }}
-                          title={t("debt.settle", lang)}
-                        >
-                          {settlingId === debt.id ? (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
-                            </svg>
-                          ) : (
-                            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </button>
-                      )}
-
-                      {/* Edit */}
-                      {!isSettled && (
-                        <button
-                          onClick={() => openEdit(debt)}
-                          className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
-                          style={{ color: "var(--accent)" }}
-                          title={t("common.edit", lang)}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                          </svg>
-                        </button>
-                      )}
-
-                      {/* Delete */}
-                      <button
-                        onClick={() => handleDelete(debt.id)}
-                        disabled={deletingId === debt.id}
-                        className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-40"
-                        style={{ color: "var(--expense)" }}
-                        title={t("common.delete", lang)}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                          <path
-                            fillRule="evenodd"
-                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                    </div>
+                  {/* Direction icon */}
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
+                    style={{
+                      background: isGiven ? "var(--income-wash)" : "var(--expense-wash)",
+                      color: isGiven ? "var(--income)" : "var(--expense)",
+                    }}
+                  >
+                    {isGiven ? "↑" : "↓"}
                   </div>
-                </div>
+
+                  {/* Main content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p
+                        className="font-semibold text-sm"
+                        style={{
+                          color: "var(--fg)",
+                          textDecoration: isSettled ? "line-through" : "none",
+                        }}
+                      >
+                        {debt.counterparty}
+                      </p>
+                      {isSettled && (
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          style={{ background: "var(--surface-sunken)", color: "var(--fg-subtle)" }}
+                        >
+                          {t("debt.status.settled", lang)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
+                      {isGiven ? t("debt.tab.given", lang) : t("debt.tab.taken", lang)}
+                      {" · "}
+                      {formatDate(debt.occurredAt)}
+                      {debt.note ? ` · ${debt.note}` : ""}
+                    </p>
+                  </div>
+
+                  {/* Amount (tabular) */}
+                  <div className="text-right shrink-0">
+                    <p
+                      className="font-bold text-sm tabular-nums"
+                      style={{ color: isGiven ? "var(--income)" : "var(--expense)" }}
+                    >
+                      {isGiven ? "+" : "−"}{formatMoney(debt.amountUzs)}
+                    </p>
+                    <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
+                      {t("common.currency", lang)}
+                    </p>
+                  </div>
+
+                  {/* Chevron affordance */}
+                  <span
+                    className="shrink-0 text-base leading-none select-none ml-1"
+                    style={{ color: "var(--fg-subtle)" }}
+                    aria-hidden="true"
+                  >
+                    ›
+                  </span>
+                </button>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* ── Action sheet ── */}
+      {actionSheetDebt && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+          style={{ background: "rgba(15,23,42,0.5)" }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeActionSheet();
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-t-[20px] sm:rounded-[16px] overflow-hidden"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          >
+            {/* Sheet header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: "1px solid var(--border)" }}
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold"
+                  style={{
+                    background: actionSheetDebt.direction === "given" ? "var(--income-wash)" : "var(--expense-wash)",
+                    color: actionSheetDebt.direction === "given" ? "var(--income)" : "var(--expense)",
+                  }}
+                >
+                  {actionSheetDebt.direction === "given" ? "↑" : "↓"}
+                </span>
+                <div>
+                  <p className="font-semibold text-sm" style={{ color: "var(--fg)" }}>
+                    {actionSheetDebt.counterparty}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
+                    {actionSheetDebt.direction === "given" ? "+" : "−"}{formatMoney(actionSheetDebt.amountUzs)}
+                    {" · "}
+                    {t("common.currency", lang)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeActionSheet}
+                className="p-2 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center"
+                style={{ color: "var(--fg-subtle)" }}
+                aria-label={t("common.close", lang)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Actions */}
+            <div className="py-2">
+              {/* Settle — only for open debts */}
+              {actionSheetDebt.status === "open" && (
+                <button
+                  onClick={() => {
+                    closeActionSheet();
+                    void handleSettle(actionSheetDebt.id);
+                  }}
+                  disabled={settlingId === actionSheetDebt.id}
+                  className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors disabled:opacity-40"
+                  style={{ color: "var(--fg)" }}
+                >
+                  <span
+                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: "var(--income-wash)" }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style={{ color: "var(--income)" }}>
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                  <span className="text-sm font-medium">{t("debt.settle", lang)}</span>
+                </button>
+              )}
+
+              {/* Edit — only for open debts */}
+              {actionSheetDebt.status === "open" && (
+                <button
+                  onClick={() => {
+                    openEdit(actionSheetDebt);
+                    closeActionSheet();
+                  }}
+                  className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors"
+                  style={{ color: "var(--fg)" }}
+                >
+                  <span
+                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: "var(--surface-sunken)" }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style={{ color: "var(--accent)" }}>
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </span>
+                  <span className="text-sm font-medium">{t("common.edit", lang)}</span>
+                </button>
+              )}
+
+              {/* Delete */}
+              <button
+                onClick={() => {
+                  closeActionSheet();
+                  void handleDelete(actionSheetDebt.id);
+                }}
+                disabled={deletingId === actionSheetDebt.id}
+                className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors disabled:opacity-40"
+              >
+                <span
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: "var(--expense-wash)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style={{ color: "var(--expense)" }}>
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <span className="text-sm font-medium" style={{ color: "var(--expense)" }}>
+                  {t("common.delete", lang)}
+                </span>
+              </button>
+            </div>
+
+            {/* Safe-area bottom padding for iOS */}
+            <div style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Context-aware FAB (single "+" on /debts) ── */}
+      <style>{`
+        .debts-fab {
+          bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+          right: 1.35rem;
+        }
+        @media (min-width: 640px) {
+          .debts-fab {
+            bottom: 2rem;
+            right: 2rem;
+          }
+        }
+      `}</style>
+      <button
+        aria-label={t("debt.add", lang)}
+        onClick={() => setShowAdd(true)}
+        className="debts-fab fixed z-50 flex items-center justify-center w-14 h-14 rounded-full transition-transform active:scale-95"
+        style={{
+          background: "var(--accent-gradient)",
+          color: "#ffffff",
+          boxShadow: "var(--shadow-lg)",
+        }}
+      >
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
     </>
   );
 }
