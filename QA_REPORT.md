@@ -72,3 +72,18 @@ The automated Step-1 auditor raised these as scary issues; skeptical verificatio
 - **Authenticated dashboard UI runtime** (actual screen rendering, click-throughs): no dev-auth bypass + Preview tool bound to the wrong repo. Build-compiles + code-audit used instead.
 - **Real-device WebView**: Excel download, Telegram theme override, hardware back — need a physical phone.
 - **Recommendation:** to make future QA fully runtime-testable, add a DEV-ONLY auth bypass (e.g. `ALLOW_INSECURE_DEV` like the sister project) so authed screens can be driven headlessly in dev.
+
+---
+
+## Step 4 — Fixes applied (2026-06-15, HEAD `a385712`, deployed & verified)
+User approved fixing all ("barini auto-smart qilaver"). All 6 Low items fixed, gates green (typecheck 0 / 107 tests / build OK), deployed; production auth re-verified (`/` → 307, dev-bypass dead in prod).
+1. ✅ **Bot correct_transaction targeting** — when the brain sets `target='by_amount'`/`targetAmount`/`targetHint`, scores the 50 most-recent txs (+2 exact amount, +1 category/note hint) and corrects the best match; falls back to last → most-recent; reply names which tx (uz/ru/en). Brain schema + prompt + 3 tests added (`bot.ts:708-758`, `tools.ts`, `prompts.ts`).
+2. ✅ **QuickAddForm double-submit guard** — early-return while a POST is in flight + disabled button.
+3. ✅ **Edit-modal loading state** — inputs disabled + spinner/"saving" while PATCH in flight.
+4. ✅ **AddSheet closes on device/Telegram back** — pushState + popstate; no page-leave, no draft over-engineering.
+5. ✅ **URL filter persistence** — type/category/search/date persisted in the URL + restored on refresh (debounced search).
+6. ✅ **ALLOW_INSECURE_DEV dev-auth bypass** — DEV ONLY; HARD-blocked in production via `NODE_ENV !== 'production'` guard in BOTH `session.ts` and `proxy.ts` + a startup `assertInsecureDevBlocked()` throw in `env.ts`. Verified live: prod `/` still 307.
+
+**Process note (QA value):** a first PARALLEL-agent attempt silently LOST fixes #1/#2/#4 (linter/file-race reverted QuickAddForm, AddSheet, bot.ts while keeping tools.ts/prompts.ts). Caught by my own `git status` + gate verification (NOT trusting the agent's "done"), then re-applied via a SINGLE sequential agent. Lesson: never parallelize agents on a repo with an aggressive linter without per-file isolation; always re-verify edits landed.
+
+**Remaining (Low, optional):** URL-debounce dedup; validate `catFilter` against existing categories; (3 brain-schema edge tests already added).

@@ -26,7 +26,7 @@
 - Never marked "pass" without evidence (a screenshot read via Read, a real command output, or cited code).
 
 ## Status
-Step 0 ✅ · Step 1 ✅ · Step 2 ✅ · Step 3 ✅ (0 ❌, 0 Critical/High; 6 Low; 4 auditor false-positives rejected) · Step 4 ⏭️ (skipped per user — fixes decided together) · Step 5 ⏭️ (skipped per user)
+Step 0 ✅ · Step 1 ✅ · Step 2 ✅ · Step 3 ✅ (0 ❌, 0 Critical/High; 6 Low; 4 auditor false-positives rejected) · Step 4 ✅ (all 6 Low fixed + deployed `a385712`; prod auth re-verified) · Step 5 ⏭️ (skipped per user)
 
 ## The 6 steps (user scope = 1→3 only, read-only)
 - Step 1 — Map flows + gaps → QA_FLOWS.md

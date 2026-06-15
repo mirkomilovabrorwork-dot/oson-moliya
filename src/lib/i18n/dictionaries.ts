@@ -134,6 +134,7 @@ const uz: Dictionary = {
   "budget.over": "oshib ketdi",
   "budget.no_limit": "Chegara belgilanmagan",
   "budget.set_limit": "Chegara belgilash",
+  "categories.budget.change": "Byudjetni o'zgartirish",
   // ── Onboarding
   "onboarding.title": "Oson Moliya'ga xush kelibsiz!",
   "onboarding.subtitle": "Biznesingiz moliyasini Telegram orqali kuzating",
@@ -432,6 +433,7 @@ const ru: Dictionary = {
   "budget.over": "превышен",
   "budget.no_limit": "Без лимита",
   "budget.set_limit": "Установить лимит",
+  "categories.budget.change": "Изменить бюджет",
   // ── Onboarding
   "onboarding.title": "Добро пожаловать в Oson Moliya!",
   "onboarding.subtitle": "Следите за финансами бизнеса через Telegram",
@@ -730,6 +732,7 @@ const en: Dictionary = {
   "budget.over": "over budget",
   "budget.no_limit": "No limit set",
   "budget.set_limit": "Set limit",
+  "categories.budget.change": "Change budget",
   // ── Onboarding
   "onboarding.title": "Welcome to Oson Moliya!",
   "onboarding.subtitle": "Track your business finances via Telegram",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
@@ -59,8 +59,32 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
   const [deleteTarget, setDeleteTarget] = useState<CategoryRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Action sheet state — which category is open
+  const [actionSheetCat, setActionSheetCat] = useState<CategoryRow | null>(null);
+
   const showToast = (msg: string, type: "success" | "error" = "success") =>
     setToast({ msg, type });
+
+  // ── Action sheet: pushState for device/Telegram back support ──────────────
+  const openActionSheet = useCallback((cat: CategoryRow) => {
+    setActionSheetCat(cat);
+    window.history.pushState({ actionSheet: true }, "");
+  }, []);
+
+  const closeActionSheet = useCallback(() => {
+    setActionSheetCat(null);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: PopStateEvent) => {
+      if (actionSheetCat) {
+        e.preventDefault?.();
+        setActionSheetCat(null);
+      }
+    };
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, [actionSheetCat]);
 
   // Add category — type comes from activeTab
   const handleAdd = useCallback(async () => {
@@ -305,6 +329,127 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
         </div>
       )}
 
+      {/* Action sheet (bottom sheet on mobile) */}
+      {actionSheetCat && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+          style={{ background: "rgba(15,23,42,0.5)" }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeActionSheet();
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-t-[20px] sm:rounded-[16px] overflow-hidden"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          >
+            {/* Sheet header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: "1px solid var(--border)" }}
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-lg"
+                  style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
+                >
+                  {actionSheetCat.emoji ?? (actionSheetCat.type === "income" ? "↑" : "↓")}
+                </span>
+                <span className="font-semibold text-base" style={{ color: "var(--fg)" }}>
+                  {translateCategoryName(actionSheetCat.name, lang)}
+                </span>
+              </div>
+              <button
+                onClick={closeActionSheet}
+                className="p-2 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center"
+                style={{ color: "var(--fg-subtle)" }}
+                aria-label={t("common.close", lang)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Actions */}
+            <div className="py-2">
+              {/* Budget action — expense only */}
+              {actionSheetCat.type === "expense" && (
+                <button
+                  onClick={() => {
+                    setEditBudgetId(actionSheetCat.id);
+                    setBudgetVal(actionSheetCat.budgetLimit ?? "");
+                    closeActionSheet();
+                  }}
+                  className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors"
+                  style={{ color: "var(--fg)" }}
+                >
+                  {/* wallet icon */}
+                  <span
+                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: "var(--surface-sunken)" }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: "var(--accent)" }}>
+                      <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                  <span className="text-sm font-medium">
+                    {actionSheetCat.budgetLimit
+                      ? t("categories.budget.change", lang)
+                      : t("budget.set_limit", lang)}
+                  </span>
+                </button>
+              )}
+
+              {/* Rename action */}
+              <button
+                onClick={() => {
+                  setRenamingId(actionSheetCat.id);
+                  setRenameVal(actionSheetCat.name);
+                  setRenameEmoji(actionSheetCat.emoji ?? "");
+                  closeActionSheet();
+                }}
+                className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors"
+                style={{ color: "var(--fg)" }}
+              >
+                {/* pencil icon */}
+                <span
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: "var(--surface-sunken)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style={{ color: "var(--accent)" }}>
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                </span>
+                <span className="text-sm font-medium">{t("categories.rename", lang)}</span>
+              </button>
+
+              {/* Delete action */}
+              <button
+                onClick={() => {
+                  setDeleteTarget(actionSheetCat);
+                  closeActionSheet();
+                }}
+                className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors"
+              >
+                {/* trash icon */}
+                <span
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: "var(--expense-wash)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style={{ color: "var(--expense)" }}>
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <span className="text-sm font-medium" style={{ color: "var(--expense)" }}>
+                  {t("categories.delete", lang)}
+                </span>
+              </button>
+            </div>
+
+            {/* Safe-area bottom padding for iOS */}
+            <div className="pb-safe" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
+          </div>
+        </div>
+      )}
+
       {/* Segmented toggle: Xarajat / Daromad */}
       <div
         className="flex rounded-[12px] p-1 gap-1"
@@ -378,167 +523,105 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
         ) : (
           <div>
             {visibleCats.map((cat, idx) => (
-              <div
-                key={cat.id}
-                className="row-hover px-5 py-4 transition-colors"
-                style={{
-                  borderTop: idx === 0 ? undefined : `1px solid var(--border)`,
-                }}
-              >
-                <div className="flex items-center gap-4">
-                  {/* Icon tile — v3: NEUTRAL bg (muted wash 12%), muted glyph; never colored tiles */}
-                  <span
-                    className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 text-lg"
-                    style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
+              <div key={cat.id}>
+                {/* ── Tappable category row ── */}
+                {renamingId === cat.id ? (
+                  /* Rename inline form — shown in place of the row */
+                  <div
+                    className="px-5 py-4"
+                    style={{
+                      borderTop: idx === 0 ? undefined : `1px solid var(--border)`,
+                    }}
                   >
-                    {cat.emoji ?? (cat.type === "income" ? "↑" : "↓")}
-                  </span>
-
-                  {/* Name + meta */}
-                  <div className="flex-1 min-w-0">
-                    {renamingId === cat.id ? (
-                      <div className="flex gap-2 flex-wrap">
-                        <input
-                          autoFocus
-                          type="text"
-                          value={renameVal}
-                          onChange={(e) => setRenameVal(e.target.value)}
-                          className="rounded-[10px] px-3 py-2 text-sm flex-1 min-w-[120px]"
-                          style={inputStyle}
-                          placeholder={t("categories.name", lang)}
-                        />
-                        <input
-                          type="text"
-                          value={renameEmoji}
-                          onChange={(e) => setRenameEmoji(e.target.value)}
-                          className="rounded-[10px] px-3 py-2 text-sm w-16"
-                          style={inputStyle}
-                          placeholder="😀"
-                          maxLength={2}
-                        />
-                        <button
-                          onClick={() => handleRename(cat.id)}
-                          disabled={renameLoading}
-                          className="px-3 py-2 rounded-[10px] text-xs font-semibold disabled:opacity-60"
-                          style={{ background: "var(--accent)", color: "#fff" }}
-                        >
-                          {t("common.save", lang)}
-                        </button>
-                        <button
-                          onClick={() => setRenamingId(null)}
-                          className="px-3 py-2 rounded-[10px] text-xs font-medium"
-                          style={{
-                            border: "1px solid var(--border)",
-                            color: "var(--fg-muted)",
-                          }}
-                        >
-                          {t("common.cancel", lang)}
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p
-                            className="font-medium text-sm"
-                            style={{ color: "var(--fg)" }}
-                          >
-                            {translateCategoryName(cat.name, lang)}
-                          </p>
-                          {cat.isDefault && (
-                            <span
-                              className="text-xs px-2 py-0.5 rounded-full font-medium"
-                              style={{
-                                background: "var(--surface-sunken)",
-                                color: "var(--fg-subtle)",
-                              }}
-                            >
-                              {t("categories.default_badge", lang)}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
-                          {cat.txCount} {t("categories.tx_count", lang)}
-                          {cat.type === "expense" && cat.budgetLimit
-                            ? ` · ${formatMoney(cat.budgetLimit)} ${t("categories.budget_progress", lang)}`
-                            : ""}
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Action buttons (right side) */}
-                  {renamingId !== cat.id && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      {/* Budget chip for expense */}
-                      {cat.type === "expense" && editBudgetId !== cat.id && (
-                        <button
-                          onClick={() => {
-                            setEditBudgetId(cat.id);
-                            setBudgetVal(cat.budgetLimit ?? "");
-                          }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all"
-                          style={{
-                            background: cat.budgetLimit
-                              ? "var(--expense-wash)"
-                              : "var(--surface-sunken)",
-                            color: cat.budgetLimit
-                              ? "var(--expense)"
-                              : "var(--fg-subtle)",
-                          }}
-                        >
-                          <svg
-                            width="11"
-                            height="11"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {cat.budgetLimit
-                            ? `${formatMoney(cat.budgetLimit)}`
-                            : t("budget.set_limit", lang)}
-                        </button>
-                      )}
+                    <div className="flex gap-2 flex-wrap">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={renameVal}
+                        onChange={(e) => setRenameVal(e.target.value)}
+                        className="rounded-[10px] px-3 py-2 text-sm flex-1 min-w-[120px]"
+                        style={inputStyle}
+                        placeholder={t("categories.name", lang)}
+                      />
+                      <input
+                        type="text"
+                        value={renameEmoji}
+                        onChange={(e) => setRenameEmoji(e.target.value)}
+                        className="rounded-[10px] px-3 py-2 text-sm w-16"
+                        style={inputStyle}
+                        placeholder="😀"
+                        maxLength={2}
+                      />
                       <button
-                        onClick={() => {
-                          setRenamingId(cat.id);
-                          setRenameVal(cat.name);
-                          setRenameEmoji(cat.emoji ?? "");
-                        }}
-                        className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        style={{ color: "var(--accent)" }}
-                        title={t("categories.rename", lang)}
+                        onClick={() => handleRename(cat.id)}
+                        disabled={renameLoading}
+                        className="px-3 py-2 rounded-[10px] text-xs font-semibold disabled:opacity-60"
+                        style={{ background: "var(--accent)", color: "#fff" }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                        </svg>
+                        {t("common.save", lang)}
                       </button>
                       <button
-                        onClick={() => setDeleteTarget(cat)}
-                        disabled={deletingId === cat.id}
-                        className="p-2 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-40"
-                        style={{ color: "var(--expense)" }}
-                        title={t("categories.delete", lang)}
+                        onClick={() => setRenamingId(null)}
+                        className="px-3 py-2 rounded-[10px] text-xs font-medium"
+                        style={{
+                          border: "1px solid var(--border)",
+                          color: "var(--fg-muted)",
+                        }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                          <path
-                            fillRule="evenodd"
-                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                        {t("common.cancel", lang)}
                       </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  /* Normal tappable row */
+                  <button
+                    onClick={() => openActionSheet(cat)}
+                    className="row-hover w-full flex items-center gap-4 px-5 py-4 text-left transition-colors"
+                    style={{
+                      borderTop: idx === 0 ? undefined : `1px solid var(--border)`,
+                      minHeight: "64px",
+                    }}
+                  >
+                    {/* Icon tile */}
+                    <span
+                      className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 text-lg"
+                      style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
+                    >
+                      {cat.emoji ?? (cat.type === "income" ? "↑" : "↓")}
+                    </span>
 
-                {/* Budget inline edit (below the row) */}
+                    {/* Name + secondary line */}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="font-medium text-sm truncate"
+                        style={{ color: "var(--fg)" }}
+                      >
+                        {translateCategoryName(cat.name, lang)}
+                      </p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: "var(--fg-subtle)" }}>
+                        {cat.type === "expense" && cat.budgetLimit
+                          ? `${t("categories.budget_progress", lang)}: ${formatMoney(cat.budgetLimit)}`
+                          : `${cat.txCount} ${t("categories.tx_count", lang)}`}
+                      </p>
+                    </div>
+
+                    {/* Chevron affordance */}
+                    <span
+                      className="shrink-0 text-base leading-none select-none"
+                      style={{ color: "var(--fg-subtle)" }}
+                      aria-hidden="true"
+                    >
+                      ›
+                    </span>
+                  </button>
+                )}
+
+                {/* Budget inline edit (below the row, when open from action sheet) */}
                 {cat.type === "expense" && editBudgetId === cat.id && (
-                  <div className="flex gap-2 flex-wrap items-center mt-3 ml-15 pl-1">
+                  <div
+                    className="flex gap-2 flex-wrap items-center px-5 pb-4 pt-1"
+                    style={{ borderTop: `1px solid var(--border)` }}
+                  >
                     <input
                       autoFocus
                       type="text"
