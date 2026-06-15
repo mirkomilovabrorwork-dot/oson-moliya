@@ -1042,12 +1042,12 @@ export function createBot(): Bot {
   // Localized welcome shown after the user picks a language.
   const welcomeText = (l: "uz" | "ru" | "en", name: string): string => {
     if (l === "ru") {
-      return `Привет, ${name}! 👋\n\nЯ сам запоминаю, сколько ПРИШЛО и сколько УШЛО.\n\n👉 Попробуйте прямо сейчас — напишите или 🎤 скажите:\n• "20 тысяч хлеб"\n• "500 тысяч от продажи"\n\nГотово — я запишу сам. ✅\n\nКнопки внизу: 📊 Отчёт · 🌐 Язык · ❓ Помощь.\n📈 Графики и подробная статистика — кнопка 📊 Молияч в нижнем меню.`;
+      return `Привет, ${name}! 👋\n\n👉 Просто напишите расход или доход, или 🎤 скажите:\n• "20 тысяч хлеб"\n• "500 тысяч от продажи"\n\nЯ запишу автоматически. ✅`;
     }
     if (l === "en") {
-      return `Hi, ${name}! 👋\n\nI keep track of everything coming IN and going OUT.\n\n👉 Try it now — just type or 🎤 say:\n• "20 thousand bread"\n• "500 thousand from sales"\n\nDone — I'll log it myself. ✅\n\nButtons below: 📊 Report · 🌐 Language · ❓ Help.\nFor charts and full stats — tap the 📊 Moliyachi button in the menu.`;
+      return `Hi, ${name}! 👋\n\n👉 Just type your expense or income, or 🎤 say it:\n• "20 thousand bread"\n• "500 thousand from sales"\n\nI'll log it automatically. ✅`;
     }
-    return `Salom, ${name}! 👋\n\nMen pulingiz qancha KIRGAN, qancha CHIQQANINI o'zim eslab boraman.\n\n👉 Hoziroq sinab ko'ring — menga yozing yoki 🎤 ayting:\n• "20 ming non"\n• "500 ming sotuvdan"\n\nBo'ldi — o'zim qayd qilaman. ✅\n\nPastdagi tugmalar: 📊 Hisobot · 🌐 Til · ❓ Yordam.\n📈 Grafik va batafsil ko'rish uchun — menyudagi 📊 Moliyachi tugmasi.`;
+    return `Salom, ${name}! 👋\n\n👉 Xarajat yoki daromadingizni yozing yoki 🎤 ayting:\n• "20 ming non"\n• "500 ming sotuvdan"\n\nMen avtomatik qayd qilaman. ✅`;
   };
 
   const loginAccessText = (
@@ -1055,12 +1055,12 @@ export function createBot(): Bot {
     code: string
   ): string => {
     if (l === "ru") {
-      return `Нажмите кнопку ниже — войдёте автоматически, код вводить не нужно. ✅\n\nИли кнопка 📊 Молияч в нижнем меню — откроется прямо в Telegram.\n\n(С компьютера введите код: ${code} — 10 минут.)`;
+      return `Нажмите кнопку ниже — сайт откроется сам. ✅\n\n(С компьютера: код ${code} — 10 минут.)`;
     }
     if (l === "en") {
-      return `Tap the button below — you'll be logged in automatically, no code needed. ✅\n\nOr tap the 📊 Moliyachi button in the menu — opens right inside Telegram.\n\n(From a desktop browser, enter code: ${code} — valid 10 minutes.)`;
+      return `Tap the button below — the site opens itself. ✅\n\n(From a computer: code ${code} — 10 minutes.)`;
     }
-    return `Pastdagi tugmani bosing — avtomatik kirasiz, kod yozish shart emas. ✅\n\nYoki menyudagi 📊 Moliyachi tugmasi — Telegram ichida kirasiz.\n\n(Kompyuterdan kirsangiz, kod: ${code} — 10 daqiqa.)`;
+    return `Pastdagi tugmani bosing — sayt o'zi ochiladi. ✅\n\n(Kompyuterdan: kod ${code} — 10 daqiqa.)`;
   };
 
   const buildLoginAccessReply = async (
