@@ -127,6 +127,7 @@ const uz: Dictionary = {
   "categories.tx_count": "ta yozuv",
   "categories.budget_progress": "Byudjet",
   "categories.spent_of": "sarflandi",
+  "categories.budget_hint": "💡 Kategoriyani bosib byudjet belgilang — limitdan oshsa ogohlantiramiz",
   // ── Budget progress
   "budget.of": "dan",
   "budget.spent": "sarflangan",
@@ -426,6 +427,7 @@ const ru: Dictionary = {
   "categories.tx_count": "записей",
   "categories.budget_progress": "Бюджет",
   "categories.spent_of": "потрачено",
+  "categories.budget_hint": "💡 Нажмите на категорию и задайте бюджет — предупредим при превышении",
   // ── Budget progress
   "budget.of": "из",
   "budget.spent": "потрачено",
@@ -725,6 +727,7 @@ const en: Dictionary = {
   "categories.tx_count": "records",
   "categories.budget_progress": "Budget",
   "categories.spent_of": "spent",
+  "categories.budget_hint": "💡 Tap a category to set a budget — we'll alert you if it's exceeded",
   // ── Budget progress
   "budget.of": "of",
   "budget.spent": "spent",

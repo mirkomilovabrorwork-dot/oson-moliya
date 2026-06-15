@@ -167,12 +167,36 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TxRow | null>(null);
 
+  // Action sheet state — which transaction is open
+  const [actionSheetTx, setActionSheetTx] = useState<TxRow | null>(null);
+
   // Toast
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
   };
+
+  // ── Action sheet: pushState for device/Telegram back support ──────────────
+  const openActionSheet = useCallback((tx: TxRow) => {
+    setActionSheetTx(tx);
+    window.history.pushState({ actionSheet: true }, "");
+  }, []);
+
+  const closeActionSheet = useCallback(() => {
+    setActionSheetTx(null);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: PopStateEvent) => {
+      if (actionSheetTx) {
+        e.preventDefault?.();
+        setActionSheetTx(null);
+      }
+    };
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, [actionSheetTx]);
 
   // Filtered rows
   const filtered = useMemo(() => {
@@ -346,6 +370,105 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
         }}
         onConfirm={handleDelete}
       />
+
+      {/* ── Transaction action sheet ── */}
+      {actionSheetTx && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+          style={{ background: "rgba(15,23,42,0.5)" }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeActionSheet();
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-t-[20px] sm:rounded-[16px] overflow-hidden"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          >
+            {/* Sheet header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: "1px solid var(--border)" }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 text-sm"
+                  style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
+                >
+                  {actionSheetTx.categoryEmoji ?? (actionSheetTx.type === "income" ? "+" : "−")}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm truncate" style={{ color: "var(--fg)" }}>
+                    {translateCategoryName(actionSheetTx.categoryName, lang) ?? t("form.category_none", lang)}
+                    {" · "}
+                    <span style={{ color: actionSheetTx.type === "income" ? "var(--income)" : "var(--expense)" }}>
+                      {actionSheetTx.type === "income" ? "+" : "−"}{formatTxMoney(actionSheetTx)}
+                    </span>
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
+                    {formatDate(actionSheetTx.occurredAt, lang)}
+                    {actionSheetTx.note ? ` · ${actionSheetTx.note}` : ""}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeActionSheet}
+                className="p-2 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
+                style={{ color: "var(--fg-subtle)" }}
+                aria-label={t("common.close", lang)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Actions */}
+            <div className="py-2">
+              {/* Edit action */}
+              <button
+                onClick={() => {
+                  openEdit(actionSheetTx);
+                  closeActionSheet();
+                }}
+                className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors"
+                style={{ color: "var(--fg)" }}
+              >
+                <span
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: "var(--surface-sunken)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style={{ color: "var(--accent)" }}>
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                </span>
+                <span className="text-sm font-medium">{t("common.edit", lang)}</span>
+              </button>
+
+              {/* Delete action */}
+              <button
+                onClick={() => {
+                  setDeleteTarget(actionSheetTx);
+                  closeActionSheet();
+                }}
+                className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors"
+              >
+                <span
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: "var(--expense-wash)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style={{ color: "var(--expense)" }}>
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <span className="text-sm font-medium" style={{ color: "var(--expense)" }}>
+                  {t("common.delete", lang)}
+                </span>
+              </button>
+            </div>
+
+            {/* Safe-area bottom padding for iOS */}
+            <div style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
+          </div>
+        </div>
+      )}
 
       {/* ── Rounded search ── */}
       <div className="relative">
@@ -553,10 +676,11 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
           <>
           <div className="sm:hidden">
             {pagedRows.map((tx, idx) => (
-              <div
+              <button
                 key={tx.id}
-                className="row-hover flex items-center gap-3 px-4 py-3.5 transition-colors"
-                style={{ borderTop: idx === 0 ? undefined : "1px solid var(--border)" }}
+                onClick={() => openActionSheet(tx)}
+                className="row-hover w-full flex items-center gap-3 px-4 py-3.5 transition-colors text-left"
+                style={{ borderTop: idx === 0 ? undefined : "1px solid var(--border)", minHeight: "64px" }}
               >
                 <span
                   className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 text-sm"
@@ -608,37 +732,15 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                     {tx.type === "income" ? "+" : "−"}
                     {formatTxMoney(tx)}
                   </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEdit(tx)}
-                      className="w-11 h-11 rounded-[10px] flex items-center justify-center"
-                      style={{ color: "var(--accent)" }}
-                      aria-label={t("common.edit", lang)}
-                      title={t("common.edit", lang)}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setDeleteTarget(tx)}
-                      disabled={deletingId === tx.id}
-                      className="w-11 h-11 rounded-[10px] flex items-center justify-center disabled:opacity-40"
-                      style={{ color: "var(--expense)" }}
-                      aria-label={t("common.delete", lang)}
-                      title={t("common.delete", lang)}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                        <path
-                          fillRule="evenodd"
-                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                  <span
+                    className="text-base leading-none select-none"
+                    style={{ color: "var(--fg-subtle)" }}
+                    aria-hidden="true"
+                  >
+                    ›
+                  </span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
 
@@ -681,22 +783,15 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                   >
                     {t("transactions.note", lang)}
                   </th>
-                  <th
-                    className="px-4 py-3 text-right font-medium text-xs"
-                    style={{ color: "var(--fg-subtle)" }}
-                  >
-                    {t("transactions.actions", lang)}
-                  </th>
                 </tr>
               </thead>
               <tbody>
                 {pagedRows.map((tx) => (
                   <tr
                     key={tx.id}
-                    className="row-hover group transition-colors"
-                    style={{
-                      borderTop: "1px solid var(--border)",
-                    }}
+                    onClick={() => openActionSheet(tx)}
+                    className="row-hover transition-colors cursor-pointer"
+                    style={{ borderTop: "1px solid var(--border)" }}
                   >
                     <td
                       className="px-4 py-3.5 whitespace-nowrap text-sm"
@@ -741,37 +836,6 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                       style={{ color: "var(--fg-subtle)" }}
                     >
                       {tx.note ?? "—"}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEdit(tx)}
-                          className="p-1.5 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
-                          style={{ color: "var(--accent)" }}
-                          title={t("common.edit", lang)}
-                          aria-label={t("common.edit", lang)}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(tx)}
-                          disabled={deletingId === tx.id}
-                          className="p-1.5 rounded-[10px] transition-all min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-40"
-                          style={{ color: "var(--expense)" }}
-                          title={t("common.delete", lang)}
-                          aria-label={t("common.delete", lang)}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                              fillRule="evenodd"
-                              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}

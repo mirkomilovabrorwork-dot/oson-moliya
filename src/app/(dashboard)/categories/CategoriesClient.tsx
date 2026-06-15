@@ -480,6 +480,20 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
         ))}
       </div>
 
+      {/* Budget hint — shown only on Expense tab when no expense budget exists yet */}
+      {activeTab === "expense" && !cats.some((c) => c.type === "expense" && c.budgetLimit) && (
+        <div
+          className="px-4 py-2.5 rounded-[10px] text-xs"
+          style={{
+            background: "var(--surface-sunken)",
+            color: "var(--fg-muted)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          {t("categories.budget_hint", lang)}
+        </div>
+      )}
+
       {/* Category list */}
       <div
         className="rounded-[12px] overflow-hidden"
