@@ -162,10 +162,19 @@ export function getBotLabels(lang: string): {
  * so no appUrl / web_app button is needed here.
  * The appUrl parameter is kept for signature compatibility but unused.
  */
-export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", _appUrl?: string): Keyboard {
+export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", appUrl?: string): Keyboard {
   const labels = getPersistentKeyboardLabels(lang);
   const kb = new Keyboard();
+  // Row 1: 📊 Hisobot (monthly report) + 📈 Grafiklar (opens the dashboard/site).
   kb.text(labels.report);
+  // Telegram requires HTTPS for a web_app keyboard button; on localhost fall back to text.
+  if (appUrl && appUrl.startsWith("https://")) {
+    kb.webApp(labels.charts, appUrl);
+  } else {
+    kb.text(labels.charts);
+  }
+  kb.row();
+  // Row 2: 🌐 Til + ❓ Yordam
   kb.text(labels.lang);
   kb.text(labels.help);
   return kb.resized().persistent();
@@ -174,16 +183,17 @@ export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", _appUrl?: stri
 /** Localized labels for the persistent reply keyboard buttons */
 export function getPersistentKeyboardLabels(lang: "uz" | "ru" | "en"): {
   report: string;
+  charts: string;
   lang: string;
   help: string;
 } {
   if (lang === "ru") {
-    return { report: "📊 Отчёт", lang: "🌐 Язык", help: "❓ Помощь" };
+    return { report: "📊 Отчёт", charts: "📈 Графики", lang: "🌐 Язык", help: "❓ Помощь" };
   }
   if (lang === "en") {
-    return { report: "📊 Report", lang: "🌐 Language", help: "❓ Help" };
+    return { report: "📊 Report", charts: "📈 Charts", lang: "🌐 Language", help: "❓ Help" };
   }
-  return { report: "📊 Hisobot", lang: "🌐 Til", help: "❓ Yordam" };
+  return { report: "📊 Hisobot", charts: "📈 Grafiklar", lang: "🌐 Til", help: "❓ Yordam" };
 }
 
 /**
