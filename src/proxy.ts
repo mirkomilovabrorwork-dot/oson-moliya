@@ -55,7 +55,8 @@ export function proxy(request: NextRequest): NextResponse {
     pathname.startsWith("/transactions") ||
     pathname.startsWith("/analytics") ||
     pathname.startsWith("/categories") ||
-    pathname.startsWith("/converter");
+    pathname.startsWith("/converter") ||
+    pathname.startsWith("/import");
 
   if (isDashboardPath && !hasSessionCookie(request)) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -69,7 +70,8 @@ export function proxy(request: NextRequest): NextResponse {
     pathname.startsWith("/api/currency") ||
     pathname.startsWith("/api/accounts") ||
     pathname.startsWith("/api/analytics") ||
-    pathname.startsWith("/api/debts");
+    pathname.startsWith("/api/debts") ||
+    pathname.startsWith("/api/import");
 
   if (isProtectedApi && !hasSessionCookie(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

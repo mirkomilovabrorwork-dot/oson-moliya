@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
@@ -361,6 +362,21 @@ export function AccountsClient({ accounts: initial, totalBalance: initialTotal, 
       >
         + {t("account.add", lang)}
       </button>
+
+      {/* ── Import statement link ── */}
+      <Link
+        href="/import"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-[14px] text-sm font-semibold transition-all min-h-[44px] mt-3"
+        style={{
+          border: "1px solid var(--border)",
+          color: "var(--fg-muted)",
+          background: "var(--surface)",
+          textDecoration: "none",
+        }}
+      >
+        <span aria-hidden="true">📥</span>
+        {t("import.nav_label", lang)}
+      </Link>
 
       {/* ── Add modal ── */}
       {showAdd && (
