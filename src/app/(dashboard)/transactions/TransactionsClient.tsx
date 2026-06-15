@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
@@ -82,8 +82,10 @@ interface EditState {
   occurredAt: string;
 }
 
-export function TransactionsClient({ transactions: initial, categories, lang, currency, rates }: Props) {
+function TransactionsClientInner({ transactions: initial, categories, lang, currency, rates }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   // formatMoney: for aggregated totals (always uses amountUzs, converts to chosen main currency)
   const formatMoney = (s: string) =>
     formatMoneyFn(BigInt(Math.round(Number(s))), currency, rates, lang);
@@ -100,16 +102,58 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
       lang
     );
 
-  // Filter state
-  const [typeFilter, setTypeFilter] = useState<"" | "income" | "expense">("");
-  const [catFilter, setCatFilter] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  // Helper: read a validated "income"|"expense"|"" from URL param
+  function readTypeParam(p: URLSearchParams): "" | "income" | "expense" {
+    const v = p.get("type") ?? "";
+    return v === "income" || v === "expense" ? v : "";
+  }
+
+  // Filter state — initialized from URL on first render
+  const [typeFilter, setTypeFilter] = useState<"" | "income" | "expense">(() => readTypeParam(searchParams));
+  const [catFilter, setCatFilter] = useState(() => searchParams.get("cat") ?? "");
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get("q") ?? "");
+  const [dateFrom, setDateFrom] = useState(() => searchParams.get("from") ?? "");
+  const [dateTo, setDateTo] = useState(() => searchParams.get("to") ?? "");
   const [page, setPage] = useState(1);
 
-  // Date panel toggle
-  const [showDatePanel, setShowDatePanel] = useState(false);
+  // Date panel toggle — open automatically if a date filter is present in URL
+  const [showDatePanel, setShowDatePanel] = useState(() => !!(searchParams.get("from") || searchParams.get("to")));
+
+  // Debounced search ref: avoids janky URL updates while typing
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync non-search filters to URL immediately; search is debounced
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (typeFilter) params.set("type", typeFilter);
+    if (catFilter) params.set("cat", catFilter);
+    if (dateFrom) params.set("from", dateFrom);
+    if (dateTo) params.set("to", dateTo);
+    // Search is handled separately in its own debounced effect below
+    if (searchQuery) params.set("q", searchQuery);
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : "?", { scroll: false });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeFilter, catFilter, dateFrom, dateTo]);
+
+  // Debounce search query URL update (300 ms)
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (typeFilter) params.set("type", typeFilter);
+      if (catFilter) params.set("cat", catFilter);
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo);
+      if (searchQuery) params.set("q", searchQuery);
+      const qs = params.toString();
+      router.replace(qs ? `?${qs}` : "?", { scroll: false });
+    }, 300);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   // Live rows (optimistic delete/edit)
   const [rows, setRows] = useState<TxRow[]>(initial);
@@ -175,6 +219,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
     setDateTo("");
     setShowDatePanel(false);
     setPage(1);
+    router.replace("?", { scroll: false });
   };
 
   // Delete handler
@@ -779,7 +824,8 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(15,23,42,0.5)" }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) setEditing(null);
+            // Do not close during save — prevents modal freezing mid-PATCH
+            if (!editLoading && e.target === e.currentTarget) setEditing(null);
           }}
         >
           <div
@@ -791,8 +837,9 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                 {t("transactions.edit.title", lang)}
               </h3>
               <button
-                onClick={() => setEditing(null)}
-                className="p-1.5 rounded-lg transition-all"
+                onClick={() => { if (!editLoading) setEditing(null); }}
+                disabled={editLoading}
+                className="p-1.5 rounded-lg transition-all disabled:opacity-40"
                 style={{ color: "var(--fg-subtle)" }}
               >
                 ✕
@@ -811,16 +858,17 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
             {/* Type — segmented: active = raised neutral, NOT income/expense fill */}
             <div
               className="flex rounded-md p-0.5 gap-0.5"
-              style={{ background: "var(--surface-sunken)" }}
+              style={{ background: "var(--surface-sunken)", opacity: editLoading ? 0.5 : 1 }}
             >
               {(["income", "expense"] as const).map((opt) => (
                 <button
                   key={opt}
                   type="button"
+                  disabled={editLoading}
                   onClick={() =>
                     setEditing((s) => (s ? { ...s, type: opt, categoryId: "" } : s))
                   }
-                  className="flex-1 py-2 rounded-[8px] text-sm font-medium transition-all"
+                  className="flex-1 py-2 rounded-[8px] text-sm font-medium transition-all disabled:cursor-not-allowed"
                   style={
                     editing.type === opt
                       ? {
@@ -847,13 +895,14 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
               <input
                 type="text"
                 inputMode="numeric"
+                disabled={editLoading}
                 value={editing.amountUzs}
                 onChange={(e) =>
                   setEditing((s) =>
                     s ? { ...s, amountUzs: e.target.value.replace(/\s/g, "") } : s
                   )
                 }
-                className="w-full rounded-[12px] px-3 py-2.5 text-sm tabular"
+                className="w-full rounded-[12px] px-3 py-2.5 text-sm tabular disabled:opacity-50 disabled:cursor-not-allowed"
                 style={inputStyle}
               />
             </div>
@@ -867,11 +916,12 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                 {t("form.category", lang)}
               </label>
               <select
+                disabled={editLoading}
                 value={editing.categoryId}
                 onChange={(e) =>
                   setEditing((s) => (s ? { ...s, categoryId: e.target.value } : s))
                 }
-                className="w-full rounded-[12px] px-3 py-2.5 text-sm"
+                className="w-full rounded-[12px] px-3 py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 style={inputStyle}
               >
                 <option value="">{t("form.category_none", lang)}</option>
@@ -896,11 +946,12 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
               </label>
               <input
                 type="date"
+                disabled={editLoading}
                 value={editing.occurredAt}
                 onChange={(e) =>
                   setEditing((s) => (s ? { ...s, occurredAt: e.target.value } : s))
                 }
-                className="w-full rounded-[12px] px-3 py-2.5 text-sm"
+                className="w-full rounded-[12px] px-3 py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 style={inputStyle}
               />
             </div>
@@ -915,11 +966,12 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
               </label>
               <input
                 type="text"
+                disabled={editLoading}
                 value={editing.note}
                 onChange={(e) =>
                   setEditing((s) => (s ? { ...s, note: e.target.value } : s))
                 }
-                className="w-full rounded-[12px] px-3 py-2.5 text-sm"
+                className="w-full rounded-[12px] px-3 py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 style={inputStyle}
               />
             </div>
@@ -927,8 +979,9 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
             {/* Actions */}
             <div className="flex gap-3 pt-1">
               <button
-                onClick={() => setEditing(null)}
-                className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all"
+                onClick={() => { if (!editLoading) setEditing(null); }}
+                disabled={editLoading}
+                className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all disabled:opacity-40"
                 style={{
                   border: "1px solid var(--border)",
                   color: "var(--fg-muted)",
@@ -939,9 +992,23 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
               <button
                 onClick={handleEditSave}
                 disabled={editLoading}
-                className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
               >
+                {editLoading && (
+                  <svg
+                    className="animate-spin"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  >
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                )}
                 {editLoading ? t("form.submitting", lang) : t("common.save", lang)}
               </button>
             </div>
@@ -949,5 +1016,13 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
         </div>
       )}
     </>
+  );
+}
+
+export function TransactionsClient(props: Props) {
+  return (
+    <Suspense>
+      <TransactionsClientInner {...props} />
+    </Suspense>
   );
 }

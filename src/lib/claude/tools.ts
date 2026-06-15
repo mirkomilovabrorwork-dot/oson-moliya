@@ -48,6 +48,10 @@ export const RecordIntentSchema = z.object({
   note: z.string().nullable().optional(),
   query: QuerySchema.nullable().optional(),
   target: z.enum(["last", "by_amount"]).nullable().optional(),
+  /** Whole-number UZS amount to match when target="by_amount". */
+  targetAmount: z.number().int().positive().nullable().optional(),
+  /** Category or note hint to match when target="by_amount" (lowercase). */
+  targetHint: z.string().nullable().optional(),
   patch: PatchSchema.nullable().optional(),
   counterparty: z.string().nullable().optional(),
   debt_direction: z.enum(["given", "taken"]).nullable().optional(),
@@ -152,7 +156,18 @@ export const RECORD_INTENT_TOOL = {
       target: {
         type: ["string", "null"],
         enum: ["last", "by_amount", null],
-        description: "Target for correct/delete operations.",
+        description:
+          "Target for correct/delete operations. Use 'by_amount' when the user references a specific amount or category (e.g. 'fix the 50 000 one'). Use 'last' when the user says 'last' or 'previous' without specifying which.",
+      },
+      targetAmount: {
+        type: ["integer", "null"],
+        description:
+          "When target='by_amount': the UZS amount to match (expanded, whole integer). Null if not mentioned.",
+      },
+      targetHint: {
+        type: ["string", "null"],
+        description:
+          "When target='by_amount': lowercase category or note keyword to help find the transaction (e.g. 'tushlik', 'transport'). Null if not mentioned.",
       },
       patch: {
         type: ["object", "null"],

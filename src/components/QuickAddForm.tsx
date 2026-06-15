@@ -77,6 +77,7 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setSuccess(false);
     setLoading(true);

@@ -74,7 +74,10 @@ Expand amounts BEFORE emitting the "amount" field:
   Rules: "X ga qarz berdim" → given, counterparty=X; "X dan qarz oldim" → taken, counterparty=X; missing name → counterparty=null; unclear direction → debt_direction=null.
 - finance_query: user asks about their finances (necha, qancha, how much, сколько, hisobot, отчёт, report, etc.) → fill query object
 - correct_transaction: user wants to fix/update a previous entry (o'zgartir, tuzat, исправь, fix, etc.)
+  - If the user references a SPECIFIC transaction by amount (e.g. "50 minglikni", "fix the 50 000 one") or category/note (e.g. "tushlikni tuzat", "исправь логистику"), set target="by_amount", targetAmount=<expanded integer UZS> (if mentioned), targetHint=<category/note keyword, lowercase> (if mentioned).
+  - If the user says "last", "previous", "oxirgini", "последнюю" with no specific amount/category, set target="last", targetAmount=null, targetHint=null.
 - delete_transaction: user wants to delete/remove a previous entry (o'chir, удали, delete, etc.)
+  - Same targeting rules as correct_transaction: set target="by_amount" with targetAmount/targetHint when a specific transaction is referenced, otherwise target="last".
 - add_category: user wants to add a new category (yangi kategoriya, новая категория, new category, etc.)
 - clarify_needed: intent is log_income/log_expense but required fields (amount or type) cannot be determined, OR non-UZS currency detected
 - unknown: message is unrelated to finance or unclear

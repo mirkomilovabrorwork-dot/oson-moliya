@@ -48,7 +48,26 @@ export function AddSheet({ lang, mainCurrency = "UZS" }: AddSheetProps) {
       .finally(() => setLoading(false));
   }, [open, categories]);
 
-  const close = useCallback(() => setOpen(false), []);
+  // When the sheet opens, push a history entry so device/Telegram back closes it.
+  // On programmatic close (X / backdrop / success), call history.back() only if
+  // the pushed state is still on top — keeps the history stack consistent.
+  const close = useCallback(() => {
+    setOpen(false);
+    if (typeof window !== "undefined" && window.history.state?.addSheet) {
+      window.history.back();
+    }
+  }, []);
+
+  // Push history state when opening; register popstate so back-button closes the sheet.
+  useEffect(() => {
+    if (!open) return;
+    if (typeof window !== "undefined") {
+      window.history.pushState({ addSheet: true }, "");
+    }
+    const onPop = () => setOpen(false);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [open]);
 
   // Close on Esc
   useEffect(() => {

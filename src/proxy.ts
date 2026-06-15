@@ -10,6 +10,25 @@ function hasSessionCookie(request: NextRequest): boolean {
   return !!request.cookies.get(COOKIE_NAME)?.value;
 }
 
+/**
+ * DEV BYPASS — returns true when ALLOW_INSECURE_DEV=1 and NODE_ENV!=='production'.
+ * This allows headless QA and local dev to reach authenticated pages without a
+ * Telegram magic-link cookie.
+ *
+ * PRODUCTION SAFETY: the same flag is hard-blocked at startup by
+ * assertInsecureDevBlocked() in src/lib/env.ts — if someone sets it in prod the
+ * server refuses to start, so this branch is unreachable in production.
+ *
+ * Note: proxy runs at the Edge (no DB access). getSessionUser() in route handlers
+ * performs the real dev user get-or-create when requests pass through here.
+ */
+function isInsecureDevBypassActive(): boolean {
+  return (
+    process.env.ALLOW_INSECURE_DEV === "1" &&
+    process.env.NODE_ENV !== "production"
+  );
+}
+
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
@@ -22,6 +41,11 @@ export function proxy(request: NextRequest): NextResponse {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
   ) {
+    return NextResponse.next();
+  }
+
+  // When the dev bypass is active, skip all cookie/auth checks.
+  if (isInsecureDevBypassActive()) {
     return NextResponse.next();
   }
 

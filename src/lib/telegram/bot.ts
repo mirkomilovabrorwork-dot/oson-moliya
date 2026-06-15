@@ -698,22 +698,6 @@ async function handleMessage(
 
   // ── correct_transaction ───────────────────────────────────────────────────
   if (intent.intent === "correct_transaction") {
-    const activePending = await getPendingAction(user.id);
-    const lastTxId =
-      activePending?.lastTransactionId ??
-      ((activePending?.draft as Record<string, unknown>)?.lastTransactionId as string | undefined);
-
-    if (!lastTxId) {
-      const noTx =
-        lang === "ru"
-          ? "Нет недавней транзакции для исправления."
-          : lang === "en"
-          ? "No recent transaction to correct."
-          : "Tuzatish uchun yaqin tranzaksiya yo'q.";
-      await ctx.reply(noTx);
-      return;
-    }
-
     const patch = intent.patch;
     if (!patch) {
       await ctx.reply(intent.reply_text);
@@ -721,8 +705,95 @@ async function handleMessage(
     }
 
     try {
+      // ── Targeted lookup: score recent transactions if brain provided targeting ─
+      const intentAny = intent as Record<string, unknown>;
+      const targetMode = intentAny.target as string | null | undefined;
+      const targetAmount = intentAny.targetAmount as number | null | undefined;
+      const targetHint = intentAny.targetHint as string | null | undefined;
+
+      let targetTxId: string | null = null;
+
+      const useTargeting =
+        targetMode === "by_amount" ||
+        (targetAmount != null && targetAmount > 0) ||
+        (typeof targetHint === "string" && targetHint.trim().length > 0);
+
+      if (useTargeting) {
+        // Fetch up to 50 most-recent non-deleted transactions with their category
+        const recent = await prisma.transaction.findMany({
+          where: { userId: user.id, deletedAt: null },
+          orderBy: { occurredAt: "desc" },
+          take: 50,
+          include: { category: true },
+        });
+
+        let bestScore = 0;
+        let bestId: string | null = null;
+
+        for (const tx of recent) {
+          let score = 0;
+          // +2 for exact amount match (BigInt comparison)
+          if (targetAmount != null && tx.amountUzs === BigInt(targetAmount)) {
+            score += 2;
+          }
+          // +1 for category or note containing the hint (case-insensitive substring)
+          if (typeof targetHint === "string" && targetHint.trim().length > 0) {
+            const hint = targetHint.toLowerCase();
+            const catName = (tx.category?.name ?? "").toLowerCase();
+            const noteTxt = (tx.note ?? "").toLowerCase();
+            if (catName.includes(hint) || noteTxt.includes(hint)) {
+              score += 1;
+            }
+          }
+          if (score > bestScore) {
+            bestScore = score;
+            bestId = tx.id;
+          }
+        }
+
+        if (bestScore > 0 && bestId) {
+          targetTxId = bestId;
+        }
+        // If nothing scored, fall through to lastTransactionId fallback below
+      }
+
+      // ── Fallback: lastTransactionId from pending action ────────────────────
+      if (!targetTxId) {
+        const activePending = await getPendingAction(user.id);
+        const lastTxId =
+          activePending?.lastTransactionId ??
+          ((activePending?.draft as Record<string, unknown>)?.lastTransactionId as string | undefined);
+        if (lastTxId) {
+          targetTxId = lastTxId;
+        }
+      }
+
+      // ── Final fallback: most-recent transaction ───────────────────────────
+      if (!targetTxId) {
+        const mostRecent = await prisma.transaction.findFirst({
+          where: { userId: user.id, deletedAt: null },
+          orderBy: { occurredAt: "desc" },
+          select: { id: true },
+        });
+        if (mostRecent) {
+          targetTxId = mostRecent.id;
+        }
+      }
+
+      if (!targetTxId) {
+        const noTx =
+          lang === "ru"
+            ? "Нет недавней транзакции для исправления."
+            : lang === "en"
+            ? "No recent transaction to correct."
+            : "Tuzatish uchun yaqin tranzaksiya yo'q.";
+        await ctx.reply(noTx);
+        return;
+      }
+
       const tx = await prisma.transaction.findFirst({
-        where: { id: lastTxId, userId: user.id, deletedAt: null },
+        where: { id: targetTxId, userId: user.id, deletedAt: null },
+        include: { category: true },
       });
       if (!tx) {
         const notFound =
@@ -730,6 +801,10 @@ async function handleMessage(
         await ctx.reply(notFound);
         return;
       }
+
+      // Remember previous state for the confirmation message
+      const prevAmount = tx.amountUzs;
+      const prevCategoryName = tx.category?.name ?? null;
 
       let newCategoryId: string | undefined = undefined;
       if (patch.category) {
@@ -740,7 +815,7 @@ async function handleMessage(
       }
 
       const updated = await prisma.transaction.update({
-        where: { id: lastTxId },
+        where: { id: targetTxId },
         data: {
           ...(patch.amount ? { amountUzs: BigInt(patch.amount) } : {}),
           ...(patch.type ? { type: patch.type === "income" ? TxType.income : TxType.expense } : {}),
@@ -749,6 +824,18 @@ async function handleMessage(
         },
         include: { category: true },
       });
+
+      // Build a "which transaction was corrected" context line for the user
+      const prevAmtStr = formatAmount(prevAmount, lang);
+      const prevCatPart = prevCategoryName
+        ? (lang === "ru" ? `, ${prevCategoryName}` : lang === "en" ? `, ${prevCategoryName}` : `, ${prevCategoryName}`)
+        : "";
+      const wasStr =
+        lang === "ru"
+          ? `(было: ${prevAmtStr}${prevCatPart})`
+          : lang === "en"
+          ? `(was: ${prevAmtStr}${prevCatPart})`
+          : `(avval: ${prevAmtStr}${prevCatPart})`;
 
       const confirmation = formatConfirmation({
         amount: updated.amountUzs,
@@ -759,7 +846,7 @@ async function handleMessage(
       });
       const prefix =
         lang === "ru" ? "✏️ Исправлено: " : lang === "en" ? "✏️ Updated: " : "✏️ Tuzatildi: ";
-      await ctx.reply(prefix + confirmation.replace(/^✅ /, ""));
+      await ctx.reply(`${prefix}${confirmation.replace(/^✅ /, "")} ${wasStr}`);
     } catch (err) {
       console.error("correct_transaction error:", err);
       await ctx.reply(intent.reply_text);

@@ -181,6 +181,62 @@ describe("RecordIntentSchema — correct_transaction", () => {
       },
     });
   });
+
+  // ── New fields: target / targetAmount / targetHint ────────────────────────
+
+  it("accepts target='by_amount' with targetAmount and targetHint", () => {
+    const data = parseOk({
+      intent: "correct_transaction",
+      language: "uz",
+      confidence: 0.92,
+      reply_text: "50 000 tushlikni tuzataman",
+      missing_fields: [],
+      target: "by_amount",
+      targetAmount: 50000,
+      targetHint: "tushlik",
+      patch: {
+        amount: 55000,
+      },
+    });
+    expect(data?.target).toBe("by_amount");
+    expect(data?.targetAmount).toBe(50000);
+    expect(data?.targetHint).toBe("tushlik");
+  });
+
+  it("accepts target='last' with no targetAmount or targetHint", () => {
+    const data = parseOk({
+      intent: "correct_transaction",
+      language: "ru",
+      confidence: 0.88,
+      reply_text: "Исправляю последнюю",
+      missing_fields: [],
+      target: "last",
+      patch: {
+        category: "транспорт",
+      },
+    });
+    expect(data?.target).toBe("last");
+    expect(data?.targetAmount).toBeUndefined();
+    expect(data?.targetHint).toBeUndefined();
+  });
+
+  it("accepts targetAmount as null (optional/nullable)", () => {
+    const data = parseOk({
+      intent: "correct_transaction",
+      language: "en",
+      confidence: 0.8,
+      reply_text: "Fixed",
+      missing_fields: [],
+      target: "by_amount",
+      targetAmount: null,
+      targetHint: "transport",
+      patch: {
+        note: "fixed note",
+      },
+    });
+    expect(data?.targetAmount).toBeNull();
+    expect(data?.targetHint).toBe("transport");
+  });
 });
 
 // ── delete_transaction ────────────────────────────────────────────────────────

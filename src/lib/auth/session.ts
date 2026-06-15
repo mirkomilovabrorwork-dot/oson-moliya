@@ -1,9 +1,13 @@
 import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import { db } from "../db";
+import { assertInsecureDevBlocked } from "../env";
 
 const COOKIE_NAME = "pultrack_session";
 const SESSION_DAYS = 30;
+
+/** Sentinel Telegram ID used for the seeded dev user (local dev only). */
+const DEV_TELEGRAM_ID = BigInt(999999999);
 
 function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex");
@@ -43,26 +47,58 @@ export async function createSession(userId: string): Promise<void> {
 /**
  * Reads the session cookie and returns the associated User or null.
  * Can be called from Server Components and Route Handlers.
+ *
+ * DEV BYPASS: when ALLOW_INSECURE_DEV=1 and NODE_ENV!=='production',
+ * returns a seeded dev user if no valid session cookie is present.
+ * This is HARD-BLOCKED in production (assertInsecureDevBlocked throws on startup).
  */
 export async function getSessionUser() {
   const prisma = db as import("@prisma/client").PrismaClient;
   const cookieStore = await cookies();
   const raw = cookieStore.get(COOKIE_NAME)?.value;
-  if (!raw) return null;
 
-  const tokenHash = sha256(raw);
-  const session = await prisma.session.findUnique({
-    where: { tokenHash },
-    include: { user: true },
-  });
+  // Normal path — validate cookie.
+  if (raw) {
+    const tokenHash = sha256(raw);
+    const session = await prisma.session.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
 
-  if (!session) return null;
-  if (session.expiresAt < new Date()) {
-    await prisma.session.delete({ where: { tokenHash } });
-    return null;
+    if (!session) {
+      // fall through to dev bypass check below
+    } else if (session.expiresAt < new Date()) {
+      await prisma.session.delete({ where: { tokenHash } });
+      // fall through to dev bypass check below
+    } else {
+      return session.user;
+    }
   }
 
-  return session.user;
+  // DEV BYPASS — only active when ALLOW_INSECURE_DEV=1 AND not production.
+  // assertInsecureDevBlocked() is called by getEnv() at startup; the double-check
+  // here is a defence-in-depth guard in case startup was skipped in tests.
+  assertInsecureDevBlocked();
+  if (
+    process.env.ALLOW_INSECURE_DEV === "1" &&
+    process.env.NODE_ENV !== "production"
+  ) {
+    // Get-or-create a stable seeded dev user so the DB always has this row.
+    const devUser = await prisma.user.upsert({
+      where: { telegramId: DEV_TELEGRAM_ID },
+      update: {},
+      create: {
+        telegramId: DEV_TELEGRAM_ID,
+        firstName: "Dev",
+        username: "dev_user",
+        language: "uz",
+        displayCurrency: "UZS",
+      },
+    });
+    return devUser;
+  }
+
+  return null;
 }
 
 /**
