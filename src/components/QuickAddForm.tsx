@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
+import { translateCategoryName } from "@/lib/categories-i18n";
 
 type SupportedCurrency = "UZS" | "USD" | "EUR" | "RUB";
 
@@ -40,12 +41,17 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
   const [accountId, setAccountId] = useState("");
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [note, setNote] = useState("");
-  const [occurredAt, setOccurredAt] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  // A4: Initialize to empty string to avoid SSR/client mismatch (hydration fix).
+  // A useEffect sets today's date on mount so the field still defaults to today.
+  const [occurredAt, setOccurredAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // A4: Set today's date on mount (client-side only) to avoid SSR/hydration mismatch.
+  useEffect(() => {
+    setOccurredAt(new Date().toISOString().slice(0, 10));
+  }, []);
 
   // Lazy-load accounts once on mount
   useEffect(() => {
@@ -283,7 +289,7 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
           {filteredCategories.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.emoji ? `${cat.emoji} ` : ""}
-              {cat.name}
+              {translateCategoryName(cat.name, lang)}
             </option>
           ))}
         </select>

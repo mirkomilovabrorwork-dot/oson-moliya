@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
@@ -71,7 +71,8 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
   const [addAmount, setAddAmount] = useState("");
   const [addDirection, setAddDirection] = useState<"given" | "taken">("given");
   const [addNote, setAddNote] = useState("");
-  const [addDate, setAddDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // A4: Initialize to "" to avoid SSR/client mismatch; set today on mount via useEffect.
+  const [addDate, setAddDate] = useState("");
 
   // Edit form
   const [editTarget, setEditTarget] = useState<DebtRow | null>(null);
@@ -85,6 +86,11 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
   // Action loading
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // A4: Set today's date on mount (client-side only) to avoid SSR/hydration mismatch.
+  useEffect(() => {
+    setAddDate(new Date().toISOString().slice(0, 10));
+  }, []);
 
   const showToast = (msg: string, type: "success" | "error" = "success") =>
     setToast({ msg, type });

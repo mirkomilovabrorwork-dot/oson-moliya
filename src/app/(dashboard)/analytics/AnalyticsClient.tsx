@@ -8,6 +8,7 @@ import { CategoryPie } from "@/components/charts/CategoryPie";
 import { TrendLine } from "@/components/charts/TrendLine";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn } from "@/lib/currency";
+import { translateCategoryName } from "@/lib/categories-i18n";
 
 type Period = "this_month" | "last_month" | "this_year" | "custom";
 
@@ -171,7 +172,7 @@ export function AnalyticsClient({
   // expense by category for pie
   const expenseByCategory = byCategory
     .filter((c) => c.expense > 0)
-    .map((c) => ({ categoryName: c.categoryName, amount: c.expense }));
+    .map((c) => ({ categoryName: translateCategoryName(c.categoryName, lang), amount: c.expense }));
 
   return (
     <div className="space-y-6">

@@ -8,6 +8,7 @@ import { Toast } from "@/components/Toast";
 import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn } from "@/lib/currency";
+import { translateCategoryName } from "@/lib/categories-i18n";
 
 interface CategoryRow {
   id: string;
@@ -195,7 +196,7 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
         }
         targetLabel={
           deleteTarget
-            ? `${deleteTarget.emoji ? `${deleteTarget.emoji} ` : ""}${deleteTarget.name}`
+            ? `${deleteTarget.emoji ? `${deleteTarget.emoji} ` : ""}${translateCategoryName(deleteTarget.name, lang)}`
             : undefined
         }
         requiredWord={t("delete.typed.word", lang)}
@@ -441,7 +442,7 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
                             className="font-medium text-sm"
                             style={{ color: "var(--fg)" }}
                           >
-                            {cat.name}
+                            {translateCategoryName(cat.name, lang)}
                           </p>
                           {cat.isDefault && (
                             <span

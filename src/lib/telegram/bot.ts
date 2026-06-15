@@ -238,12 +238,58 @@ async function showUpdatedTx(
   });
 }
 
+// ── A1: module-level report builder (shared by command + keyword path) ───────
+// Keyword that triggers this path (checked BEFORE the brain call).
+// Unicode-aware boundaries: JS \b only knows ASCII word chars, so \bотчёт\b never
+// matches Cyrillic. \p{L} (with /u) gives real letter boundaries for BOTH scripts and
+// also blocks false positives inside words ("reporting", "excellent").
+const REPORT_KEYWORD_RE = /(?:^|[^\p{L}])(hisobot|hisobotni|otchet|отчёт|отчет|report|excel)(?![\p{L}])/iu;
+
+type ReplyFn = (text: string) => Promise<unknown>;
+type ReplyWithDocumentFn = (file: InputFile, opts?: { caption?: string }) => Promise<unknown>;
+
+async function buildAndSendReport(
+  reply: ReplyFn,
+  replyWithDocument: ReplyWithDocumentFn,
+  prisma: import("@prisma/client").PrismaClient,
+  user: { id: string; firstName: string | null },
+  lang: "uz" | "ru" | "en"
+): Promise<void> {
+  try {
+    const buf = await buildMonthlyReportXlsx(prisma, user.id, {
+      lang,
+      displayName: user.firstName ?? undefined,
+    });
+    const tashkentNow = new Date(Date.now() + 5 * 60 * 60 * 1000);
+    const yyyy = tashkentNow.getUTCFullYear();
+    const mm = String(tashkentNow.getUTCMonth() + 1).padStart(2, "0");
+    const filename = `Oson-Moliya-${yyyy}-${mm}.xlsx`;
+    const caption =
+      lang === "ru"
+        ? `📊 Отчёт за ${yyyy}-${mm}`
+        : lang === "en"
+        ? `📊 Report for ${yyyy}-${mm}`
+        : `📊 ${yyyy}-${mm} oy hisoboti`;
+    await replyWithDocument(new InputFile(buf, filename), { caption });
+  } catch (err) {
+    console.error("hisobot error:", err);
+    await reply(
+      lang === "ru"
+        ? "Не удалось создать отчёт. Попробуйте ещё раз."
+        : lang === "en"
+        ? "Could not generate report. Please try again."
+        : "Hisobotni yaratib bo'lmadi. Qaytadan urinib ko'ring."
+    );
+  }
+}
+
 // ── Shared message-handling logic (text + voice share this path) ─────────────
 
 async function handleMessage(
   ctx: {
     from: { id: number; first_name?: string; username?: string } | undefined;
     reply: (text: string, opts?: Parameters<Bot["api"]["sendMessage"]>[2]) => Promise<unknown>;
+    replyWithDocument?: ReplyWithDocumentFn;
   },
   text: string,
   prisma: import("@prisma/client").PrismaClient
@@ -277,6 +323,23 @@ async function handleMessage(
 
   // Load pending action
   const pending = await getPendingAction(user.id);
+
+  // ── A1: Report-on-demand keyword shortcut ─────────────────────────────────
+  // Check BEFORE the brain so it is always fast and reliable.
+  // Only fires when the whole message is essentially just the report keyword —
+  // this avoids interfering with genuine finance queries like
+  // "bu oy logistika qancha?" (contains no hisobot/отчёт/report word).
+  if (REPORT_KEYWORD_RE.test(text) && ctx.replyWithDocument) {
+    const kLang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    await buildAndSendReport(
+      (t) => ctx.reply(t),
+      ctx.replyWithDocument,
+      prisma,
+      user,
+      kLang
+    );
+    return;
+  }
 
   // Editing a transaction's AMOUNT via typed text (covers STT mistakes)
   if (pending && pending.intent === "edit_tx") {
@@ -769,15 +832,21 @@ async function handleMessage(
     return;
   }
 
-  // ── unknown ───────────────────────────────────────────────────────────────
-  await ctx.reply(
+  // ── unknown (A3: append /help hint) ──────────────────────────────────────
+  const unknownBase =
     intent.reply_text ||
-      (lang === "ru"
-        ? "Не понял. Напишите о доходе или расходе."
-        : lang === "en"
-        ? "I didn't understand. Write about income or expense."
-        : "Tushunmadim. Kirim yoki chiqim haqida yozing.")
-  );
+    (lang === "ru"
+      ? "Не понял. Напишите о доходе или расходе."
+      : lang === "en"
+      ? "I didn't understand. Write about income or expense."
+      : "Tushunmadim. Kirim yoki chiqim haqida yozing.");
+  const helpHint =
+    lang === "ru"
+      ? '\n💡 Подсказка: /help — список команд. Например: "На обед 35 000 сум".'
+      : lang === "en"
+      ? '\n💡 Tip: /help — command list. E.g. "35 000 for lunch".'
+      : '\n💡 Maslahat: /help — buyruqlar. Masalan: "Tushlikka 35 000 so\'m".';
+  await ctx.reply(unknownBase + helpHint);
 }
 
 // ── Bot factory ───────────────────────────────────────────────────────────────
@@ -945,15 +1014,15 @@ export function createBot(): Bot {
     await ctx.reply(access.text, { reply_markup: access.reply_markup });
   });
 
-  // Localized /help text
+  // Localized /help text (A2: /hisobot line added)
   const helpText = (l: "uz" | "ru" | "en"): string => {
     if (l === "ru") {
-      return `📖 Oson Moliya — Помощь\n\nОтправьте мне текст или 🎤 голосовое — я автоматически сохраню ваши расходы и доходы.\n\nКоманды:\n/start — Запустить бота\n/language — Сменить язык\n/dashboard — Открыть панель Moliyachi\n/help — Список команд\n\n💡 Например:\n"На обед ушло 35 тысяч"\n"Зарплата 5 000 000 сум"\n"сколько расходов в этом месяце?"`;
+      return `📖 Oson Moliya — Помощь\n\nОтправьте мне текст или 🎤 голосовое — я автоматически сохраню ваши расходы и доходы.\n\nКоманды:\n/start — Запустить бота\n/language — Сменить язык\n/dashboard — Открыть панель Moliyachi\n/hisobot — Excel отчёт за текущий месяц (также: /report, /otchet или напишите «отчёт»)\n/help — Список команд\n\n💡 Например:\n"На обед ушло 35 тысяч"\n"Зарплата 5 000 000 сум"\n"сколько расходов в этом месяце?"`;
     }
     if (l === "en") {
-      return `📖 Oson Moliya — Help\n\nSend me text or a 🎤 voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the Moliyachi dashboard\n/help — Command list\n\n💡 For example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
+      return `📖 Oson Moliya — Help\n\nSend me text or a 🎤 voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the Moliyachi dashboard\n/hisobot — Excel monthly report (also: /report, /otchet or type "report")\n/help — Command list\n\n💡 For example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
     }
-    return `📖 Oson Moliya — Yordam\n\nMenga matn yoki 🎤 ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Moliyachi panelini ochish\n/help — Buyruqlar ro'yxati\n\n💡 Masalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
+    return `📖 Oson Moliya — Yordam\n\nMenga matn yoki 🎤 ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Moliyachi panelini ochish\n/hisobot — Excel oylik hisobot (shuningdek: /report, /otchet yoki «hisobot» deb yozing)\n/help — Buyruqlar ro'yxati\n\n💡 Masalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
   };
 
   // /help — command list + examples
@@ -1001,38 +1070,15 @@ export function createBot(): Bot {
       return;
     }
 
-    try {
-      await ctx.replyWithChatAction("upload_document");
-
-      const buf = await buildMonthlyReportXlsx(prisma, user.id, {
-        lang,
-        displayName: user.firstName ?? undefined,
-      });
-
-      // Build a date-stamped filename: Oson-Moliya-YYYY-MM.xlsx
-      const tashkentNow = new Date(Date.now() + 5 * 60 * 60 * 1000);
-      const yyyy = tashkentNow.getUTCFullYear();
-      const mm = String(tashkentNow.getUTCMonth() + 1).padStart(2, "0");
-      const filename = `Oson-Moliya-${yyyy}-${mm}.xlsx`;
-
-      const caption =
-        lang === "ru"
-          ? `📊 Отчёт за ${yyyy}-${mm}`
-          : lang === "en"
-          ? `📊 Report for ${yyyy}-${mm}`
-          : `📊 ${yyyy}-${mm} oy hisoboti`;
-
-      await ctx.replyWithDocument(new InputFile(buf, filename), { caption });
-    } catch (err) {
-      console.error("hisobot error:", err);
-      await ctx.reply(
-        lang === "ru"
-          ? "Не удалось создать отчёт. Попробуйте ещё раз."
-          : lang === "en"
-          ? "Could not generate report. Please try again."
-          : "Hisobotni yaratib bo'lmadi. Qaytadan urinib ko'ring."
-      );
-    }
+    // A1: delegate to module-level helper (shared with keyword path in handleMessage)
+    await ctx.replyWithChatAction("upload_document");
+    await buildAndSendReport(
+      (t) => ctx.reply(t),
+      (file, opts) => ctx.replyWithDocument(file, opts),
+      prisma,
+      user,
+      lang
+    );
   });
 
   // /language — re-open the language picker any time
@@ -1065,6 +1111,8 @@ export function createBot(): Bot {
       {
         from: ctx.from,
         reply: (text, opts) => ctx.reply(text, opts),
+        // A1: pass replyWithDocument so keyword handler can send Excel
+        replyWithDocument: (file, opts) => ctx.replyWithDocument(file, opts),
       },
       ctx.message.text,
       prisma
@@ -1128,9 +1176,13 @@ export function createBot(): Bot {
       // Echo transcript so user knows what was heard
       await ctx.reply(`🎤 ${transcript}`);
 
-      // Feed into the same brain path as text
+      // Feed into the same brain path as text (A1: replyWithDocument for keyword path)
       await handleMessage(
-        { from, reply: (text, opts) => ctx.reply(text, opts) },
+        {
+          from,
+          reply: (text, opts) => ctx.reply(text, opts),
+          replyWithDocument: (file, opts) => ctx.replyWithDocument(file, opts),
+        },
         transcript,
         prisma
       );

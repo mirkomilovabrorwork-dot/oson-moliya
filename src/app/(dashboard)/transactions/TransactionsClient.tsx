@@ -8,6 +8,7 @@ import { Toast } from "@/components/Toast";
 import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn, formatTxMoney as formatTxMoneyFn } from "@/lib/currency";
+import { translateCategoryName } from "@/lib/categories-i18n";
 
 interface TxRow {
   id: string;
@@ -285,7 +286,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
         targetLabel={
           deleteTarget
             ? `${deleteTarget.type === "income" ? "+" : "-"}${formatTxMoney(deleteTarget)} · ${
-                deleteTarget.categoryName ?? t("form.category_none", lang)
+                translateCategoryName(deleteTarget.categoryName, lang) ?? t("form.category_none", lang)
               }`
             : undefined
         }
@@ -363,7 +364,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
             <option value="">{t("transactions.filter.category", lang)}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.emoji ? `${c.emoji} ` : ""}{c.name}
+                {c.emoji ? `${c.emoji} ` : ""}{translateCategoryName(c.name, lang)}
               </option>
             ))}
           </select>
@@ -529,7 +530,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                       className="text-sm font-medium truncate"
                       style={{ color: "var(--fg)" }}
                     >
-                      {tx.categoryName ?? t("form.category_none", lang)}
+                      {translateCategoryName(tx.categoryName, lang) ?? t("form.category_none", lang)}
                     </p>
                     <span
                       className="text-[11px] font-medium shrink-0"
@@ -676,7 +677,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                       style={{ color: "var(--fg-muted)" }}
                     >
                       {tx.categoryEmoji ? `${tx.categoryEmoji} ` : ""}
-                      {tx.categoryName ?? "—"}
+                      {translateCategoryName(tx.categoryName, lang) ?? "—"}
                     </td>
                     <td
                       className="px-4 py-3.5 text-right font-semibold tabular whitespace-nowrap"
@@ -879,7 +880,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
                   .map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.emoji ? `${c.emoji} ` : ""}
-                      {c.name}
+                      {translateCategoryName(c.name, lang)}
                     </option>
                   ))}
               </select>
