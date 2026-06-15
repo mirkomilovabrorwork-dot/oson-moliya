@@ -217,6 +217,13 @@ const uz: Dictionary = {
   "home.delta.no_prev": "o'tgan oyda ma'lumot yo'q",
   "home.delta.new": "yangi",
   "home.delta.sign_change": "o'tgan oy {prev} → bu oy {curr}",
+  // ── Diqqat card (amber attention card on Home)
+  "home.diqqat.title": "Diqqat",
+  "home.diqqat.over_line": "{category} — byudjetdan {pct}% (oshgan: {amount})",
+  "home.diqqat.no_budget.body": "Byudjet belgilang — xarajatlaringizni nazoratda tuting",
+  "home.diqqat.no_budget.cta": "Kategoriyalarga o'tish",
+  // ── Biggest-mover insight (neutral, Home "Bu oy" block)
+  "home.biggest_mover": "📈 {category}: o'tgan oydan +{pct}%",
   // ── Debts / Accounts placeholders
   "debts.soon_desc": "Qarzlar moduli tez orada qo'shiladi.",
   "accounts.soon_desc": "Hisoblar moduli tez orada qo'shiladi.",
@@ -508,6 +515,13 @@ const ru: Dictionary = {
   "home.delta.no_prev": "нет данных за прошлый месяц",
   "home.delta.new": "новый",
   "home.delta.sign_change": "прошлый месяц {prev} → этот {curr}",
+  // ── Diqqat card (amber attention card on Home)
+  "home.diqqat.title": "Внимание",
+  "home.diqqat.over_line": "{category} — {pct}% от бюджета (превышение: {amount})",
+  "home.diqqat.no_budget.body": "Установите бюджет — держите расходы под контролем",
+  "home.diqqat.no_budget.cta": "Перейти к категориям",
+  // ── Biggest-mover insight (neutral, Home "Bu oy" block)
+  "home.biggest_mover": "📈 {category}: +{pct}% к прошлому месяцу",
   // ── Debts / Accounts placeholders
   "debts.soon_desc": "Модуль долгов появится скоро.",
   "accounts.soon_desc": "Модуль счетов появится скоро.",
@@ -799,6 +813,13 @@ const en: Dictionary = {
   "home.delta.no_prev": "no data for last month",
   "home.delta.new": "new",
   "home.delta.sign_change": "last month {prev} → this month {curr}",
+  // ── Diqqat card (amber attention card on Home)
+  "home.diqqat.title": "Attention",
+  "home.diqqat.over_line": "{category} — {pct}% of budget (over by: {amount})",
+  "home.diqqat.no_budget.body": "Set a budget — keep your expenses under control",
+  "home.diqqat.no_budget.cta": "Go to categories",
+  // ── Biggest-mover insight (neutral, Home "Bu oy" block)
+  "home.biggest_mover": "📈 {category}: +{pct}% vs last month",
   // ── Debts / Accounts placeholders
   "debts.soon_desc": "The debts module is coming soon.",
   "accounts.soon_desc": "The accounts module is coming soon.",

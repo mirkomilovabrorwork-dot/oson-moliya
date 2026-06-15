@@ -15,6 +15,7 @@ import type { DisplayCurrency } from "@/lib/rates";
 import { formatMoney as formatMoneyFn, formatNative, convertNativeToMain } from "@/lib/currency";
 import { translateCategoryName } from "@/lib/categories-i18n";
 import type { Rates } from "@/lib/rates";
+import { tashkentMonthRange } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,64 @@ export default async function OverviewPage() {
       .map((r) => [r.categoryId as string, r._sum.amountUzs ?? 0n])
   );
 
+  // ── Biggest-mover: last-month expense groupBy (additive read, no schema change) ──
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const { start: prevMonthStart, end: prevMonthEnd } = tashkentMonthRange(prevYear, prevMonth);
+
+  const prevSpentRows = await prisma.transaction.groupBy({
+    by: ["categoryId"],
+    where: {
+      userId: user.id,
+      type: "expense",
+      deletedAt: null,
+      occurredAt: { gte: prevMonthStart, lt: prevMonthEnd },
+    },
+    _sum: { amountUzs: true },
+  });
+  const prevSpentMap = new Map<string, bigint>(
+    prevSpentRows
+      .filter((r) => r.categoryId !== null)
+      .map((r) => [r.categoryId as string, r._sum.amountUzs ?? 0n])
+  );
+
+  // Among categories present in BOTH months, find the biggest % increase.
+  // Threshold: >= +15% increase AND last-month amount >= 10 000 UZS (non-trivial).
+  const MIN_PREV_UZS = 10_000n;
+  const MIN_PCT_INCREASE = 15;
+  let biggestMoverCatId: string | null = null;
+  let biggestMoverPct = 0;
+  for (const [catId, thisAmt] of spentMap.entries()) {
+    const prevAmt = prevSpentMap.get(catId);
+    if (!prevAmt || prevAmt <= 0n) continue;
+    if (prevAmt < MIN_PREV_UZS) continue;
+    // Integer percent: round((this - prev) / prev * 100)
+    const pct = Math.round(Number(((thisAmt - prevAmt) * 100n) / prevAmt));
+    if (pct >= MIN_PCT_INCREASE && pct > biggestMoverPct) {
+      biggestMoverPct = pct;
+      biggestMoverCatId = catId;
+    }
+  }
+
+  // Resolve category name for the biggest mover (reuse catNameMap built later — build it now)
+  // We collect all catIds we'll need names for (spentMap + prevSpentMap keys)
+  const allCatIds = Array.from(new Set([...Array.from(spentMap.keys()), ...Array.from(prevSpentMap.keys())]));
+  const allCategoryNames =
+    allCatIds.length > 0
+      ? await prisma.category.findMany({
+          where: { id: { in: allCatIds }, userId: user.id },
+          select: { id: true, name: true },
+        })
+      : [];
+  const allCatNameMap = new Map<string, string>(allCategoryNames.map((c) => [c.id, c.name]));
+
+  const biggestMoverLine: string | null =
+    biggestMoverCatId !== null
+      ? t("home.biggest_mover", lang)
+          .replace("{category}", translateCategoryName(allCatNameMap.get(biggestMoverCatId) ?? "—", lang))
+          .replace("{pct}", String(biggestMoverPct))
+      : null;
+
   const budgetDTOs: BudgetDTO[] = budgets.map((b) => {
     const spent = spentMap.get(b.categoryId) ?? 0n;
     const pct = b.limitUzs > 0n ? Math.round(Number((spent * 100n) / b.limitUzs)) : 0;
@@ -96,16 +155,8 @@ export default async function OverviewPage() {
     };
   });
 
-  // Expense-by-category for the donut: join category names
-  const categoryIds = Array.from(spentMap.keys());
-  const categoryNames =
-    categoryIds.length > 0
-      ? await prisma.category.findMany({
-          where: { id: { in: categoryIds }, userId: user.id },
-          select: { id: true, name: true },
-        })
-      : [];
-  const catNameMap = new Map<string, string>(categoryNames.map((c) => [c.id, c.name]));
+  // Expense-by-category for the donut: reuse allCatNameMap (already fetched above)
+  const catNameMap = allCatNameMap;
 
   const donutData = Array.from(spentMap.entries())
     .map(([catId, amt]) => ({
@@ -225,6 +276,12 @@ export default async function OverviewPage() {
 
   const isEmpty = recent.length === 0;
 
+  // ── Diqqat card state ──────────────────────────────────────────────────────
+  // State (a): one or more categories are OVER budget this month
+  const overBudgetItems = budgetDTOs.filter((b) => BigInt(b.spentUzs) > BigInt(b.limitUzs));
+  // State (b): budgets exist but none are over — no card; OR no budgets at all → nudge
+  const noBudgetSet = budgets.length === 0;
+
   // This-month secondary context line
   const monthIncomeStr = fmt(overview.income);
   const monthExpenseStr = fmt(overview.expense);
@@ -266,6 +323,91 @@ export default async function OverviewPage() {
             {thisMonthContext}
           </p>
         </div>
+
+        {/* 1b — Diqqat card: amber attention (over budget OR no budget set) */}
+        {overBudgetItems.length > 0 ? (
+          <div
+            className="p-4 sm:p-5 rounded-[var(--radius-lg)]"
+            style={{
+              background: "var(--warning-wash)",
+              border: "1px solid var(--warning)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <div className="flex items-start gap-3">
+              {/* Amber bell icon */}
+              <span
+                className="shrink-0 mt-0.5 w-8 h-8 rounded-[10px] flex items-center justify-center"
+                style={{ background: "var(--warning)", color: "var(--warning-fg)" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold mb-1.5" style={{ color: "var(--warning)" }}>
+                  {t("home.diqqat.title", lang)}
+                </p>
+                <ul className="space-y-1">
+                  {overBudgetItems.map((b) => {
+                    const overUzs = BigInt(b.spentUzs) - BigInt(b.limitUzs);
+                    const overFormatted = fmt(overUzs);
+                    const pctStr = String(b.percent);
+                    const catName = translateCategoryName(b.categoryName, lang);
+                    const line = t("home.diqqat.over_line", lang)
+                      .replace("{category}", catName)
+                      .replace("{pct}", pctStr)
+                      .replace("{amount}", overFormatted);
+                    return (
+                      <li key={b.categoryId} className="text-xs leading-relaxed" style={{ color: "var(--fg)" }}>
+                        {line}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : noBudgetSet ? (
+          <div
+            className="p-4 sm:p-5 rounded-[var(--radius-lg)]"
+            style={{
+              background: "var(--warning-wash)",
+              border: "1px solid var(--warning)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <div className="flex items-start gap-3">
+              {/* Amber sparkle / next-step icon */}
+              <span
+                className="shrink-0 mt-0.5 w-8 h-8 rounded-[10px] flex items-center justify-center"
+                style={{ background: "var(--warning)", color: "var(--warning-fg)" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4" />
+                  <path d="M12 16h.01" />
+                </svg>
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold mb-1" style={{ color: "var(--warning)" }}>
+                  {t("home.diqqat.title", lang)}
+                </p>
+                <p className="text-xs leading-relaxed mb-2" style={{ color: "var(--fg)" }}>
+                  {t("home.diqqat.no_budget.body", lang)}
+                </p>
+                <Link
+                  href="/categories"
+                  className="text-xs font-semibold underline underline-offset-2"
+                  style={{ color: "var(--warning)" }}
+                >
+                  {t("home.diqqat.no_budget.cta", lang)} &rarr;
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {/* 2 — Per-currency breakdown — ALWAYS visible */}
         <div
@@ -392,6 +534,13 @@ export default async function OverviewPage() {
               </div>
             ))}
           </div>
+
+          {/* Biggest-mover insight — neutral, only when data crosses threshold */}
+          {biggestMoverLine && (
+            <p className="text-xs" style={{ color: "var(--fg-muted)" }}>
+              {biggestMoverLine}
+            </p>
+          )}
 
         </div>
 

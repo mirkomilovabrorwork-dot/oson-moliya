@@ -27,12 +27,12 @@ interface BudgetBarProps {
 export function BudgetBar({ budget, lang, compact = false, displaySpent, displayLimit }: BudgetBarProps) {
   const pct = Math.min(budget.percent, 100);
   const over = budget.percent >= 100;
-  const warn = budget.percent >= 70;
+  const warn = !over && budget.percent >= 80;
 
   const barColor = over
     ? "var(--expense)"
     : warn
-    ? "var(--chart-3)"
+    ? "var(--warning)"
     : "var(--income)";
 
   const currencyLabel = t("common.currency", lang);
@@ -51,7 +51,7 @@ export function BudgetBar({ budget, lang, compact = false, displaySpent, display
         </span>
         <span
           className="text-xs tabular shrink-0"
-          style={{ color: over ? "var(--expense)" : "var(--fg-muted)" }}
+          style={{ color: over ? "var(--expense)" : warn ? "var(--warning)" : "var(--fg-muted)" }}
         >
           {spentLabel} / {limitLabel}
           {over && <span className="ml-1 font-semibold">⚠</span>}

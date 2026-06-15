@@ -38,6 +38,7 @@
   --expense-wash: #fff1f2;
 
   --warning: #dd8a2a;
+  --warning-fg: #ffffff;
   --warning-wash: #fbead0;
 
   --chart-1: #0e663c;
@@ -101,6 +102,7 @@
   --expense-wash: rgba(243, 115, 126, .13);
 
   --warning: #f0a73a;
+  --warning-fg: #2e1f04;
   --warning-wash: rgba(240, 167, 58, .13);
 
   --chart-1: #2fbe76;
@@ -148,6 +150,7 @@
   --color-expense-fg: var(--expense-fg);
   --color-expense-wash: var(--expense-wash);
   --color-warning: var(--warning);
+  --color-warning-fg: var(--warning-fg);
   --color-warning-wash: var(--warning-wash);
 
   --color-chart-1: var(--chart-1);
