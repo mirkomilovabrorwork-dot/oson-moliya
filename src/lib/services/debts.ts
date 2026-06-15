@@ -56,7 +56,7 @@ export async function settleDebt(id: string, userId: string) {
   const existing = await prisma.debt.findFirst({ where: { id, userId } });
   if (!existing) return null;
   return prisma.debt.update({
-    where: { id },
+    where: { id, userId },
     data: { status: DebtStatus.settled, settledAt: new Date() },
   });
 }
@@ -70,7 +70,7 @@ export async function updateDebt(
   const existing = await prisma.debt.findFirst({ where: { id, userId } });
   if (!existing) return null;
   return prisma.debt.update({
-    where: { id },
+    where: { id, userId },
     data: {
       counterparty: input.counterparty,
       amountUzs: input.amountUzs,
@@ -84,7 +84,7 @@ export async function deleteDebt(id: string, userId: string) {
   const prisma = db as import("@prisma/client").PrismaClient;
   const existing = await prisma.debt.findFirst({ where: { id, userId } });
   if (!existing) return null;
-  await prisma.debt.delete({ where: { id } });
+  await prisma.debt.delete({ where: { id, userId } });
   return true;
 }
 

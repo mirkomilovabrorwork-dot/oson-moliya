@@ -19,7 +19,7 @@ export async function POST(request: Request): Promise<Response> {
       return new Response("Unauthorized", { status: 401 });
     }
   } catch (err) {
-    console.error("Telegram webhook: env error", err);
+    console.error("Telegram webhook: env_error");
     // Still return 200 per spec to avoid Telegram retries
     return new Response("OK", { status: 200 });
   }
@@ -31,7 +31,7 @@ export async function POST(request: Request): Promise<Response> {
     // is caught here and we still return 200 — Telegram must never see a 500/retry.
     return await handler(request);
   } catch (err) {
-    console.error("Telegram webhook: handler error", err);
+    console.error("Telegram webhook: handler_error");
     // Always return 200 so Telegram doesn't keep retrying.
     return new Response("OK", { status: 200 });
   }

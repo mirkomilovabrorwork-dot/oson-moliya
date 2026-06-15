@@ -25,8 +25,8 @@ function fmt(n: number): string {
   return String(n);
 }
 
-/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income:#059669 --expense:#dc2626 tokens) */
-function formatMoney(n: number): string {
+/** Space-grouped money formatter — uses lang-aware currency suffix (so'm / сум / UZS). */
+function formatMoney(n: number, lang: string): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));
   while (rem >= 1000) {
@@ -34,23 +34,20 @@ function formatMoney(n: number): string {
     rem = Math.floor(rem / 1000);
   }
   parts.unshift(String(rem));
-  return (n < 0 ? "−" : "") + parts.join(" ") + " so'm";
+  const suffix = lang === "ru" ? "сум" : lang === "en" ? "UZS" : "so'm";
+  return (n < 0 ? "−" : "") + parts.join(" ") + " " + suffix;
 }
 
-const CustomTooltip = ({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; fill: string }>;
-}) => {
+// recharts tooltip props use loose generics — typed loosely here to avoid conflicts
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ChartTooltip({ active, payload, lang }: { active?: boolean; payload?: readonly any[]; lang: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div
       className="text-xs rounded-[10px] p-3 space-y-1"
       style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
-      {payload.map((entry) => (
+      {(payload as Array<{ name: string; value: number; fill: string }>).map((entry) => (
         <div key={entry.name} className="flex items-center gap-2">
           <span
             className="w-2.5 h-2.5 rounded-full"
@@ -61,13 +58,13 @@ const CustomTooltip = ({
             className="font-semibold tabular"
             style={{ color: "var(--fg)" }}
           >
-            {formatMoney(entry.value)}
+            {formatMoney(entry.value, lang)}
           </span>
         </div>
       ))}
     </div>
   );
-};
+}
 
 export function IncomeExpenseChart({ income, expense, lang }: Props) {
   if (income === 0 && expense === 0) {
@@ -90,17 +87,17 @@ export function IncomeExpenseChart({ income, expense, lang }: Props) {
     );
   }
 
-  // Colors mirror CSS tokens: --income:#059669  --expense:#dc2626
+  // Colors use CSS tokens: var(--income) / var(--expense) — works in light and dark.
   const data = [
     {
       name: t("analytics.total_income", lang),
       value: income,
-      fill: "#059669",
+      fill: "var(--income)",
     },
     {
       name: t("analytics.total_expense", lang),
       value: expense,
-      fill: "#dc2626",
+      fill: "var(--expense)",
     },
   ];
 
@@ -124,7 +121,7 @@ export function IncomeExpenseChart({ income, expense, lang }: Props) {
           axisLine={false}
           tickLine={false}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={(props) => <ChartTooltip {...props} lang={lang} />} />
         <Bar dataKey="value" radius={[6, 6, 0, 0]}>
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.fill} />

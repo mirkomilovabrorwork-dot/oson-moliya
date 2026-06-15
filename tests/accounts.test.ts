@@ -226,7 +226,7 @@ describe("deleteAccount", () => {
 
     const result = await deleteAccount("acc-del", userId);
     expect(result).toBe(true);
-    expect(mockAccountDelete).toHaveBeenCalledWith({ where: { id: "acc-del" } });
+    expect(mockAccountDelete).toHaveBeenCalledWith({ where: { id: "acc-del", userId } });
   });
 });
 

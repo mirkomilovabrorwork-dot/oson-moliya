@@ -10,19 +10,7 @@
 
 import ExcelJS from "exceljs";
 import { TxType } from "@prisma/client";
-
-// ── Tashkent helpers (mirrors transactions.ts / analytics.ts) ─────────────────
-
-function getTashkentNow(): Date {
-  return new Date(Date.now() + 5 * 60 * 60 * 1000);
-}
-
-function tashkentMonthBoundaries(year: number, month: number): { start: Date; end: Date } {
-  // start = UTC equivalent of 1st of month at Tashkent midnight (UTC - 5h)
-  const start = new Date(Date.UTC(year, month - 1, 1) - 5 * 60 * 60 * 1000);
-  const end = new Date(Date.UTC(year, month, 1) - 5 * 60 * 60 * 1000);
-  return { start, end };
-}
+import { getTashkentNow, tashkentMonthRange } from "../dates";
 
 // ── Month name helpers ────────────────────────────────────────────────────────
 
@@ -94,7 +82,7 @@ export async function buildMonthlyReportXlsx(
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth() + 1; // 1-based
 
-  const { start: monthStart, end: monthEnd } = tashkentMonthBoundaries(year, month);
+  const { start: monthStart, end: monthEnd } = tashkentMonthRange(year, month);
 
   // ── 1. Aggregate totals (same query logic as getOverview) ─────────────────
 
@@ -188,7 +176,7 @@ export async function buildMonthlyReportXlsx(
   // Summary header
   const sumHeaderRow = sheet1.addRow([
     lang === "ru" ? "Показатель" : lang === "en" ? "Metric" : "Ko'rsatkich",
-    lang === "ru" ? "Сумма (so'm)" : lang === "en" ? "Amount (so'm)" : "Summa (so'm)",
+    lang === "ru" ? "Сумма (сум)" : lang === "en" ? "Amount (UZS)" : "Summa (so'm)",
     "",
   ]);
   sumHeaderRow.eachCell((cell, col) => {
@@ -294,7 +282,7 @@ export async function buildMonthlyReportXlsx(
     { header: lang === "ru" ? "Дата" : lang === "en" ? "Date" : "Sana", key: "date", width: 14 },
     { header: lang === "ru" ? "Тип" : lang === "en" ? "Type" : "Turi", key: "type", width: 12 },
     { header: lang === "ru" ? "Категория" : lang === "en" ? "Category" : "Kategoriya", key: "category", width: 20 },
-    { header: lang === "ru" ? "Сумма (so'm)" : lang === "en" ? "Amount (so'm)" : "Summa (so'm)", key: "amount", width: 18 },
+    { header: lang === "ru" ? "Сумма (сум)" : lang === "en" ? "Amount (UZS)" : "Summa (so'm)", key: "amount", width: 18 },
   ];
 
   if (hasOriginal) {

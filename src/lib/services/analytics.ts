@@ -126,6 +126,16 @@ function resolvePeriod(
       // Parse YYYY-MM-DD and treat as Tashkent midnight
       const [fy, fm, fd] = dateFrom.split("-").map(Number);
       const [ty, tm, td] = dateTo.split("-").map(Number);
+      // Guard against NaN / out-of-range values; fall back to this month if invalid
+      const validMonth = (n: number) => Number.isFinite(n) && n >= 1 && n <= 12;
+      const validDay = (n: number) => Number.isFinite(n) && n >= 1 && n <= 31;
+      const validYear = (n: number) => Number.isFinite(n) && n > 1970;
+      if (
+        !validYear(fy) || !validMonth(fm) || !validDay(fd) ||
+        !validYear(ty) || !validMonth(tm) || !validDay(td)
+      ) {
+        return { from: tashkentMonthStart(y, m), to: tashkentMonthEnd(y, m) };
+      }
       const from = tashkentDateToUtcStart(fy, fm, fd);
       // dateTo is inclusive → end of that day
       const to = new Date(

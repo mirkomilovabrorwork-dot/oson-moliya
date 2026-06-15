@@ -35,8 +35,9 @@ export function BudgetBar({ budget, lang, compact = false, displaySpent, display
     ? "var(--chart-3)"
     : "var(--income)";
 
-  const spentLabel = displaySpent ?? `${formatMoney(budget.spentUzs)} so'm`;
-  const limitLabel = displayLimit ?? `${formatMoney(budget.limitUzs)} so'm`;
+  const currencyLabel = t("common.currency", lang);
+  const spentLabel = displaySpent ?? `${formatMoney(budget.spentUzs)} ${currencyLabel}`;
+  const limitLabel = displayLimit ?? `${formatMoney(budget.limitUzs)} ${currencyLabel}`;
 
   return (
     <div className="space-y-1.5">

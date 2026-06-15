@@ -94,7 +94,7 @@ export async function updateAccount(
   if (!existing) return null;
 
   const updated = await prisma.account.update({
-    where: { id },
+    where: { id, userId },
     data: {
       name: input.name,
       type: input.type,
@@ -126,7 +126,7 @@ export async function deleteAccount(id: string, userId: string): Promise<boolean
   if (!existing) return false;
 
   // On delete, Prisma's SetNull cascade clears transaction.accountId automatically
-  await prisma.account.delete({ where: { id } });
+  await prisma.account.delete({ where: { id, userId } });
   return true;
 }
 

@@ -1,22 +1,10 @@
 import { TxType } from "@prisma/client";
 import { db } from "../db";
+import { getTashkentNow, tashkentMonthRange } from "../dates";
 
-// Asia/Tashkent = UTC+5
-function getTashkentNow(): Date {
-  return new Date(Date.now() + 5 * 60 * 60 * 1000);
-}
-
+// Alias for internal use (backwards-compatible with callers in this file)
 function getMonthBoundaries(year: number, month: number): { start: Date; end: Date } {
-  // month is 1-based
-  // Return UTC dates that correspond to Tashkent month start/end
-  // Tashkent midnight = UTC 19:00 previous day
-  const startTashkent = new Date(
-    Date.UTC(year, month - 1, 1) - 5 * 60 * 60 * 1000
-  );
-  const endTashkent = new Date(
-    Date.UTC(year, month, 1) - 5 * 60 * 60 * 1000
-  );
-  return { start: startTashkent, end: endTashkent };
+  return tashkentMonthRange(year, month);
 }
 
 export interface CreateTransactionInput {

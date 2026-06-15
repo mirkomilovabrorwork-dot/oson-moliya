@@ -22,6 +22,7 @@ interface Props {
   totalLabel: string;
 }
 
+// Chart palette — uses CSS tokens (works in light + dark)
 const COLORS = [
   "var(--expense)",
   "var(--accent)",
@@ -30,7 +31,8 @@ const COLORS = [
   "var(--border-strong)",
 ];
 
-function formatMoney(n: number): string {
+/** Space-grouped money formatter — uses lang-aware currency suffix (so'm / сум / UZS). */
+function formatMoney(n: number, lang: string): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));
   while (rem >= 1000) {
@@ -38,18 +40,15 @@ function formatMoney(n: number): string {
     rem = Math.floor(rem / 1000);
   }
   parts.unshift(String(rem));
-  return (n < 0 ? "-" : "") + parts.join(" ") + " so'm";
+  const suffix = lang === "ru" ? "сум" : lang === "en" ? "UZS" : "so'm";
+  return (n < 0 ? "−" : "") + parts.join(" ") + " " + suffix;
 }
 
-const CustomTooltip = ({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; payload: { fill: string } }>;
-}) => {
+// recharts tooltip props use loose generics — typed loosely here to avoid conflicts
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ChartTooltip({ active, payload, lang }: { active?: boolean; payload?: readonly any[]; lang: string }) {
   if (!active || !payload?.length) return null;
-  const entry = payload[0];
+  const entry = payload[0] as { name: string; value: number; payload: { fill: string } };
   return (
     <div
       className="text-xs rounded-[10px] p-3"
@@ -65,11 +64,11 @@ const CustomTooltip = ({
         </span>
       </div>
       <p className="mt-1 font-semibold tabular" style={{ color: "var(--fg-muted)" }}>
-        {formatMoney(entry.value)}
+        {formatMoney(entry.value, lang)}
       </p>
     </div>
   );
-};
+}
 
 export function HomeExpenseDonut({ data, lang, totalLabel }: Props) {
   const filtered = data.filter((d) => d.amount > 0);
@@ -132,7 +131,8 @@ export function HomeExpenseDonut({ data, lang, totalLabel }: Props) {
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <Tooltip content={(props: any) => <ChartTooltip {...props} lang={lang} />} />
             <Legend
               iconType="circle"
               iconSize={7}
@@ -185,7 +185,7 @@ export function HomeExpenseDonut({ data, lang, totalLabel }: Props) {
                   </span>
                 </div>
                 <span className="tabular shrink-0" style={{ color: "var(--fg-muted)" }}>
-                  {formatMoney(entry.value)}
+                  {formatMoney(entry.value, lang)}
                 </span>
               </div>
               <div

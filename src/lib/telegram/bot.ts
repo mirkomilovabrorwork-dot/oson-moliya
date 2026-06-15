@@ -329,15 +329,27 @@ async function handleMessage(
   // Only fires when the whole message is essentially just the report keyword —
   // this avoids interfering with genuine finance queries like
   // "bu oy logistika qancha?" (contains no hisobot/отчёт/report word).
-  if (REPORT_KEYWORD_RE.test(text) && ctx.replyWithDocument) {
+  if (REPORT_KEYWORD_RE.test(text)) {
     const kLang = (user.language as "uz" | "ru" | "en") ?? "uz";
-    await buildAndSendReport(
-      (t) => ctx.reply(t),
-      ctx.replyWithDocument,
-      prisma,
-      user,
-      kLang
-    );
+    if (ctx.replyWithDocument) {
+      await buildAndSendReport(
+        (t) => ctx.reply(t),
+        ctx.replyWithDocument,
+        prisma,
+        user,
+        kLang
+      );
+    } else {
+      // Defensive fallback: handler was wired without replyWithDocument — tell the
+      // user to use the /hisobot command instead of going silent.
+      const fallbackMsg =
+        kLang === "ru"
+          ? "Для получения отчёта используйте команду /hisobot."
+          : kLang === "en"
+          ? "Please use /hisobot command to get the report."
+          : "Hisobot olish uchun /hisobot buyrug'idan foydalaning.";
+      await ctx.reply(fallbackMsg);
+    }
     return;
   }
 
@@ -1811,7 +1823,11 @@ export function createBot(): Bot {
 
       await ctx.reply(`🎤 ${transcript}`);
       await handleMessage(
-        { from, reply: (text, opts) => ctx.reply(text, opts) },
+        {
+          from,
+          reply: (text, opts) => ctx.reply(text, opts),
+          replyWithDocument: (file, opts) => ctx.replyWithDocument(file, opts),
+        },
         transcript,
         prisma
       );

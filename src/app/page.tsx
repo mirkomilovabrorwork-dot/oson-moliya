@@ -13,6 +13,7 @@ import type { BudgetDTO } from "@/lib/types";
 import { getRates } from "@/lib/rates";
 import type { DisplayCurrency } from "@/lib/rates";
 import { formatMoney as formatMoneyFn, formatNative, convertNativeToMain } from "@/lib/currency";
+import { translateCategoryName } from "@/lib/categories-i18n";
 import type { Rates } from "@/lib/rates";
 
 export const dynamic = "force-dynamic";
@@ -250,7 +251,7 @@ export default async function OverviewPage() {
             {t("home.total_balance", lang)}
           </p>
           <p
-            className="text-4xl font-bold tabular tracking-normal"
+            className="text-2xl sm:text-4xl font-bold tabular tracking-normal break-words"
             style={{ color: "#ffffff" }}
           >
             {allTimeBalancePositive ? "+" : "−"}
@@ -344,8 +345,84 @@ export default async function OverviewPage() {
           )}
         </div>
 
-        {/* 3 — Expense overview card */}
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)]">
+        {/* 3 — "Bu oy" stats: this-month KPIs + top categories mini view */}
+        <div
+          className="p-4 sm:p-5 rounded-[var(--radius-lg)] space-y-4"
+          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
+        >
+          <div className="flex items-center justify-between">
+            <h2
+              className="font-bold text-sm"
+              style={{ fontFamily: "var(--font-serif)", color: "var(--fg)" }}
+            >
+              {t("home.this_month_stat", lang)}
+            </h2>
+            <Link
+              href="/analytics"
+              className="text-xs font-medium"
+              style={{ color: "var(--accent)" }}
+            >
+              {t("home.more", lang)} &rarr;
+            </Link>
+          </div>
+
+          {/* This-month KPI row */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {[
+              { label: t("home.month_income", lang), val: overview.income, color: "var(--income)" },
+              { label: t("home.month_expense", lang), val: overview.expense, color: "var(--expense)" },
+              {
+                label: t("home.month_net", lang),
+                val: overview.income >= overview.expense ? overview.income - overview.expense : overview.expense - overview.income,
+                color: overview.income >= overview.expense ? "var(--income)" : "var(--expense)",
+              },
+            ].map(({ label, val, color }) => (
+              <div
+                key={label}
+                className="rounded-xl p-3 flex flex-col gap-1 min-w-0"
+                style={{ background: "var(--surface-sunken)" }}
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-wide truncate" style={{ color: "var(--fg-subtle)" }}>
+                  {label}
+                </p>
+                <p className="text-sm font-bold tabular break-words leading-tight" style={{ color }}>
+                  {fmt(val)}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Top 3-4 expense categories mini view */}
+          {donutData.length > 0 && (() => {
+            const total = donutData.reduce((s, d) => s + d.amount, 0);
+            const top4 = donutData.slice(0, 4);
+            const miniColors = ["var(--expense)", "var(--chart-3)", "var(--chart-4)", "var(--accent)"];
+            return (
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--fg-subtle)" }}>
+                  {t("analytics.hero_title", lang)}
+                </p>
+                {top4.map((cat, i) => {
+                  const pct = total > 0 ? Math.round((cat.amount / total) * 100) : 0;
+                  return (
+                    <div key={cat.categoryName} className="flex items-center gap-2 text-xs">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: miniColors[i % miniColors.length] }} />
+                      <span className="truncate flex-1 font-medium" style={{ color: "var(--fg)" }}>
+                        {translateCategoryName(cat.categoryName, lang)}
+                      </span>
+                      <span className="tabular shrink-0 font-semibold" style={{ color: "var(--fg-muted)" }}>
+                        {pct}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* 4 — Expense overview card + right column */}
+        <div className="grid gap-5 grid-cols-1 lg:grid-cols-2 min-w-0">
           <div className="space-y-5">
         <div
           className="p-4 sm:p-5 rounded-[var(--radius-lg)]"

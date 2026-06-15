@@ -1,5 +1,6 @@
 import { TxType } from "@prisma/client";
 import { db } from "../db";
+import { getTashkentNow, tashkentMonthRange } from "../dates";
 
 /**
  * Pure decision function — no DB, no side-effects.
@@ -53,14 +54,10 @@ export async function checkExpenseBudgetBreach(
   if ((budget.limitUzs as bigint) <= 0n) return null;
 
   // 2. Current Tashkent-month window (matches budgets/route.ts:19-27)
-  const now = new Date(Date.now() + 5 * 60 * 60 * 1000);
+  const now = getTashkentNow();
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth() + 1;
-  const monthStart = new Date(Date.UTC(year, month - 1, 1) - 5 * 60 * 60 * 1000);
-  const monthEnd =
-    month === 12
-      ? new Date(Date.UTC(year + 1, 0, 1) - 5 * 60 * 60 * 1000)
-      : new Date(Date.UTC(year, month, 1) - 5 * 60 * 60 * 1000);
+  const { start: monthStart, end: monthEnd } = tashkentMonthRange(year, month);
 
   // 3. Aggregate this-month spend for this category
   const spendGroups = await prisma.transaction.groupBy({

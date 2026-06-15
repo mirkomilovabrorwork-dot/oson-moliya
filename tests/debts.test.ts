@@ -173,7 +173,7 @@ describe("deleteDebt", () => {
 
     const result = await deleteDebt(debtId, userId);
     expect(result).toBe(true);
-    expect(mockDebtDelete).toHaveBeenCalledWith({ where: { id: debtId } });
+    expect(mockDebtDelete).toHaveBeenCalledWith({ where: { id: debtId, userId } });
   });
 
   it("returns null when debt not found (owner check)", async () => {

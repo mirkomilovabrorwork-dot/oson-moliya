@@ -44,7 +44,7 @@ export async function POST(request: Request): Promise<Response> {
         { status: 401 }
       );
     }
-    console.error("Unexpected initData validation error:", err);
+    console.error("Unexpected initData validation error: unexpected_error");
     return NextResponse.json({ ok: false, error: "validation error" }, { status: 500 });
   }
 

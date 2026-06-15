@@ -22,7 +22,7 @@ interface Props {
   lang: LangCode;
 }
 
-// Chart palette — cool/professional, mirrors --chart-1..5 tokens then extends
+// Chart palette — cool/professional, uses CSS tokens (works in light + dark)
 const COLORS = [
   "var(--expense)",
   "var(--accent)",
@@ -31,8 +31,8 @@ const COLORS = [
   "var(--border-strong)",
 ];
 
-/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --expense:#dc2626 token) */
-function formatMoney(n: number): string {
+/** Space-grouped money formatter — uses lang-aware currency suffix (so'm / сум / UZS). */
+function formatMoney(n: number, lang: string): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));
   while (rem >= 1000) {
@@ -40,7 +40,8 @@ function formatMoney(n: number): string {
     rem = Math.floor(rem / 1000);
   }
   parts.unshift(String(rem));
-  return (n < 0 ? "−" : "") + parts.join(" ") + " so'm";
+  const suffix = lang === "ru" ? "сум" : lang === "en" ? "UZS" : "so'm";
+  return (n < 0 ? "−" : "") + parts.join(" ") + " " + suffix;
 }
 
 const RADIAN = Math.PI / 180;
@@ -48,9 +49,14 @@ const RADIAN = Math.PI / 180;
 const renderLabel = (props: PieLabelRenderProps) => {
   const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props;
   if (
-    cx === undefined || cy === undefined || midAngle === undefined ||
-    innerRadius === undefined || outerRadius === undefined || percent === undefined
-  ) return null;
+    cx === undefined ||
+    cy === undefined ||
+    midAngle === undefined ||
+    innerRadius === undefined ||
+    outerRadius === undefined ||
+    percent === undefined
+  )
+    return null;
   if ((percent as number) < 0.05) return null;
   const cxN = cx as number;
   const cyN = cy as number;
@@ -76,15 +82,11 @@ const renderLabel = (props: PieLabelRenderProps) => {
   );
 };
 
-const CustomTooltip = ({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; payload: { fill: string } }>;
-}) => {
+// recharts tooltip props use loose generics — typed loosely here to avoid conflicts
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ChartTooltip({ active, payload, lang }: { active?: boolean; payload?: readonly any[]; lang: string }) {
   if (!active || !payload?.length) return null;
-  const entry = payload[0];
+  const entry = payload[0] as { name: string; value: number; payload: { fill: string } };
   return (
     <div
       className="text-xs rounded-[10px] p-3"
@@ -99,15 +101,12 @@ const CustomTooltip = ({
           {entry.name}
         </span>
       </div>
-      <p
-        className="mt-1 font-semibold tabular"
-        style={{ color: "var(--fg-muted)" }}
-      >
-        {formatMoney(entry.value)}
+      <p className="mt-1 font-semibold tabular" style={{ color: "var(--fg-muted)" }}>
+        {formatMoney(entry.value, lang)}
       </p>
     </div>
   );
-};
+}
 
 export function CategoryPie({ data, lang }: Props) {
   if (!data.length) {
@@ -117,9 +116,19 @@ export function CategoryPie({ data, lang }: Props) {
           className="w-12 h-12 rounded-xl flex items-center justify-center"
           style={{ background: "var(--surface-sunken)" }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)" }}>
-            <path d="M12 2v10l4.24 4.24"/>
-            <circle cx="12" cy="12" r="10"/>
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ color: "var(--fg-subtle)" }}
+          >
+            <path d="M12 2v10l4.24 4.24" />
+            <circle cx="12" cy="12" r="10" />
           </svg>
         </div>
         <p className="text-sm" style={{ color: "var(--fg-subtle)" }}>
@@ -155,7 +164,8 @@ export function CategoryPie({ data, lang }: Props) {
             <Cell key={`cell-${index}`} fill={entry.fill} />
           ))}
         </Pie>
-        <Tooltip content={<CustomTooltip />} />
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <Tooltip content={(props: any) => <ChartTooltip {...props} lang={lang} />} />
         <Legend
           iconType="circle"
           iconSize={8}

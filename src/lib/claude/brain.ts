@@ -83,6 +83,37 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
   if (!parsed.success) {
     console.error("Brain schema validation failed:", parsed.error.format());
     const userLang2 = (input.user.language as "uz" | "ru" | "en") ?? "uz";
+
+    // Before giving up with clarify_needed, try to recover an amount from raw text.
+    // If a clear UZS amount is found, return a log_income/log_expense directly so
+    // the user avoids an unnecessary extra round-trip.
+    const fallbackAmount = parseAmountUzs(input.text);
+    if (fallbackAmount !== null) {
+      // Heuristic direction detection: income keywords win, else default to expense.
+      const INCOME_RE =
+        /\b(kirim|tushum|sotuv|daromat|received?|получил|доход|tushu[md]|oldi[nm]|topdi[nm])\b/i;
+      const isIncome = INCOME_RE.test(input.text);
+      const recoveredIntent = isIncome ? "log_income" : "log_expense";
+      const recoveredReply =
+        userLang2 === "ru"
+          ? `Записано: ${fallbackAmount.toLocaleString()} сум.`
+          : userLang2 === "en"
+          ? `Logged: ${fallbackAmount.toLocaleString()} UZS.`
+          : `Yozildi: ${fallbackAmount.toLocaleString()} so'm.`;
+      return {
+        intent: {
+          intent: recoveredIntent,
+          language: userLang2,
+          confidence: 0.6,
+          currency: "UZS" as const,
+          amount: Number(fallbackAmount),
+          reply_text: recoveredReply,
+          missing_fields: [],
+        },
+        raw: toolUse.input,
+      };
+    }
+
     const clarifyReply =
       userLang2 === "ru"
         ? "Пожалуйста, напишите точнее."

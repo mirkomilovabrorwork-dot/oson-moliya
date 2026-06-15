@@ -31,8 +31,8 @@ function fmt(n: number): string {
   return String(n);
 }
 
-/** Space-grouped money formatter — reliable on Vercel/Node (mirrors --income:#059669 --expense:#dc2626 tokens) */
-function formatMoney(n: number): string {
+/** Space-grouped money formatter — uses lang-aware currency suffix (so'm / сум / UZS). */
+function formatMoney(n: number, lang: string): string {
   const parts: string[] = [];
   let rem = Math.abs(Math.round(n));
   while (rem >= 1000) {
@@ -40,18 +40,13 @@ function formatMoney(n: number): string {
     rem = Math.floor(rem / 1000);
   }
   parts.unshift(String(rem));
-  return (n < 0 ? "−" : "") + parts.join(" ") + " so'm";
+  const suffix = lang === "ru" ? "сум" : lang === "en" ? "UZS" : "so'm";
+  return (n < 0 ? "−" : "") + parts.join(" ") + " " + suffix;
 }
 
-const CustomTooltip = ({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; color: string }>;
-  label?: string;
-}) => {
+// recharts tooltip props use loose generics — typed loosely here to avoid conflicts
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ChartTooltip({ active, payload, label, lang }: { active?: boolean; payload?: readonly any[]; label?: string | number; lang: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div
@@ -59,18 +54,18 @@ const CustomTooltip = ({
       style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
       <p className="font-semibold mb-2" style={{ color: "var(--fg)" }}>{label}</p>
-      {payload.map((entry) => (
+      {(payload as Array<{ name: string; value: number; color: string }>).map((entry) => (
         <div key={entry.name} className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: entry.color }} />
           <span style={{ color: "var(--fg-muted)" }}>{entry.name}:</span>
           <span className="font-semibold tabular" style={{ color: "var(--fg)" }}>
-            {formatMoney(entry.value)}
+            {formatMoney(entry.value, lang)}
           </span>
         </div>
       ))}
     </div>
   );
-};
+}
 
 export function TrendLine({ data, lang }: Props) {
   if (!data.length) {
@@ -112,7 +107,7 @@ export function TrendLine({ data, lang }: Props) {
           axisLine={false}
           tickLine={false}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={(props) => <ChartTooltip {...props} lang={lang} />} />
         <Legend
           iconType="circle"
           iconSize={8}
@@ -121,23 +116,23 @@ export function TrendLine({ data, lang }: Props) {
             <span style={{ color: "var(--fg-muted)" }}>{value}</span>
           )}
         />
-        {/* Colors mirror CSS tokens: --income:#059669  --expense:#dc2626 */}
+        {/* Colors use CSS tokens: var(--income) / var(--expense) — works in light and dark. */}
         <Line
           type="monotone"
           dataKey="income"
           name={incomeLabel}
-          stroke="#059669"
+          stroke="var(--income)"
           strokeWidth={2}
-          dot={{ r: 3, fill: "#059669" }}
+          dot={{ r: 3, fill: "var(--income)" }}
           activeDot={{ r: 5 }}
         />
         <Line
           type="monotone"
           dataKey="expense"
           name={expenseLabel}
-          stroke="#dc2626"
+          stroke="var(--expense)"
           strokeWidth={2}
-          dot={{ r: 3, fill: "#dc2626" }}
+          dot={{ r: 3, fill: "var(--expense)" }}
           activeDot={{ r: 5 }}
         />
       </LineChart>

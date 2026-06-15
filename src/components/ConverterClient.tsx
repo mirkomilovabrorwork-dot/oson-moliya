@@ -15,18 +15,18 @@ interface ConverterClientProps {
 
 const CURRENCIES: Currency[] = ["UZS", "USD", "EUR", "RUB"];
 
-const CURRENCY_LABELS: Record<Currency, string> = {
-  UZS: "UZS — so'm",
-  USD: "USD — $",
-  EUR: "EUR — €",
-  RUB: "RUB — ₽",
+const CURRENCY_LABELS: Record<Currency, Record<string, string>> = {
+  UZS: { uz: "UZS — so'm", ru: "UZS — сум", en: "UZS" },
+  USD: { uz: "USD — $", ru: "USD — $", en: "USD — $" },
+  EUR: { uz: "EUR — €", ru: "EUR — €", en: "EUR — €" },
+  RUB: { uz: "RUB — ₽", ru: "RUB — ₽", en: "RUB — ₽" },
 };
 
-const CURRENCY_SYMBOLS: Record<Currency, string> = {
-  UZS: "so'm",
-  USD: "$",
-  EUR: "€",
-  RUB: "₽",
+const CURRENCY_SYMBOLS: Record<Currency, Record<string, string>> = {
+  UZS: { uz: "so'm", ru: "сум", en: "UZS" },
+  USD: { uz: "$", ru: "$", en: "$" },
+  EUR: { uz: "€", ru: "€", en: "€" },
+  RUB: { uz: "₽", ru: "₽", en: "₽" },
 };
 
 /** Convert amount in `from` to `to` using CBU rates (UZS = base). */
@@ -150,7 +150,7 @@ export function ConverterClient({ rates, lang }: ConverterClientProps) {
             >
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>
-                  {CURRENCY_LABELS[c]}
+                  {CURRENCY_LABELS[c][lang] ?? CURRENCY_LABELS[c]["en"]}
                 </option>
               ))}
             </select>
@@ -195,7 +195,7 @@ export function ConverterClient({ rates, lang }: ConverterClientProps) {
         <button
           type="button"
           onClick={handleSwap}
-          aria-label="Swap currencies"
+          aria-label={t("converter.swap", lang)}
           style={{
             background: "var(--accent-gradient, var(--accent))",
             color: "#fff",
@@ -243,7 +243,7 @@ export function ConverterClient({ rates, lang }: ConverterClientProps) {
             >
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>
-                  {CURRENCY_LABELS[c]}
+                  {CURRENCY_LABELS[c][lang] ?? CURRENCY_LABELS[c]["en"]}
                 </option>
               ))}
             </select>
@@ -276,7 +276,7 @@ export function ConverterClient({ rates, lang }: ConverterClientProps) {
               userSelect: "text",
               cursor: "default",
             }}
-            aria-label="Converted result"
+            aria-label={t("converter.result", lang)}
             aria-readonly="true"
           >
             {formatResult(result, toCurrency, lang)}
@@ -304,7 +304,7 @@ export function ConverterClient({ rates, lang }: ConverterClientProps) {
             fontVariantNumeric: "tabular-nums",
           }}
         >
-          1 {fromCurrency} ≈ {formatRateNumber(rateValue)} {CURRENCY_SYMBOLS[toCurrency]}
+          1 {fromCurrency} ≈ {formatRateNumber(rateValue)} {CURRENCY_SYMBOLS[toCurrency][lang] ?? CURRENCY_SYMBOLS[toCurrency]["en"]}
         </div>
         <div style={{ fontSize: "0.75rem", color: "var(--fg-subtle)" }}>
           {t("more.currency_cbu_note", lang)}

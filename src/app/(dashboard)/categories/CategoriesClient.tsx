@@ -262,7 +262,7 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
                 onChange={(e) => setAddName(e.target.value)}
                 className={inputCls}
                 style={inputStyle}
-                placeholder="Oylik, Logistika..."
+                placeholder={t("categories.placeholder", lang)}
               />
             </div>
 
@@ -476,7 +476,7 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
                             setEditBudgetId(cat.id);
                             setBudgetVal(cat.budgetLimit ?? "");
                           }}
-                          className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all"
                           style={{
                             background: cat.budgetLimit
                               ? "var(--expense-wash)"

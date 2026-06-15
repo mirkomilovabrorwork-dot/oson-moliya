@@ -19,7 +19,10 @@ export function convertFromUzs(
 ): number {
   if (currency === "UZS") return Number(amountUzs);
   const rate = rates[currency as keyof Rates];
-  if (!rate || rate <= 0) return Number(amountUzs);
+  if (!rate || rate <= 0) {
+    console.warn("[currency] missing/invalid rate", currency);
+    return Number(amountUzs);
+  }
   return Number(amountUzs) / rate;
 }
 
@@ -83,7 +86,10 @@ export function convertToUzs(
 ): bigint {
   if (currency === "UZS") return BigInt(Math.round(amount));
   const rate = rates[currency as keyof Rates];
-  if (!rate || rate <= 0) return BigInt(Math.round(amount));
+  if (!rate || rate <= 0) {
+    console.warn("[currency] missing/invalid rate", currency);
+    return BigInt(Math.round(amount));
+  }
   return BigInt(Math.round(amount * rate));
 }
 
@@ -241,6 +247,9 @@ export function convertNativeToMain(
     amountUzs = nativeAmount;
   } else {
     const rate = rates[oc as keyof Rates];
+    if (!rate || rate <= 0) {
+      console.warn("[currency] missing/invalid rate", oc);
+    }
     amountUzs = rate && rate > 0 ? nativeAmount * rate : nativeAmount;
   }
 

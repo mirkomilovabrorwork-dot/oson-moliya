@@ -315,7 +315,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                 onChange={(e) => setAddCounterparty(e.target.value)}
                 className={inputCls}
                 style={inputStyle}
-                placeholder="Ali, Baraka LLC..."
+                placeholder={t("debt.counterparty_placeholder", lang)}
               />
             </div>
 
@@ -330,7 +330,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                 onChange={(e) => setAddAmount(e.target.value)}
                 className={inputCls}
                 style={inputStyle}
-                placeholder="500 000"
+                placeholder={t("debt.amount_placeholder", lang)}
               />
             </div>
 
@@ -357,7 +357,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                 onChange={(e) => setAddNote(e.target.value)}
                 className={inputCls}
                 style={inputStyle}
-                placeholder="..."
+                placeholder={t("debt.note_placeholder", lang)}
               />
             </div>
 
@@ -493,7 +493,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
         {/* Given (lent out) */}
         <div
           className="rounded-[var(--radius-lg)] p-4"

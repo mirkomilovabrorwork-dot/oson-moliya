@@ -438,7 +438,7 @@ export function TransactionsClient({ transactions: initial, categories, lang, cu
       )}
 
       {/* ── Summary cards — v3: neutral bg, colored NUMBER only ── */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div
           className="rounded-[var(--radius-lg)] px-4 py-4 space-y-1"
           style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
+import { t } from "@/lib/i18n/translate";
 
 const LANG_COOKIE = "pultrack_lang";
 
@@ -14,9 +15,11 @@ const LANGS: { code: LangCode; label: string }[] = [
 
 interface LangSwitcherProps {
   currentLang: LangCode;
+  lang?: LangCode;
 }
 
-export function LangSwitcher({ currentLang }: LangSwitcherProps) {
+export function LangSwitcher({ currentLang, lang }: LangSwitcherProps) {
+  const effectiveLang = lang ?? currentLang;
   const router = useRouter();
   const [pendingLang, setPendingLang] = useState<LangCode | null>(null);
 
@@ -35,7 +38,7 @@ export function LangSwitcher({ currentLang }: LangSwitcherProps) {
       className="flex rounded-lg overflow-hidden text-xs font-semibold"
       style={{ border: "1px solid var(--border)" }}
       role="group"
-      aria-label="Language"
+      aria-label={t("more.language", effectiveLang)}
     >
       {LANGS.map(({ code, label }, i) => (
         <button
