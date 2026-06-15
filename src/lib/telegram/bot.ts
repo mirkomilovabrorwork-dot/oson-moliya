@@ -284,7 +284,7 @@ async function buildAndSendReport(
 }
 
 // ── Login access (magic-link button + 6-digit code) — module-level so both
-//    handleMessage (🔗 Sayt button) and createBot (/dashboard) can call it ──────
+//    handleMessage (📈 Grafik button) and createBot (/dashboard) can call it ──────
 function loginAccessText(l: "uz" | "ru" | "en", code: string, siteHost: string): string {
   if (l === "ru") {
     return `Нажмите кнопку ниже — сайт откроется сам. ✅\n\n💻 С компьютера: откройте ${siteHost} и введите код ${code} (действителен 10 минут).`;
@@ -373,7 +373,7 @@ async function handleMessage(
   const REPORT_BTNS = ["📊 Hisobot", "📊 Отчёт", "📊 Report"];
   const HELP_BTNS = ["❓ Yordam", "❓ Помощь", "❓ Help"];
   const LANG_BTNS = ["🌐 Til", "🌐 Язык", "🌐 Language"];
-  const SAYT_BTNS = ["🔗 Sayt", "🔗 Сайт", "🔗 Site"];
+  const GRAFIK_BTNS = ["📈 Grafik", "📈 Графики", "📈 Charts"];
 
   if (REPORT_BTNS.includes(text)) {
     const btnLang = (user.language as "uz" | "ru" | "en") ?? "uz";
@@ -419,10 +419,10 @@ async function handleMessage(
     return;
   }
 
-  if (SAYT_BTNS.includes(text)) {
+  if (GRAFIK_BTNS.includes(text)) {
     // Reply with the same magic-link + 6-digit code as /dashboard — for computer login.
-    const saytLang = (user.language as "uz" | "ru" | "en") ?? "uz";
-    const access = await buildLoginAccessReply(user.id, saytLang);
+    const grafikLang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    const access = await buildLoginAccessReply(user.id, grafikLang);
     await ctx.reply(access.text, { reply_markup: access.reply_markup });
     return;
   }
@@ -1091,7 +1091,7 @@ export function createBot(): Bot {
   };
 
   // loginAccessText + buildLoginAccessReply are now module-level (defined above createBot)
-  // so handleMessage's 🔗 Sayt handler can also call them.
+  // so handleMessage's 📈 Grafik handler can also call them.
 
   // /start handler
   bot.command("start", async (ctx) => {

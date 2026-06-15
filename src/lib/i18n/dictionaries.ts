@@ -226,6 +226,9 @@ const uz: Dictionary = {
   "home.diqqat.no_budget.cta": "Kategoriyalarga o'tish",
   // ── Biggest-mover insight (neutral, Home "Bu oy" block)
   "home.biggest_mover": "📈 {category}: o'tgan oydan +{pct}%",
+  // ── Budget nudge (dismissible, Home — shown when no expense budget is set)
+  "home.budget_nudge": "Byudjet belgilang — limitdan oshsa ogohlantiramiz",
+  "home.budget_nudge_cta": "Belgilash →",
   // ── Debts / Accounts placeholders
   "debts.soon_desc": "Qarzlar moduli tez orada qo'shiladi.",
   "accounts.soon_desc": "Hisoblar moduli tez orada qo'shiladi.",
@@ -560,6 +563,9 @@ const ru: Dictionary = {
   "home.diqqat.no_budget.cta": "Перейти к категориям",
   // ── Biggest-mover insight (neutral, Home "Bu oy" block)
   "home.biggest_mover": "📈 {category}: +{pct}% к прошлому месяцу",
+  // ── Budget nudge (dismissible, Home — shown when no expense budget is set)
+  "home.budget_nudge": "Задайте бюджет — предупредим, если лимит будет превышен",
+  "home.budget_nudge_cta": "Настроить →",
   // ── Debts / Accounts placeholders
   "debts.soon_desc": "Модуль долгов появится скоро.",
   "accounts.soon_desc": "Модуль счетов появится скоро.",
@@ -894,6 +900,9 @@ const en: Dictionary = {
   "home.diqqat.no_budget.cta": "Go to categories",
   // ── Biggest-mover insight (neutral, Home "Bu oy" block)
   "home.biggest_mover": "📈 {category}: +{pct}% vs last month",
+  // ── Budget nudge (dismissible, Home — shown when no expense budget is set)
+  "home.budget_nudge": "Set a budget — we'll alert you when the limit is reached",
+  "home.budget_nudge_cta": "Set up →",
   // ── Debts / Accounts placeholders
   "debts.soon_desc": "The debts module is coming soon.",
   "accounts.soon_desc": "The accounts module is coming soon.",

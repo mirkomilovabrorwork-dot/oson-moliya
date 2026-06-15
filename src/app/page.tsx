@@ -3,6 +3,7 @@ import { getOverview } from "@/lib/services/transactions";
 import { db } from "@/lib/db";
 import { resolveLang, t } from "@/lib/i18n";
 import { BudgetBar } from "@/components/BudgetBar";
+import { BudgetNudge } from "@/components/BudgetNudge";
 import { TopNav } from "@/components/TopNav";
 import { BottomNav } from "@/components/BottomNav";
 import { AddSheet } from "@/components/AddSheet";
@@ -154,6 +155,12 @@ export default async function OverviewPage() {
       percent: pct,
     };
   });
+
+  // No expense budget set → show the dismissible nudge on Home.
+  // True when no budget row has an expense category with limitUzs > 0.
+  const noBudgetSet = !budgets.some(
+    (b) => b.category.type === "expense" && b.limitUzs > 0n
+  );
 
   // Expense-by-category for the donut: reuse allCatNameMap (already fetched above)
   const catNameMap = allCatNameMap;
@@ -370,6 +377,9 @@ export default async function OverviewPage() {
             </div>
           </div>
         ) : null}
+
+        {/* 1c — Budget nudge (dismissible) — shown when no expense budget is set */}
+        <BudgetNudge show={noBudgetSet} lang={lang} />
 
         {/* 2 — Per-currency breakdown — ALWAYS visible */}
         <div

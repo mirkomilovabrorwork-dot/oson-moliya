@@ -152,12 +152,12 @@ export function getBotLabels(lang: string): {
 
 /**
  * Build a persistent reply keyboard with 4 plain TEXT buttons (2 rows):
- *  Row 1: 📊 Hisobot · 🔗 Sayt
+ *  Row 1: 📊 Hisobot · 📈 Grafik
  *  Row 2: 🌐 Til     · ❓ Yordam
  *
  * Labels are localized uz/ru/en.
  * Returns a grammY Keyboard object (.resized().persistent()).
- * All four buttons are plain text — no web_app; tapping 🔗 Sayt sends the
+ * All four buttons are plain text — no web_app; tapping 📈 Grafik sends the
  * text to the bot, which replies with an inline URL button + 6-digit login code
  * so the user can log in from a computer browser.
  * The _appUrl parameter is kept for signature compatibility but is unused.
@@ -165,7 +165,7 @@ export function getBotLabels(lang: string): {
 export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", _appUrl?: string): Keyboard {
   const labels = getPersistentKeyboardLabels(lang);
   const kb = new Keyboard();
-  // Row 1: 📊 Hisobot + 🔗 Sayt
+  // Row 1: 📊 Hisobot + 📈 Grafik
   kb.text(labels.report).text(labels.sayt);
   kb.row();
   // Row 2: 🌐 Til + ❓ Yordam
@@ -181,12 +181,12 @@ export function getPersistentKeyboardLabels(lang: "uz" | "ru" | "en"): {
   help: string;
 } {
   if (lang === "ru") {
-    return { report: "📊 Отчёт", sayt: "🔗 Сайт", lang: "🌐 Язык", help: "❓ Помощь" };
+    return { report: "📊 Отчёт", sayt: "📈 Графики", lang: "🌐 Язык", help: "❓ Помощь" };
   }
   if (lang === "en") {
-    return { report: "📊 Report", sayt: "🔗 Site", lang: "🌐 Language", help: "❓ Help" };
+    return { report: "📊 Report", sayt: "📈 Charts", lang: "🌐 Language", help: "❓ Help" };
   }
-  return { report: "📊 Hisobot", sayt: "🔗 Sayt", lang: "🌐 Til", help: "❓ Yordam" };
+  return { report: "📊 Hisobot", sayt: "📈 Grafik", lang: "🌐 Til", help: "❓ Yordam" };
 }
 
 /**
