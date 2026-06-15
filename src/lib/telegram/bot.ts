@@ -16,7 +16,7 @@ import {
   upsertPendingAction,
   clearPendingAction,
 } from "../services/pending";
-import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, formatAmount, getBotLabels, type InlineKeyboardButton } from "./reply";
+import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, formatAmount, getBotLabels, buildPersistentKeyboard, getPersistentKeyboardLabels, type InlineKeyboardButton } from "./reply";
 import { checkExpenseBudgetBreach } from "../services/budgets";
 import { createDebt } from "../services/debts";
 import { getSttProvider } from "../stt";
@@ -283,6 +283,17 @@ async function buildAndSendReport(
   }
 }
 
+// ── Localized /help text (module-level so handleMessage can call it) ─────────
+function helpText(l: "uz" | "ru" | "en"): string {
+  if (l === "ru") {
+    return `📖 Oson Moliya — Помощь\n\nОтправьте мне текст или 🎤 голосовое — я автоматически сохраню ваши расходы и доходы.\n\nКоманды:\n/start — Запустить бота\n/language — Сменить язык\n/dashboard — Открыть панель\n/hisobot — Excel отчёт за текущий месяц (также: /report или напишите «отчёт»)\n/help — Список команд\n\n💡 Например:\n"На обед ушло 35 тысяч"\n"Зарплата 5 000 000 сум"\n"сколько расходов в этом месяце?"`;
+  }
+  if (l === "en") {
+    return `📖 Oson Moliya — Help\n\nSend me text or a 🎤 voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the dashboard\n/hisobot — Excel monthly report (also: /report or type "report")\n/help — Command list\n\n💡 For example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
+  }
+  return `📖 Oson Moliya — Yordam\n\nMenga matn yoki 🎤 ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Panelni ochish\n/hisobot — Excel oylik hisobot (shuningdek: /report yoki «hisobot» deb yozing)\n/help — Buyruqlar ro'yxati\n\n💡 Masalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
+}
+
 // ── Shared message-handling logic (text + voice share this path) ─────────────
 
 async function handleMessage(
@@ -323,6 +334,41 @@ async function handleMessage(
 
   // Load pending action
   const pending = await getPendingAction(user.id);
+
+  // ── Persistent reply keyboard button handlers ─────────────────────────────
+  // Exact-match the button labels before passing to the brain.
+  // We check all three language variants so the correct button always fires
+  // regardless of which language was active when the keyboard was rendered.
+  const REPORT_BTNS = ["📊 Hisobot", "📊 Отчёт", "📊 Report"];
+  const HELP_BTNS = ["❓ Yordam", "❓ Помощь", "❓ Help"];
+
+  if (REPORT_BTNS.includes(text)) {
+    const btnLang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    if (ctx.replyWithDocument) {
+      await buildAndSendReport(
+        (t) => ctx.reply(t),
+        ctx.replyWithDocument,
+        prisma,
+        user,
+        btnLang
+      );
+    } else {
+      const fallback =
+        btnLang === "ru"
+          ? "Для получения отчёта используйте команду /hisobot."
+          : btnLang === "en"
+          ? "Please use /hisobot command to get the report."
+          : "Hisobot olish uchun /hisobot buyrug'idan foydalaning.";
+      await ctx.reply(fallback);
+    }
+    return;
+  }
+
+  if (HELP_BTNS.includes(text)) {
+    const helpLang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    await ctx.reply(helpText(helpLang));
+    return;
+  }
 
   // ── A1: Report-on-demand keyword shortcut ─────────────────────────────────
   // Check BEFORE the brain so it is always fast and reliable.
@@ -979,12 +1025,12 @@ export function createBot(): Bot {
   // Localized welcome shown after the user picks a language.
   const welcomeText = (l: "uz" | "ru" | "en", name: string): string => {
     if (l === "ru") {
-      return `Привет, ${name}! 👋\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\n✍️ Пишите расход/доход ПРЯМО СЮДА или 🎤 наговорите — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"\n\n📊 Кнопка "Moliyachi" — только для ПРОСМОТРА отчётов и графиков (туда писать не нужно).`;
+      return `Привет, ${name}! 👋\n\nЯ сам запоминаю, сколько ПРИШЛО и сколько УШЛО.\n\n👉 Попробуйте прямо сейчас — напишите или 🎤 скажите:\n• "20 тысяч хлеб"\n• "500 тысяч от продажи"\n\nГотово — я запишу сам. ✅\n\nКнопки внизу 📊 Отчёт и 📈 Графики — для ПРОСМОТРА данных.`;
     }
     if (l === "en") {
-      return `Hi, ${name}! 👋\n\nOson Moliya — a bot to track your business finances.\n\n✍️ Log an expense/income RIGHT HERE or 🎤 by voice — I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"\n\n📊 The "Moliyachi" button just opens your dashboard to VIEW reports — no need to type there.`;
+      return `Hi, ${name}! 👋\n\nI keep track of everything coming IN and going OUT.\n\n👉 Try it now — just type or 🎤 say:\n• "20 thousand bread"\n• "500 thousand from sales"\n\nDone — I'll log it myself. ✅\n\nThe buttons below 📊 Report and 📈 Charts are for VIEWING your data.`;
     }
-    return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\n✍️ Xarajat/daromadni SHU YERGA yozing yoki 🎤 ayting — men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"\n\n📊 "Moliyachi" tugmasi — faqat hisobot va grafiklarni KO'RISH uchun (u yerga yozish shart emas).`;
+    return `Salom, ${name}! 👋\n\nMen pulingiz qancha KIRGAN, qancha CHIQQANINI o'zim eslab boraman.\n\n👉 Hoziroq sinab ko'ring — menga yozing yoki 🎤 ayting:\n• "20 ming non"\n• "500 ming sotuvdan"\n\nBo'ldi — o'zim qayd qilaman. ✅\n\nPastdagi 📊 Hisobot va 📈 Grafiklar tugmalari — hisobotlarni KO'RISH uchun.`;
   };
 
   const loginAccessText = (
@@ -993,24 +1039,18 @@ export function createBot(): Bot {
     hasMiniAppButton: boolean
   ): string => {
     if (l === "ru") {
-      return `Код входа: ${code}\n\nВведите этот 6-значный код на сайте. Код действует 10 минут.\n\n${
-        hasMiniAppButton
-          ? "Или нажмите кнопку Moliyachi ниже, чтобы войти автоматически внутри Telegram."
-          : "Или откройте панель по ссылке ниже."
-      }`;
+      return hasMiniAppButton
+        ? `Нажмите 📈 Графики внизу, чтобы открыть панель прямо в Telegram.\n\nЕсли сайт просит код — введите: ${code} (действует 10 минут).`
+        : `Ссылка для входа: ${code}\n\nОткройте панель по ссылке ниже. Код действует 10 минут.`;
     }
     if (l === "en") {
-      return `Login code: ${code}\n\nEnter this 6-digit code on the website. It works for 10 minutes.\n\n${
-        hasMiniAppButton
-          ? "Or tap the Moliyachi button below to sign in automatically inside Telegram."
-          : "Or open the dashboard from the link below."
-      }`;
+      return hasMiniAppButton
+        ? `Tap 📈 Charts below to open the dashboard right inside Telegram.\n\nIf the site asks for a code — enter: ${code} (valid 10 minutes).`
+        : `Login link: ${code}\n\nOpen the dashboard from the link below. Valid for 10 minutes.`;
     }
-    return `Kirish kodi: ${code}\n\nSaytdagi kod oynasiga shu 6 xonali kodni kiriting. Kod 10 daqiqa amal qiladi.\n\n${
-      hasMiniAppButton
-        ? "Yoki pastdagi Moliyachi tugmasi orqali Telegram ichida avtomatik kiring."
-        : "Yoki pastdagi havola orqali panelni oching."
-    }`;
+    return hasMiniAppButton
+      ? `Pastdagi 📈 Grafiklar tugmasini bosing — Telegram ichida dashboardni ochasiz.\n\nAgar kod so'ralsa — kiriting: ${code} (10 daqiqa amal qiladi).`
+      : `Kirish havolasi: ${code}\n\nQuyidagi havola orqali panelni oching. 10 daqiqa amal qiladi.`;
   };
 
   const buildLoginAccessReply = async (
@@ -1081,12 +1121,10 @@ export function createBot(): Bot {
     const name =
       from.first_name ?? (lang === "ru" ? "друг" : lang === "en" ? "friend" : "Do'stim");
     const dashStart = await dashboardReplyOptions(user.id);
-    const rows: InlineKeyboardButton[][] = [
-      ...dashStart.dashRows,
-      [{ text: "🌐 Til / Язык / Language", callback_data: "lang:pick" }],
-    ];
+    const env = getEnv();
+    const kb = buildPersistentKeyboard(lang, env.APP_URL);
     await ctx.reply(welcomeText(lang, name) + dashStart.extraText, {
-      reply_markup: { inline_keyboard: rows },
+      reply_markup: kb,
     });
   });
 
@@ -1113,19 +1151,8 @@ export function createBot(): Bot {
     await ctx.reply(access.text, { reply_markup: access.reply_markup });
   });
 
-  // Localized /help text (A2: /hisobot line added)
-  const helpText = (l: "uz" | "ru" | "en"): string => {
-    if (l === "ru") {
-      return `📖 Oson Moliya — Помощь\n\nОтправьте мне текст или 🎤 голосовое — я автоматически сохраню ваши расходы и доходы.\n\nКоманды:\n/start — Запустить бота\n/language — Сменить язык\n/dashboard — Открыть панель Moliyachi\n/hisobot — Excel отчёт за текущий месяц (также: /report, /otchet или напишите «отчёт»)\n/help — Список команд\n\n💡 Например:\n"На обед ушло 35 тысяч"\n"Зарплата 5 000 000 сум"\n"сколько расходов в этом месяце?"`;
-    }
-    if (l === "en") {
-      return `📖 Oson Moliya — Help\n\nSend me text or a 🎤 voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the Moliyachi dashboard\n/hisobot — Excel monthly report (also: /report, /otchet or type "report")\n/help — Command list\n\n💡 For example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
-    }
-    return `📖 Oson Moliya — Yordam\n\nMenga matn yoki 🎤 ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Moliyachi panelini ochish\n/hisobot — Excel oylik hisobot (shuningdek: /report, /otchet yoki «hisobot» deb yozing)\n/help — Buyruqlar ro'yxati\n\n💡 Masalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
-  };
-
-  // /help — command list + examples
-  bot.command("help", async (ctx) => {
+  // /help + /yordam — command list + examples (yordam = Uzbek alias)
+  bot.command(["help", "yordam"], async (ctx) => {
     const from = ctx.from;
     if (!from) return;
     const u = await prisma.user.findUnique({
@@ -1180,8 +1207,8 @@ export function createBot(): Bot {
     );
   });
 
-  // /language — re-open the language picker any time
-  bot.command("language", async (ctx) => {
+  // /language + /til — re-open the language picker any time (til = Uzbek alias)
+  bot.command(["language", "til"], async (ctx) => {
     if (!ctx.from) return;
     await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:", {
       reply_markup: {
@@ -1333,8 +1360,10 @@ export function createBot(): Bot {
         const name =
           from.first_name ?? (chosen === "ru" ? "друг" : chosen === "en" ? "friend" : "Do'stim");
         const access = await buildLoginAccessReply(user.id, chosen);
+        const langEnv = getEnv();
+        const langKb = buildPersistentKeyboard(chosen, langEnv.APP_URL);
         await ctx.reply(`${welcomeText(chosen, name)}\n\n${access.text}`, {
-          reply_markup: access.reply_markup,
+          reply_markup: langKb,
         });
         return;
       }

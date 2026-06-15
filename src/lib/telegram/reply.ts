@@ -1,3 +1,4 @@
+import { Keyboard } from "grammy";
 import { issueMagicToken } from "../auth/token";
 import { getEnv } from "../env";
 
@@ -150,30 +151,63 @@ export function getBotLabels(lang: string): {
 }
 
 /**
+ * Build a persistent reply keyboard with 3 buttons:
+ *  - 📊 Hisobot  (text button → triggers report path)
+ *  - 📈 Grafiklar (web_app button → opens dashboard charts)
+ *  - ❓ Yordam   (text button → triggers help)
+ *
+ * Labels are localized uz/ru/en.
+ * Returns a grammY Keyboard object (.resized().persistent()).
+ * If appUrl is not https, the web_app button falls back to a plain text button.
+ */
+export function buildPersistentKeyboard(lang: "uz" | "ru" | "en", appUrl: string): Keyboard {
+  const labels = getPersistentKeyboardLabels(lang);
+  const kb = new Keyboard();
+  kb.text(labels.report);
+  if (appUrl.startsWith("https://")) {
+    kb.webApp(labels.charts, appUrl);
+  } else {
+    // localhost: can't use web_app; add a plain text placeholder
+    kb.text(labels.charts);
+  }
+  kb.text(labels.help);
+  return kb.resized().persistent();
+}
+
+/** Localized labels for the persistent reply keyboard buttons */
+export function getPersistentKeyboardLabels(lang: "uz" | "ru" | "en"): {
+  report: string;
+  charts: string;
+  help: string;
+} {
+  if (lang === "ru") {
+    return { report: "📊 Отчёт", charts: "📈 Графики", help: "❓ Помощь" };
+  }
+  if (lang === "en") {
+    return { report: "📊 Report", charts: "📈 Charts", help: "❓ Help" };
+  }
+  return { report: "📊 Hisobot", charts: "📈 Grafiklar", help: "❓ Yordam" };
+}
+
+/**
  * Build the Dashboard reply options.
  *
- * - In production (https APP_URL): uses a web_app button so the dashboard opens
- *   as a native Telegram Mini App (authenticated via initData, no magic-link needed).
- * - On localhost (http): sends the magic-link as plain text (Telegram rejects http URLs
- *   in inline buttons and doesn't allow web_app on non-https).
+ * Previously returned an inline "Moliyachi" web_app button attached to replies.
+ * Now the persistent reply keyboard handles navigation — this function only
+ * returns a magic-link fallback text for localhost (http) environments.
  */
 export async function dashboardReplyOptions(
   userId: string
 ): Promise<{ extraText: string; reply_markup?: { inline_keyboard: InlineKeyboardButton[][] }; dashRows: InlineKeyboardButton[][] }> {
   const env = getEnv();
   if (env.APP_URL.startsWith("https://")) {
-    // web_app button: opens Mini App in-Telegram; auth happens via initData
-    const dashRows: InlineKeyboardButton[][] = [[{ text: "📊 Moliyachi", web_app: { url: env.APP_URL } }]];
-    return {
-      extraText: "",
-      dashRows,
-      reply_markup: { inline_keyboard: dashRows },
-    };
+    // No inline button — the persistent reply keyboard has the 📈 Grafiklar web_app button.
+    return { extraText: "", dashRows: [], reply_markup: undefined };
   }
   // Localhost fallback: magic-link as plain text
   const raw = await issueMagicToken(userId);
   const url = `${env.APP_URL}/api/auth/verify?token=${raw}`;
-  return { extraText: `\n\n📊 Moliyachi: ${url}`, dashRows: [] };
+  return { extraText: `\n\n📊 Dashboard: ${url}`, dashRows: [] };
 }
 
 /** Format a localized budget overspend warning to append to a confirmation reply */
