@@ -5,6 +5,7 @@ import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
 import { TrendLine } from "@/components/charts/TrendLine";
+import { CategoryPie } from "@/components/charts/CategoryPie";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn } from "@/lib/currency";
 import { translateCategoryName } from "@/lib/categories-i18n";
@@ -61,14 +62,6 @@ function getThisYear() {
   return { from: start.toISOString().slice(0, 10), to: tomorrow.toISOString().slice(0, 10) };
 }
 
-/** Palette for the hero donut + ranked list. Using CSS tokens only. */
-const CAT_COLORS = [
-  "var(--expense)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--accent)",
-  "var(--chart-5)",
-];
 
 export function AnalyticsClient({
   lang,
@@ -216,7 +209,6 @@ export function AnalyticsClient({
     .sort((a, b) => b.amount - a.amount);
 
   const totalExpense = expenseCats.reduce((s, c) => s + c.amount, 0);
-  const hasData = income > 0 || expense > 0;
 
   return (
     <div className="space-y-6">
@@ -340,105 +332,28 @@ export function AnalyticsClient({
         ))}
       </div>
 
-      {/* ── (b) HERO — Pul qayerga ketdi? */}
+      {/* ── (b) HERO — Pul qayerga ketdi? — Donut chart */}
       <div className={cardCls} style={cardStyle}>
-        <div className="flex items-center gap-3">
-          <div>
-            <h2
-              className="font-bold text-base"
-              style={{ fontFamily: "var(--font-serif)", color: "var(--fg)" }}
-            >
-              {t("analytics.hero_title", lang)}
-            </h2>
-            <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
-              {t("analytics.hero_subtitle", lang)}
-            </p>
-          </div>
+        <div>
+          <h2
+            className="font-bold text-base"
+            style={{ fontFamily: "var(--font-serif)", color: "var(--fg)" }}
+          >
+            {t("analytics.hero_title", lang)}
+          </h2>
+          <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
+            {t("analytics.hero_subtitle", lang)}
+          </p>
         </div>
 
-        {!hasData || expenseCats.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 space-y-3">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ background: "var(--surface-sunken)" }}
-            >
-              <svg
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ color: "var(--fg-subtle)" }}
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 8v4l3 3" />
-              </svg>
-            </div>
-            <p className="text-sm font-medium" style={{ color: "var(--fg-muted)" }}>
-              {t("analytics.empty_hero", lang)}
-            </p>
-            <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
-              {t("analytics.empty_hero_hint", lang)}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {expenseCats.slice(0, 8).map((cat, i) => {
-              const pct = totalExpense > 0 ? (cat.amount / totalExpense) * 100 : 0;
-              const color = CAT_COLORS[i % CAT_COLORS.length];
-              return (
-                <div key={cat.name} className="space-y-1">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ background: color }}
-                      />
-                      <span
-                        className="font-medium truncate"
-                        style={{ color: "var(--fg)" }}
-                      >
-                        {cat.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className="text-xs font-bold tabular rounded-full px-2 py-0.5"
-                        style={{
-                          background: i === 0 ? "var(--expense-wash)" : "var(--surface-sunken)",
-                          color: i === 0 ? "var(--expense)" : "var(--fg-muted)",
-                        }}
-                      >
-                        {pct.toFixed(1)}%
-                      </span>
-                      <span
-                        className="text-xs tabular"
-                        style={{ color: "var(--fg-muted)" }}
-                      >
-                        {formatMoney(cat.amount)}
-                      </span>
-                    </div>
-                  </div>
-                  <div
-                    className="h-2 rounded-full overflow-hidden"
-                    style={{ background: "var(--surface-sunken)" }}
-                  >
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${Math.max(pct, 1.5)}%`,
-                        background: color,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <CategoryPie
+          data={expenseCats.map((c) => ({ categoryName: c.name, amount: c.amount }))}
+          lang={lang}
+          totalLabel={formatMoney(totalExpense)}
+          maxSlices={6}
+          outerRadius={96}
+          height={300}
+        />
       </div>
 
       {/* ── (c) + (d) Charts row: Income/Expense bar + Trend line */}
@@ -460,68 +375,6 @@ export function AnalyticsClient({
         </div>
       </div>
 
-      {/* ── (e) Top-5 expense categories as ranked progress bars */}
-      {expenseCats.length > 0 && (
-        <div className={cardCls} style={cardStyle}>
-          <h2
-            className="font-bold text-sm"
-            style={{ fontFamily: "var(--font-serif)", color: "var(--fg)" }}
-          >
-            {t("analytics.top5_title", lang)}
-          </h2>
-          <div className="space-y-4">
-            {expenseCats.slice(0, 5).map((cat, i) => {
-              const pct = totalExpense > 0 ? (cat.amount / totalExpense) * 100 : 0;
-              const maxAmt = expenseCats[0].amount;
-              const barPct = maxAmt > 0 ? (cat.amount / maxAmt) * 100 : 0;
-              const color = CAT_COLORS[i % CAT_COLORS.length];
-              return (
-                <div key={cat.name} className="flex items-center gap-3">
-                  <span
-                    className="w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0"
-                    style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
-                  >
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className="text-sm font-medium truncate"
-                        style={{ color: "var(--fg)" }}
-                      >
-                        {cat.name}
-                      </span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className="text-xs tabular"
-                          style={{ color: "var(--fg-subtle)" }}
-                        >
-                          {pct.toFixed(1)}% {t("analytics.of_total", lang)}
-                        </span>
-                        <span
-                          className="text-sm font-semibold tabular"
-                          style={{ color: "var(--expense)" }}
-                        >
-                          {formatMoney(cat.amount)}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className="h-1.5 rounded-full overflow-hidden"
-                      style={{ background: "var(--surface-sunken)" }}
-                    >
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${Math.max(barPct, 2)}%`, background: color }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

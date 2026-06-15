@@ -109,10 +109,11 @@ export default async function OverviewPage() {
 
   const donutData = Array.from(spentMap.entries())
     .map(([catId, amt]) => ({
-      categoryName: catNameMap.get(catId) ?? "—",
+      categoryName: translateCategoryName(catNameMap.get(catId) ?? "—", lang),
       amount: Number(amt),
     }))
-    .filter((d) => d.amount > 0);
+    .filter((d) => d.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
 
   // ── ALL-TIME totals (aggregation, no row fetch) ───────────────────────────
   const [allTimeIncomeAgg, allTimeExpenseAgg] = await Promise.all([
@@ -392,33 +393,6 @@ export default async function OverviewPage() {
             ))}
           </div>
 
-          {/* Top 3-4 expense categories mini view */}
-          {donutData.length > 0 && (() => {
-            const total = donutData.reduce((s, d) => s + d.amount, 0);
-            const top4 = donutData.slice(0, 4);
-            const miniColors = ["var(--expense)", "var(--chart-3)", "var(--chart-4)", "var(--accent)"];
-            return (
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--fg-subtle)" }}>
-                  {t("analytics.hero_title", lang)}
-                </p>
-                {top4.map((cat, i) => {
-                  const pct = total > 0 ? Math.round((cat.amount / total) * 100) : 0;
-                  return (
-                    <div key={cat.categoryName} className="flex items-center gap-2 text-xs">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: miniColors[i % miniColors.length] }} />
-                      <span className="truncate flex-1 font-medium" style={{ color: "var(--fg)" }}>
-                        {translateCategoryName(cat.categoryName, lang)}
-                      </span>
-                      <span className="tabular shrink-0 font-semibold" style={{ color: "var(--fg-muted)" }}>
-                        {pct}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
         </div>
 
         {/* 4 — Expense overview card + right column */}
