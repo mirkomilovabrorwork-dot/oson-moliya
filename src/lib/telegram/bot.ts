@@ -1110,7 +1110,7 @@ export function createBot(): Bot {
 
     // First time only → ask to choose language. Returning users go straight in.
     if (!existing) {
-      await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:\n\nTil tanlangach kirish kodi keladi. / После выбора языка придёт код входа. / After choosing a language, you will get a login code.", {
+      await ctx.reply("Tilni tanlang / Выберите язык / Choose your language:", {
         reply_markup: {
           inline_keyboard: [
             [
@@ -1373,14 +1373,10 @@ export function createBot(): Bot {
         await ctx.answerCallbackQuery();
         const name =
           from.first_name ?? (chosen === "ru" ? "друг" : chosen === "en" ? "friend" : "Do'stim");
-        const access = await buildLoginAccessReply(user.id, chosen);
         const langEnv = getEnv();
         const langKb = buildPersistentKeyboard(chosen, langEnv.APP_URL);
         await ctx.reply(welcomeText(chosen, name), {
           reply_markup: langKb,
-        });
-        await ctx.reply(access.text, {
-          reply_markup: access.reply_markup,
         });
         return;
       }
