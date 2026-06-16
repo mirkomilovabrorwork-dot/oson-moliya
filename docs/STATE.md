@@ -4,27 +4,26 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-16, Opus 1M — RESUME POINT recorded for the design experiment)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-16, Opus — NEW DESIGN SHIPPED TO PROD)
 
-### 🔖 RESUME POINT — design experiment (recorded 2026-06-16, after prior session hit usage limit)
-- **WHERE THE LAST SESSION STOPPED:** branch `design/experiment-2026-06-14`, HEAD = `9f8a236`
-  "feat(experiment): DATA SAFETY (batch 1)". Committed today (2026-06-16), then the session ended on the
-  usage limit. Tag for easy return: `resume/experiment-2026-06-16` (points at `9f8a236`).
-- **HEALTH:** working tree CLEAN, all 26 experiment commits pushed to `origin/design/experiment-2026-06-14`
-  (nothing uncommitted, nothing lost). Gates green on this branch: `npm run typecheck` 0 errors,
-  `npm test` 112/112. (full `next build` not re-run this session; was green per task 021 note.)
-- **NOT DEPLOYED:** per `docs/tasks/021-design-login-experiment-handoff.md` — do NOT deploy this experiment
-  until the user explicitly approves the design. LIVE prod (oson-moliya.vercel.app) is still on `main`.
-- **WHAT THIS EXPERIMENT BRANCH IS (26 commits ahead of `main`):** warm-cream light redesign + donut charts +
-  Debts module + bot debt-queries + bank-statement IMPORT + "Download my data" CSV export + soft-delete debts.
-  The two early planning docs are now PARTLY STALE: `021` describes only the first few commits; the full
-  10-phase roadmap is `docs/tasks/017-ui-ux-finance-design-plan.md`.
-- **"batch 1" → batch 2 was intended.** DATA SAFETY batch 1 = CSV export + debts soft-delete (DONE).
-  Remaining per `017` Phase 10 / Phase 7: undo/restore UI, soft-delete for categories/budgets, "what will be
-  lost" warning + audit metadata, typed-confirm on all destructive deletes.
-- **NEXT (user-gated, awaiting "boshla"):** either (A) DATA SAFETY batch 2, or (B) user reviews the whole
-  experiment on phone first and decides approve→deploy vs reject→rollback to `checkpoint/current-stable-2026-06-14`.
-- **ROLLBACK if the design is rejected:** `git switch checkpoint/current-stable-2026-06-14`.
+- **✅ DESIGN EXPERIMENT IS NOW LIVE.** User reviewed the warm-cream redesign (donut charts, Debts module,
+  bank-statement import) and approved it. `main` fast-forwarded to the experiment and deployed to prod:
+  **oson-moliya.vercel.app**, commit `0370e90` (deployment `dpl_7xDaALCZy887TeM4gqCBp3i21cw2`). Verified live:
+  /login new design loads, `/api/export` → 404 (removed), `/api/import` → 401 (intact). DB pre-check
+  "schema is up to date" — no migration ran on deploy (build = `prisma generate && next build` only).
+- **TASK-023 DONE (Opus-led, 2026-06-16):** removed the redundant "Download my data" CSV export — user's
+  call (the Excel **hisobot** already covers data export). Deleted `/api/export` route, the export card in
+  More, `more.export`/`more.export_sub` i18n keys (uz/ru/en), the `/api/export` line in `proxy.ts`; also
+  trimmed the now-false "download anytime" clause from `more.privacy_note`. Bank-statement import + Excel
+  report untouched. Spec: `docs/tasks/023-remove-csv-export.md`. Gates green (typecheck 0, test 112/112, build).
+- **MERGE detail:** `main` had ONE prod-only commit (`036a2b2`: quick-add amount label + bot welcome copy)
+  that the experiment lacked. Merged main→experiment; the only conflict (bot.ts welcome text) was resolved
+  in favour of main's clearer copy ("log RIGHT HERE / 'Moliyachi' is view-only"). Nothing lost.
+- **ROLLBACK if needed:** `git switch checkpoint/current-stable-2026-06-14` then `npx vercel --prod --yes`.
+- **⚠️ USER TODO (security):** the GitHub PAT is embedded in the `origin` remote URL — rotate it (was already
+  a standing todo). Also: real Uzbek voice test on @oson_moliya_bot; provider spend caps.
+- **NEXT (user-gated, awaiting "boshla"):** optional DATA SAFETY batch 2 per `docs/tasks/017` (undo/restore
+  UI, soft-delete for categories/budgets, "what will be lost" warning, typed-confirm on destructive deletes).
 
 ---
 
