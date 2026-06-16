@@ -156,7 +156,7 @@ describe("settleDebt", () => {
 
     await settleDebt(debtId, userId);
     expect(mockDebtFindFirst).toHaveBeenCalledWith({
-      where: { id: debtId, userId },
+      where: { id: debtId, userId, deletedAt: null },
     });
   });
 });
@@ -167,13 +167,16 @@ describe("deleteDebt", () => {
   const userId = `user-${RUN}-delete`;
   const debtId = `debt-${RUN}-2`;
 
-  it("deletes the debt and returns true", async () => {
+  it("soft-deletes the debt (sets deletedAt) and returns true", async () => {
     mockDebtFindFirst.mockResolvedValueOnce({ id: debtId, userId });
-    mockDebtDelete.mockResolvedValueOnce({});
+    mockDebtUpdate.mockResolvedValueOnce({});
 
     const result = await deleteDebt(debtId, userId);
     expect(result).toBe(true);
-    expect(mockDebtDelete).toHaveBeenCalledWith({ where: { id: debtId, userId } });
+    expect(mockDebtUpdate).toHaveBeenCalledWith({
+      where: { id: debtId },
+      data: { deletedAt: expect.any(Date) },
+    });
   });
 
   it("returns null when debt not found (owner check)", async () => {
@@ -181,7 +184,7 @@ describe("deleteDebt", () => {
 
     const result = await deleteDebt(debtId, "wrong-user");
     expect(result).toBeNull();
-    expect(mockDebtDelete).not.toHaveBeenCalled();
+    expect(mockDebtUpdate).not.toHaveBeenCalled();
   });
 });
 

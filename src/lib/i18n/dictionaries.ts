@@ -181,6 +181,10 @@ const uz: Dictionary = {
   "error.retry": "Qayta urinish",
   // ── More page
   "more.title": "Sozlamalar va asboblar",
+  "more.export": "Ma'lumotni yuklab olish",
+  "more.export_sub": "CSV faylda barcha yozuvlar va qarzlar",
+  "more.privacy_note":
+    "Ma'lumotingiz maxfiy va shifrlangan — faqat siz koʻrasiz. Istalgan vaqtda yuklab olishingiz mumkin.",
   "more.accounts": "Hisoblar",
   "more.accounts_sub": "Hisoblarni boshqarish",
   "more.categories_sub": "Kategoriyalarni boshqarish",
@@ -542,6 +546,10 @@ const ru: Dictionary = {
   "more.language": "Язык",
   "more.language_sub": "Выбор языка",
   "more.theme_sub": "Светлая, тёмная или системная",
+  "more.export": "Скачать данные",
+  "more.export_sub": "Все операции и долги в CSV",
+  "more.privacy_note":
+    "Ваши данные приватны и зашифрованы — видите только вы. Можно скачать в любой момент.",
   // ── Common
   "common.soon": "Скоро",
   // ── Home page
@@ -879,6 +887,10 @@ const en: Dictionary = {
   "more.language": "Language",
   "more.language_sub": "Choose language",
   "more.theme_sub": "Light, dark or system",
+  "more.export": "Download my data",
+  "more.export_sub": "All transactions and debts in CSV",
+  "more.privacy_note":
+    "Your data is private and encrypted — only you can see it. Download anytime.",
   // ── Common
   "common.soon": "Coming soon",
   // ── Home page

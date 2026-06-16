@@ -145,6 +145,7 @@ model Debt {
   note         String?
   occurredAt   DateTime
   settledAt    DateTime?
+  deletedAt    DateTime?
   createdAt    DateTime      @default(now())
 
   @@index([userId, status])

@@ -44,6 +44,7 @@ export async function listDebts(
   return prisma.debt.findMany({
     where: {
       userId,
+      deletedAt: null,
       direction: filters.direction,
       status: filters.status,
     },
@@ -53,7 +54,7 @@ export async function listDebts(
 
 export async function settleDebt(id: string, userId: string) {
   const prisma = db as import("@prisma/client").PrismaClient;
-  const existing = await prisma.debt.findFirst({ where: { id, userId } });
+  const existing = await prisma.debt.findFirst({ where: { id, userId, deletedAt: null } });
   if (!existing) return null;
   return prisma.debt.update({
     where: { id, userId },
@@ -67,7 +68,7 @@ export async function updateDebt(
   input: UpdateDebtInput
 ) {
   const prisma = db as import("@prisma/client").PrismaClient;
-  const existing = await prisma.debt.findFirst({ where: { id, userId } });
+  const existing = await prisma.debt.findFirst({ where: { id, userId, deletedAt: null } });
   if (!existing) return null;
   return prisma.debt.update({
     where: { id, userId },
@@ -82,9 +83,14 @@ export async function updateDebt(
 
 export async function deleteDebt(id: string, userId: string) {
   const prisma = db as import("@prisma/client").PrismaClient;
-  const existing = await prisma.debt.findFirst({ where: { id, userId } });
+  const existing = await prisma.debt.findFirst({
+    where: { id, userId, deletedAt: null },
+  });
   if (!existing) return null;
-  await prisma.debt.delete({ where: { id, userId } });
+  await prisma.debt.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  });
   return true;
 }
 
@@ -94,7 +100,7 @@ export async function getDebtTotals(userId: string): Promise<DebtTotals> {
   // One groupBy query — no N+1
   const groups = await prisma.debt.groupBy({
     by: ["direction"],
-    where: { userId, status: DebtStatus.open },
+    where: { userId, status: DebtStatus.open, deletedAt: null },
     _sum: { amountUzs: true },
   });
 
