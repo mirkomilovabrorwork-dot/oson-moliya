@@ -4,7 +4,30 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-14, Opus 1M — Revolut-style multi-currency overview LIVE)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-16, Opus 1M — RESUME POINT recorded for the design experiment)
+
+### 🔖 RESUME POINT — design experiment (recorded 2026-06-16, after prior session hit usage limit)
+- **WHERE THE LAST SESSION STOPPED:** branch `design/experiment-2026-06-14`, HEAD = `9f8a236`
+  "feat(experiment): DATA SAFETY (batch 1)". Committed today (2026-06-16), then the session ended on the
+  usage limit. Tag for easy return: `resume/experiment-2026-06-16` (points at `9f8a236`).
+- **HEALTH:** working tree CLEAN, all 26 experiment commits pushed to `origin/design/experiment-2026-06-14`
+  (nothing uncommitted, nothing lost). Gates green on this branch: `npm run typecheck` 0 errors,
+  `npm test` 112/112. (full `next build` not re-run this session; was green per task 021 note.)
+- **NOT DEPLOYED:** per `docs/tasks/021-design-login-experiment-handoff.md` — do NOT deploy this experiment
+  until the user explicitly approves the design. LIVE prod (oson-moliya.vercel.app) is still on `main`.
+- **WHAT THIS EXPERIMENT BRANCH IS (26 commits ahead of `main`):** warm-cream light redesign + donut charts +
+  Debts module + bot debt-queries + bank-statement IMPORT + "Download my data" CSV export + soft-delete debts.
+  The two early planning docs are now PARTLY STALE: `021` describes only the first few commits; the full
+  10-phase roadmap is `docs/tasks/017-ui-ux-finance-design-plan.md`.
+- **"batch 1" → batch 2 was intended.** DATA SAFETY batch 1 = CSV export + debts soft-delete (DONE).
+  Remaining per `017` Phase 10 / Phase 7: undo/restore UI, soft-delete for categories/budgets, "what will be
+  lost" warning + audit metadata, typed-confirm on all destructive deletes.
+- **NEXT (user-gated, awaiting "boshla"):** either (A) DATA SAFETY batch 2, or (B) user reviews the whole
+  experiment on phone first and decides approve→deploy vs reject→rollback to `checkpoint/current-stable-2026-06-14`.
+- **ROLLBACK if the design is rejected:** `git switch checkpoint/current-stable-2026-06-14`.
+
+---
+
 - **MULTI-CURRENCY OVERVIEW REDESIGN — LIVE (commit `5633526`):** per user (Revolut screenshot). Removed the
   confusing "ORIGINAL" display mode. Currencies = UZS/RUB/EUR/USD; **main currency** (bosh valyuta) selectable
   in /more, default UZS. Home overview now groups this-period tx by currency: each currency row shows its
