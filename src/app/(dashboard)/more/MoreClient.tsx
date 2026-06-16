@@ -326,31 +326,6 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
           )}
         </div>
 
-        {/* Ma'lumotni yuklab olish (Export — data backup) */}
-        <div style={{ borderTop: "1px solid var(--border)" }}>
-          <a
-            href="/api/export"
-            className={rowClass}
-            style={{ minHeight: 56, display: "flex", textDecoration: "none" }}
-          >
-            <IconTile bg="var(--surface-sunken)" color="var(--fg-muted)">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
-              </svg>
-            </IconTile>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium" style={{ color: "var(--fg)" }}>
-                {t("more.export", lang)}
-              </div>
-              <div className="text-xs" style={{ color: "var(--fg-subtle)" }}>
-                {t("more.export_sub", lang)}
-              </div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)", flexShrink: 0 }}>
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </a>
-        </div>
       </div>
 
       {/* Privacy note — builds trust */}
