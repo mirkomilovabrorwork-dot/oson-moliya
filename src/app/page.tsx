@@ -296,6 +296,36 @@ export default async function OverviewPage() {
     .replace("{income}", monthIncomeStr)
     .replace("{expense}", monthExpenseStr);
 
+  // ── Secondary-currency lines (Fix 030-3) ──────────────────────────────────
+  // If main = UZS → show USD equivalent; otherwise show UZS equivalent.
+  // Omit when value ≈ 0 or rate is missing.
+  function makeSecondaryLine(amountUzs: bigint): string | null {
+    if (amountUzs === 0n) return null;
+    const absUzs = amountUzs < 0n ? -amountUzs : amountUzs;
+    if (currency === "UZS") {
+      const usdRate = rates.USD;
+      if (!usdRate || usdRate <= 0) return null;
+      const usd = Number(absUzs) / usdRate;
+      if (usd < 0.01) return null;
+      const formatted = usd.toFixed(2);
+      const [intPart, decPart] = formatted.split(".");
+      const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return `≈ $${grouped}.${decPart}`;
+    }
+    // Main is USD/EUR/RUB → show UZS equivalent
+    const uzsAmt = Number(absUzs);
+    if (uzsAmt < 100) return null;
+    return `≈ ${formatNative(uzsAmt, "UZS", lang)}`;
+  }
+
+  const balanceSecondary = makeSecondaryLine(allTimeBalanceUzs < 0n ? -allTimeBalanceUzs : allTimeBalanceUzs);
+  const incomeSecondary = makeSecondaryLine(overview.income);
+  const expenseSecondary = makeSecondaryLine(overview.expense);
+  const netUzs = overview.income >= overview.expense
+    ? overview.income - overview.expense
+    : overview.expense - overview.income;
+  const netSecondary = makeSecondaryLine(netUzs);
+
   return (
     <div className="min-h-screen" style={{ background: "transparent" }}>
       <TopNav lang={lang} />
@@ -322,6 +352,11 @@ export default async function OverviewPage() {
             {allTimeBalancePositive ? "+" : "−"}
             {allTimeBalanceMain}
           </p>
+          {balanceSecondary && (
+            <p className="text-xs mt-0.5 pl-0.5" style={{ color: "rgba(255,255,255,.65)" }}>
+              {balanceSecondary}
+            </p>
+          )}
           {/* This-month context: smaller, on the green card */}
           <p
             className="text-xs font-medium mt-2 pl-0.5"
@@ -484,14 +519,15 @@ export default async function OverviewPage() {
           {/* This-month KPI row */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
-              { label: t("home.month_income", lang), val: overview.income, color: "var(--income)" },
-              { label: t("home.month_expense", lang), val: overview.expense, color: "var(--expense)" },
+              { label: t("home.month_income", lang), val: overview.income, color: "var(--income)", secondary: incomeSecondary },
+              { label: t("home.month_expense", lang), val: overview.expense, color: "var(--expense)", secondary: expenseSecondary },
               {
                 label: overview.income >= overview.expense ? t("analytics.net_positive", lang) : t("analytics.net_negative", lang),
                 val: overview.income >= overview.expense ? overview.income - overview.expense : overview.expense - overview.income,
                 color: overview.income >= overview.expense ? "var(--income)" : "var(--expense)",
+                secondary: netSecondary,
               },
-            ].map(({ label, val, color }) => (
+            ].map(({ label, val, color, secondary }) => (
               <div
                 key={label}
                 className="rounded-xl p-3 flex flex-col gap-1 min-w-0"
@@ -503,6 +539,11 @@ export default async function OverviewPage() {
                 <p className="text-sm font-bold tabular break-words leading-tight" style={{ color }}>
                   {fmt(val)}
                 </p>
+                {secondary && (
+                  <p className="text-xs leading-tight tabular" style={{ color: "var(--fg-subtle)" }}>
+                    {secondary}
+                  </p>
+                )}
               </div>
             ))}
           </div>
