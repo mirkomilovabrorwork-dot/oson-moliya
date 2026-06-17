@@ -4,9 +4,19 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028 STT GEMINI SHIPPED)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028+029 SHIPPED)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `08c1c4e`).** Just shipped:
+- **LIVE on prod (oson-moliya.vercel.app, main `95b07a4`).** Shipped this session:
+  - **TASK 029 — visual separation of type vs category (`95b07a4`).** Bot UX fix for the user's
+    "kirimda oziq-ovqat" confusion (turned out to be PERCEPTION, not classification). Edit picker no
+    longer shows twin `[🟢 Kirim][🔴 Chiqim]` pills above the category pills — replaced with a SINGLE
+    full-width action button (`🔄 Kirimga aylantirish` or `🔄 Chiqimga aylantirish`, depending on
+    current type). Confirmation card AND updated-card (after edit) gained a NEW row below
+    `[Tahrirlash, O'chirish]` with the same flip-action button → type errors now fixable in ONE tap,
+    no menu dive. New callback `ft:<txId>` flips type + reassigns category to user's default of the
+    new type (`boshqa kirim`/`boshqa chiqim` preferred). Edit-picker message now leads with
+    "✏️ Hozir: 🔴 Chiqim · sartarosh · 70 000 so'm" so the user sees exactly what they're changing.
+    3 new i18n keys + helper across uz/ru/en. Spec `docs/tasks/029`.
   - **TASK 028 — STT switch ElevenLabs → Gemini 2.5 Flash (`08c1c4e`, dpl `4fjJxXdccQfXmV8MQqRvEA2rZQuW`).**
     New `GeminiFlashProvider` (`src/lib/stt/gemini.ts`) hits `generateContent` multimodal with inline-base64
     OGG/Opus + a language-aware "transcribe verbatim" prompt. Wired into `src/lib/stt/index.ts` alongside
@@ -16,16 +26,16 @@
     Verified: /login 200, /api/telegram 405 (POST-only, expected). Pushed to origin/main.
     **NOTE on the Gemini API key format:** Google now issues keys as `AQ.Ab8RN6...` (not the classic `AIza...`)
     — captured in `playbook_tech_gotchas` so we don't second-guess that format next time.
-- **USER ACTION NEEDED NOW — real Uzbek voice test on `@oson_moliya_bot`:**
-  - Send 3-5 voice messages with typical Uzbek phrasing (expense + income + mixed slang).
-  - If transcripts look bad → say "STT yomon" → I roll back in 1 minute: `STT_PROVIDER=elevenlabs` + redeploy.
-  - If transcripts look good → say "STT yaxshi" → we move to the next item.
-- **NEXT — agreed plan (after STT verdict):**
-  1. **Type tugmalarini vizual ajratish** (was issue #1 — root cause was UX, NOT misclassification). User said
-     "asli to'g'ri ekan faqat kirimni ostida turgani uchun unga tegishli debman". Make 🟢 KIRIM / 🔴 CHIQIM
-     buttons look DIFFERENT from category buttons (header-style row vs pill buttons) so users don't read them
-     as "another category". Brain classification stays.
-  2. **Spam protection** (added by user 2026-06-17): rate-limit `@oson_moliya_bot` per Telegram user_id (voice
+- **USER ACTION NEEDED — two tests on `@oson_moliya_bot`:**
+  1. **STT verdict (task 028)** — send 3-5 voice messages, see if Gemini transcripts are right. If bad →
+     "STT yomon" → I roll back to ElevenLabs in 1 minute (rollback script lower in this file).
+  2. **Task 029 verdict** — send any tx, tap Tahrirlash on the card: you should now see the new full-width
+     `🔄 Kirimga aylantirish` (or Chiqim) action button INSTEAD of twin pills. Category pills below feel
+     separate. Also on the card itself there's now a SECOND keyboard row with the same 🔄 flip button for
+     one-tap type fix. Try flipping a tx via the card button — it should reassign category to "boshqa kirim/
+     chiqim" automatically.
+- **NEXT — agreed plan (after both verdicts):**
+  1. **Spam protection** (added by user 2026-06-17): rate-limit `@oson_moliya_bot` per Telegram user_id (voice
      costs money — separate, tighter cap). Storage: in-memory or DB? Limits TBD — needs a short spec.
 - **WITHDRAWN this session (decided not to do):**
   - Old issue #2 "edit-in-bot only" — user reconsidered: "men boshqa applar shunaqa qilarkan dedim, biz app emas".
