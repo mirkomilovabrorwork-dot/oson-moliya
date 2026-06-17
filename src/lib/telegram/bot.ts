@@ -1770,15 +1770,9 @@ export function createBot(): Bot {
         await clearPendingAction(user.id);
         await upsertPendingAction(user.id, { intent: "edit_tx", draft: { txId }, question: "" });
 
-        // One window: single full-width flip-type button + the user's categories + amount/delete — all one tap.
+        // One window: category pills (2-per-row) + amount/delete — type-flip lives on the card only.
         const editCats = await getSmartCategories(user.id, tx.type, tx.note ?? null, 6);
-        const isExpenseEdit = tx.type === TxType.expense;
         const rows: InlineKeyboardButton[][] = [];
-        // Single full-width action button to flip type (visually distinct from 2-per-row category pills below)
-        rows.push([{
-          text: isExpenseEdit ? labels.flipToIncomeBtn : labels.flipToExpenseBtn,
-          callback_data: isExpenseEdit ? "et:income" : "et:expense",
-        }]);
         const catBtns: InlineKeyboardButton[] = editCats.map((c) => ({ text: c.name, callback_data: `ec:${c.id}` }));
         for (let i = 0; i < catBtns.length; i += 2) rows.push(catBtns.slice(i, i + 2));
         rows.push([
@@ -1788,6 +1782,7 @@ export function createBot(): Bot {
           { text: labels.editAmountLabel, callback_data: "ef:amt" },
           { text: labels.deleteBtn, callback_data: `d:${txId}` },
         ]);
+        const isExpenseEdit = tx.type === TxType.expense;
         const typeIcon = isExpenseEdit ? "🔴" : "🟢";
         const typeWord = isExpenseEdit
           ? (lang === "ru" ? "Расход" : lang === "en" ? "Expense" : "Chiqim")

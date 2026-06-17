@@ -522,6 +522,11 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         </div>
       )}
 
+      {/* Debt explainer — one-liner so users know debts aren't counted in income/expense */}
+      <p className="text-xs mb-4" style={{ color: "var(--fg-subtle)" }}>
+        {t("debt.explainer", lang)}
+      </p>
+
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
         {/* Given (lent out) — neutral; money-lent is an asset-at-risk, not income */}

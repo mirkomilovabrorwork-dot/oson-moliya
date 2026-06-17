@@ -282,6 +282,7 @@ const uz: Dictionary = {
   "debt.settled": "Qarz to'landi deb belgilandi",
   "debt.saved": "Qarz saqlandi",
   "debt.edit.title": "Qarzni tahrirlash",
+  "debt.explainer": "Qarzlar kirim va chiqimga qo'shilmaydi — pulingiz qaytishi kutilyapti.",
   // ── Common
   "delete.typed.title": "O'chirishni tasdiqlang",
   "delete.typed.warning": "Ogohlantirish: bu amalni qaytarib bo'lmaydi.",
@@ -621,6 +622,7 @@ const ru: Dictionary = {
   "debt.settled": "Долг отмечен как погашенный",
   "debt.saved": "Долг сохранён",
   "debt.edit.title": "Редактировать долг",
+  "debt.explainer": "Долги не входят в доходы и расходы — деньги ожидаются обратно.",
   // ── Common
   "delete.typed.title": "Подтвердите удаление",
   "delete.typed.warning": "Предупреждение: это действие нельзя отменить.",
@@ -960,6 +962,7 @@ const en: Dictionary = {
   "debt.settled": "Debt marked as settled",
   "debt.saved": "Debt saved",
   "debt.edit.title": "Edit debt",
+  "debt.explainer": "Debts are not added to income or expenses — the money is expected back.",
   // ── Common
   "delete.typed.title": "Confirm deletion",
   "delete.typed.warning": "Warning: this action cannot be undone.",
