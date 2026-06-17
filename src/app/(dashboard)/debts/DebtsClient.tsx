@@ -37,9 +37,12 @@ type Tab = "all" | "given" | "taken";
 
 // formatMoney is defined as instance method inside DebtsClient (currency-aware)
 
-function formatDate(iso: string): string {
+function formatDate(iso: string | null | undefined, lang: string): string {
+  if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleDateString("uz-Latn-UZ", {
+  if (isNaN(d.getTime())) return "—";
+  const locale = lang === "ru" ? "ru-RU" : lang === "en" ? "en-GB" : "uz-Latn-UZ";
+  return d.toLocaleDateString(locale, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -521,15 +524,15 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        {/* Given (lent out) */}
+        {/* Given (lent out) — neutral; money-lent is an asset-at-risk, not income */}
         <div
           className="rounded-[var(--radius-lg)] p-4"
-          style={{ background: "var(--income-wash)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
+          style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}
         >
-          <p className="text-xs font-medium mb-1" style={{ color: "var(--income)" }}>
+          <p className="text-xs font-medium mb-1" style={{ color: "var(--fg-subtle)" }}>
             {t("debt.given", lang)}
           </p>
-          <p className="text-xl font-bold tabular-nums" style={{ color: "var(--income)" }}>
+          <p className="text-xl font-bold tabular-nums" style={{ color: "var(--fg)" }}>
             {formatMoney(totals.givenOpen)}
           </p>
         </div>
@@ -662,7 +665,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                     <p className="text-xs mt-0.5" style={{ color: "var(--fg-subtle)" }}>
                       {isGiven ? t("debt.tab.given", lang) : t("debt.tab.taken", lang)}
                       {" · "}
-                      {formatDate(debt.occurredAt)}
+                      {formatDate(debt.occurredAt, lang)}
                       {debt.note ? ` · ${debt.note}` : ""}
                     </p>
                   </div>
