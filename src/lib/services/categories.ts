@@ -98,3 +98,52 @@ export async function resolveOrCreateCategory(
   });
   return created.id;
 }
+
+/**
+ * Return the user's categories of `type`, ranked by usage count (most used first),
+ * with a +1000 score boost when `hint` substring-matches the category name
+ * (either direction, case-insensitive). Returns top `limit` {id, name} pairs.
+ */
+export async function getSmartCategories(
+  userId: string,
+  type: TxType,
+  hint?: string | null,
+  limit = 5
+): Promise<{ id: string; name: string }[]> {
+  const prisma = db as import("@prisma/client").PrismaClient;
+
+  // Fetch all categories of this type for the user
+  const cats = await prisma.category.findMany({
+    where: { userId, type },
+    select: { id: true, name: true },
+  });
+
+  if (cats.length === 0) return [];
+
+  // Usage counts: group transactions by categoryId
+  const groups = await prisma.transaction.groupBy({
+    by: ["categoryId"],
+    where: { userId, type, deletedAt: null, categoryId: { not: null } },
+    _count: { _all: true },
+  });
+  const usageMap = new Map<string, number>();
+  for (const g of groups) {
+    if (g.categoryId) usageMap.set(g.categoryId, g._count._all);
+  }
+
+  // Score each category
+  const hintLower = hint ? hint.toLowerCase() : null;
+  const scored = cats.map((c) => {
+    const nameLower = c.name.toLowerCase();
+    let score = usageMap.get(c.id) ?? 0;
+    if (hintLower && (nameLower.includes(hintLower) || hintLower.includes(nameLower))) {
+      score += 1000;
+    }
+    return { ...c, score };
+  });
+
+  // Sort by score desc, then name asc
+  scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+
+  return scored.slice(0, limit).map(({ id, name }) => ({ id, name }));
+}

@@ -237,41 +237,44 @@ export function formatConfirmation(params: {
   categoryName?: string | null;
   date: string; // "today" | "yesterday" | "YYYY-MM-DD"
   language: string;
+  headline?: string; // optional override; if absent use Saqladim/Сохранил/Saved
 }): string {
-  const { amount, type, categoryName, date, language } = params;
+  const { amount, type, categoryName, date, language, headline } = params;
   const amountStr = formatAmount(amount, language);
+
+  const headLine =
+    headline ??
+    (language === "ru" ? "✅ Сохранил" : language === "en" ? "✅ Saved" : "✅ Saqladim");
+
+  const typeEmoji = type === "income" ? "🟢" : "🔴";
+  const typeLabel =
+    type === "income"
+      ? language === "ru"
+        ? "Доход"
+        : language === "en"
+        ? "Income"
+        : "Kirim"
+      : language === "ru"
+      ? "Расход"
+      : language === "en"
+      ? "Expense"
+      : "Chiqim";
 
   let dateLabel: string;
   if (date === "today") {
-    dateLabel = language === "ru" ? "сегодня" : language === "en" ? "today" : "bugun";
+    dateLabel = language === "ru" ? "Сегодня" : language === "en" ? "Today" : "Bugun";
   } else if (date === "yesterday") {
-    dateLabel = language === "ru" ? "вчера" : language === "en" ? "yesterday" : "kecha";
+    dateLabel = language === "ru" ? "Вчера" : language === "en" ? "Yesterday" : "Kecha";
   } else {
     dateLabel = date;
   }
 
-  const typeLabel =
-    type === "income"
-      ? language === "ru"
-        ? "доход"
-        : language === "en"
-        ? "income"
-        : "kirim"
-      : language === "ru"
-      ? "расход"
-      : language === "en"
-      ? "expense"
-      : "chiqim";
+  const lines = [
+    headLine,
+    `${typeEmoji} ${typeLabel} · ${amountStr}`,
+  ];
+  if (categoryName) lines.push(`🗂 ${categoryName}`);
+  lines.push(`📅 ${dateLabel}`);
 
-  const parts = [amountStr, typeLabel];
-  if (categoryName) parts.push(categoryName);
-  parts.push(dateLabel);
-
-  if (language === "ru") {
-    return `✅ Записано: ${parts.join(", ")}.`;
-  } else if (language === "en") {
-    return `✅ Logged: ${parts.join(", ")}.`;
-  } else {
-    return `✅ Yozildi: ${parts.join(", ")}.`;
-  }
+  return lines.join("\n");
 }

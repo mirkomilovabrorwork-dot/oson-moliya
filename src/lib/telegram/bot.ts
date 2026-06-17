@@ -8,6 +8,7 @@ import { parseAmountUzs } from "../claude/amount";
 import {
   ensureDefaultCategories,
   resolveOrCreateCategory,
+  getSmartCategories,
 } from "../services/categories";
 import { ensureDefaultAccount } from "../services/accounts";
 import { createTransaction } from "../services/transactions";
@@ -26,6 +27,7 @@ import type { FinanceQuery } from "../types";
 import { extractReceipt } from "../claude/receipt";
 import { buildMonthlyReportXlsx } from "../report/excel";
 import { InputFile } from "grammy";
+import { getTashkentNow } from "../dates";
 
 // ── Per-user rate limiter (in-memory, sliding window) ────────────────────────
 // Guards STT + brain calls: 20 AI messages per 10 minutes per Telegram user.
@@ -219,12 +221,27 @@ async function showUpdatedTx(
     await ctx.reply(labels.notFoundMsg);
     return;
   }
-  const typeLabel =
-    tx.type === TxType.income
-      ? lang === "ru" ? "доход" : lang === "en" ? "income" : "kirim"
-      : lang === "ru" ? "расход" : lang === "en" ? "expense" : "chiqim";
-  const catPart = tx.category ? `, ${tx.category.name}` : "";
-  const head = lang === "ru" ? "✏️ Изменено" : lang === "en" ? "✏️ Updated" : "✏️ Yangilandi";
+  // Compute date key for formatConfirmation
+  const tz = (date: Date) => {
+    const t = new Date(date.getTime() + 5 * 60 * 60 * 1000);
+    return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`;
+  };
+  const now = getTashkentNow();
+  const todayStr = tz(now);
+  const yesterdayStr = tz(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const txDayStr = tz(tx.occurredAt);
+  const dateKey = txDayStr === todayStr ? "today" : txDayStr === yesterdayStr ? "yesterday" : txDayStr;
+
+  const updatedHeadline =
+    lang === "ru" ? "✅ Обновил" : lang === "en" ? "✅ Updated" : "✅ Yangiladim";
+  const cardText = formatConfirmation({
+    amount: tx.amountUzs,
+    type: tx.type === TxType.income ? "income" : "expense",
+    categoryName: tx.category?.name ?? null,
+    date: dateKey,
+    language: lang,
+    headline: updatedHeadline,
+  });
   const dash = await dashboardReplyOptions(user.id);
   const rows: InlineKeyboardButton[][] = [
     ...dash.dashRows,
@@ -233,9 +250,24 @@ async function showUpdatedTx(
       { text: labels.deleteBtn, callback_data: `d:${tx.id}` },
     ],
   ];
-  await ctx.reply(`${head}: ${formatAmount(tx.amountUzs, lang)}, ${typeLabel}${catPart}.` + dash.extraText, {
+  await ctx.reply(cardText + dash.extraText, {
     reply_markup: { inline_keyboard: rows },
   });
+}
+
+// ── Date label helper (Tashkent timezone) ────────────────────────────────────
+function utcDateToTashkentLabel(d: Date, lang: string): string {
+  const tz = (date: Date) => {
+    const t = new Date(date.getTime() + 5 * 60 * 60 * 1000);
+    return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`;
+  };
+  const now = getTashkentNow();
+  const todayStr = tz(now);
+  const yesterdayStr = tz(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const dStr = tz(d);
+  if (dStr === todayStr) return lang === "ru" ? "Сегодня" : lang === "en" ? "Today" : "Bugun";
+  if (dStr === yesterdayStr) return lang === "ru" ? "Вчера" : lang === "en" ? "Yesterday" : "Kecha";
+  return dStr;
 }
 
 // ── buildDebtCard: reusable debt confirmation/update card ────────────────────
@@ -250,25 +282,25 @@ interface DebtCardResult {
 function buildDebtCard(
   debt: { id: string; counterparty: string; amountUzs: bigint; direction: DebtDirection },
   lang: "uz" | "ru" | "en",
-  mode: "saved" | "updated"
+  mode: "saved" | "updated",
+  occurredAt?: Date
 ): DebtCardResult {
-  const headline =
+  const headLine =
     mode === "saved"
-      ? (lang === "ru" ? "✅ Долг сохранён:" : lang === "en" ? "✅ Debt saved:" : "✅ Qarz saqlandi:")
-      : (lang === "ru" ? "✅ Долг обновлён:" : lang === "en" ? "✅ Debt updated:" : "✅ Qarz yangilandi:");
+      ? (lang === "ru" ? "✅ Сохранил" : lang === "en" ? "✅ Saved" : "✅ Saqladim")
+      : (lang === "ru" ? "✅ Обновил" : lang === "en" ? "✅ Updated" : "✅ Yangiladim");
 
-  const dirPart =
+  const dirLine =
     debt.direction === DebtDirection.given
-      ? (lang === "ru" ? `${debt.counterparty} дали` : lang === "en" ? `lent to ${debt.counterparty}` : `${debt.counterparty}ga berdingiz`)
-      : (lang === "ru" ? `у ${debt.counterparty} взяли` : lang === "en" ? `borrowed from ${debt.counterparty}` : `${debt.counterparty}dan oldingiz`);
+      ? (lang === "ru" ? `🤝 ${debt.counterparty}у дали` : lang === "en" ? `🤝 lent to ${debt.counterparty}` : `🤝 ${debt.counterparty}ga berdingiz`)
+      : (lang === "ru" ? `🤝 у ${debt.counterparty} взяли` : lang === "en" ? `🤝 borrowed from ${debt.counterparty}` : `🤝 ${debt.counterparty}dan oldingiz`);
 
   const amtStr = formatAmount(debt.amountUzs, lang);
-  const text =
-    lang === "ru"
-      ? `${headline} вы ${dirPart} ${amtStr}.`
-      : lang === "en"
-      ? `${headline} you ${dirPart} ${amtStr}.`
-      : `${headline} ${dirPart} ${amtStr}.`;
+  const lines = [headLine, dirLine, `💵 ${amtStr}`];
+  if (occurredAt) {
+    lines.push(`📅 ${utcDateToTashkentLabel(occurredAt, lang)}`);
+  }
+  const text = lines.join("\n");
 
   const editDeleteRow: InlineKeyboardButton[] = [
     { text: lang === "ru" ? "✏️ Изменить" : lang === "en" ? "✏️ Edit" : "✏️ Tahrirla", callback_data: `de:${debt.id}` },
@@ -531,6 +563,38 @@ async function handleMessage(
       await showUpdatedTx({ reply: (t, o) => ctx.reply(t, o) }, prisma, user, ed.txId, elang);
       return;
     }
+
+    if (ed.field === "category_text" && typeof ed.txId === "string") {
+      const elang = (user.language as "uz" | "ru" | "en") ?? "uz";
+      const name = text.trim();
+      if (!name) {
+        await ctx.reply(
+          elang === "ru" ? "Введите название категории:" : elang === "en" ? "Enter the category name:" : "Kategoriya nomini yozing:",
+          { reply_markup: { force_reply: true } }
+        );
+        return;
+      }
+      const tx = await prisma.transaction.findFirst({
+        where: { id: ed.txId, userId: user.id, deletedAt: null },
+        select: { id: true, type: true },
+      });
+      if (!tx) {
+        await clearPendingAction(user.id);
+        await ctx.reply(getBotLabels(elang).notFoundMsg);
+        return;
+      }
+      const catId = await resolveOrCreateCategory(user.id, name, tx.type);
+      await prisma.transaction.update({ where: { id: ed.txId, userId: user.id }, data: { categoryId: catId } });
+      await clearPendingAction(user.id);
+      await upsertPendingAction(user.id, {
+        intent: "logged",
+        draft: { lastTransactionId: ed.txId },
+        question: "",
+        lastTransactionId: ed.txId,
+      });
+      await showUpdatedTx({ reply: (t, o) => ctx.reply(t, o) }, prisma, user, ed.txId, elang);
+      return;
+    }
   }
 
   // Editing a debt field via typed text (literal — never re-parsed by brain)
@@ -555,7 +619,7 @@ async function handleMessage(
         return;
       }
       await clearPendingAction(user.id);
-      const card = buildDebtCard(updated, elang, "updated");
+      const card = buildDebtCard(updated, elang, "updated", updated.occurredAt);
       const dash = await dashboardReplyOptions(user.id);
       await ctx.reply(card.text + dash.extraText, {
         reply_markup: { inline_keyboard: [...dash.dashRows, card.editDeleteRow] },
@@ -582,7 +646,7 @@ async function handleMessage(
         return;
       }
       await clearPendingAction(user.id);
-      const card = buildDebtCard(updated, elang, "updated");
+      const card = buildDebtCard(updated, elang, "updated", updated.occurredAt);
       const dash = await dashboardReplyOptions(user.id);
       await ctx.reply(card.text + dash.extraText, {
         reply_markup: { inline_keyboard: [...dash.dashRows, card.editDeleteRow] },
@@ -732,7 +796,7 @@ async function handleMessage(
         occurredAt: dateStringToUtc(dateStr),
       });
       await clearPendingAction(user.id);
-      const card = buildDebtCard(created, lang, "saved");
+      const card = buildDebtCard(created, lang, "saved", created.occurredAt);
       const dashDebt = await dashboardReplyOptions(user.id);
       await ctx.reply(card.text + dashDebt.extraText, {
         reply_markup: {
@@ -1686,7 +1750,7 @@ export function createBot(): Bot {
         const txId = data.slice(2);
         const tx = await prisma.transaction.findFirst({
           where: { id: txId, userId: user.id, deletedAt: null },
-          select: { id: true, type: true },
+          select: { id: true, type: true, note: true },
         });
         if (!tx) {
           await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
@@ -1697,11 +1761,7 @@ export function createBot(): Bot {
         await upsertPendingAction(user.id, { intent: "edit_tx", draft: { txId }, question: "" });
 
         // One window: type toggle + the user's categories + amount/delete — all one tap.
-        const editCats = await prisma.category.findMany({
-          where: { userId: user.id, type: tx.type },
-          select: { id: true, name: true },
-          take: 6,
-        });
+        const editCats = await getSmartCategories(user.id, tx.type, tx.note ?? null, 6);
         const rows: InlineKeyboardButton[][] = [];
         rows.push([
           { text: labels.incomeBtn, callback_data: "et:income" },
@@ -1709,6 +1769,9 @@ export function createBot(): Bot {
         ]);
         const catBtns: InlineKeyboardButton[] = editCats.map((c) => ({ text: c.name, callback_data: `ec:${c.id}` }));
         for (let i = 0; i < catBtns.length; i += 2) rows.push(catBtns.slice(i, i + 2));
+        rows.push([
+          { text: lang === "ru" ? "✏️ Другое" : lang === "en" ? "✏️ Other" : "✏️ Boshqa", callback_data: `ec:other:${txId}` },
+        ]);
         rows.push([
           { text: labels.editAmountLabel, callback_data: "ef:amt" },
           { text: labels.deleteBtn, callback_data: `d:${txId}` },
@@ -1745,6 +1808,22 @@ export function createBot(): Bot {
         await ctx.reply(
           labels.editAmountPrompt,
           { reply_markup: { force_reply: true, input_field_placeholder: labels.editAmountLabel.replace("💰 ", "") } }
+        );
+        return;
+      }
+
+      // ── ec:other:<txId> — edit: type a custom category name ──────────────
+      if (data.startsWith("ec:other:")) {
+        const txId = data.slice(9);
+        await upsertPendingAction(user.id, {
+          intent: "edit_tx",
+          draft: { txId, field: "category_text" },
+          question: "",
+        });
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Введите название категории:" : lang === "en" ? "Enter the category name:" : "Kategoriya nomini yozing:",
+          { reply_markup: { force_reply: true } }
         );
         return;
       }
@@ -1894,7 +1973,7 @@ export function createBot(): Bot {
         });
         await clearPendingAction(user.id);
 
-        const cardDir = buildDebtCard(createdDirDebt, lang, "saved");
+        const cardDir = buildDebtCard(createdDirDebt, lang, "saved", createdDirDebt.occurredAt);
         const dashDir = await dashboardReplyOptions(user.id);
         await ctx.answerCallbackQuery();
         await ctx.reply(cardDir.text + dashDir.extraText, {
@@ -1983,7 +2062,7 @@ export function createBot(): Bot {
           await ctx.reply(labels.notFoundMsg);
           return;
         }
-        const cardDed = buildDebtCard(updatedDirDebt, lang, "updated");
+        const cardDed = buildDebtCard(updatedDirDebt, lang, "updated", updatedDirDebt.occurredAt);
         const dashDed = await dashboardReplyOptions(user.id);
         await ctx.answerCallbackQuery();
         await ctx.reply(cardDed.text + dashDed.extraText, {
