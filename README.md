@@ -55,7 +55,7 @@ the language of each message independently.
 ## Key Features
 
 ### Telegram bot
-- Text and voice input (production uses ElevenLabs Scribe v2 STT for Uzbek; Groq/OpenAI are swappable via `STT_PROVIDER`)
+- Text and voice input (production uses Gemini 2.5 Flash STT for Uzbek; ElevenLabs/Groq/OpenAI are swappable via `STT_PROVIDER`)
 - **Receipt photo:** send a photo of a receipt — Claude vision reads the grand total and the expense
   category and auto-logs it as an expense (5 MB cap, rate-limited like other AI calls); edit or delete
   it from the inline buttons under the confirmation
@@ -98,17 +98,17 @@ reconciliation, accrual accounting, and team workflows are on the 3-day roadmap
 
 ---
 
-## Why Claude + ElevenLabs instead of a full OpenAI stack
+## Why Claude + Gemini instead of a full OpenAI stack
 
 **Structured output via forced tool-use + zod.** Every bot message goes to Claude with a
 `record_intent` tool schema; Claude must call the tool, and the result is validated with zod before
 any DB write. This is functionally equivalent to OpenAI structured-output / function-calling — the
 model never writes SQL, and a malformed response is rejected cleanly.
 
-**STT is swappable.** Production voice input currently uses ElevenLabs Scribe v2 because Uzbek
-phone audio accuracy matters more than provider uniformity for this assessment. The same interface
-can switch to Groq Whisper or OpenAI `gpt-4o-transcribe` through `STT_PROVIDER` without changing the
-bot flow.
+**STT is swappable.** Production voice input uses Gemini 2.5 Flash because it supports OGG/Opus
+natively, costs significantly less per minute than alternatives, and handles Uzbek well thanks to a
+broad multilingual corpus. The same interface can switch to ElevenLabs Scribe v2, Groq Whisper, or
+OpenAI `gpt-4o-transcribe` through `STT_PROVIDER` without changing the bot flow.
 
 **Cost.** Claude Haiku (the default model) is among the cheapest available models that reliably
 follows a multi-field tool schema in three languages including Uzbek.
@@ -124,7 +124,7 @@ Telegram  ──POST──►  /api/telegram (webhook)
                           │
                           ▼
                     Claude brain (forced tool-use + zod)
-                    ElevenLabs Scribe v2 (voice -> text)
+                    Gemini 2.5 Flash (voice -> text)
                     Prisma 6 → Neon Postgres
                           │
                           ▼
@@ -140,9 +140,9 @@ Browser  ──HTTPS──►  Next.js App Router
 - **Brain:** every bot message goes to Claude via forced tool-use (`record_intent`). The structured
   output is validated with zod before any DB write — the model never writes SQL.
 - **Voice:** Telegram sends OGG audio; the server downloads it and forwards the buffer to the
-  configured STT provider. Production uses ElevenLabs Scribe v2; Groq Whisper and OpenAI
-  `gpt-4o-transcribe` remain available behind the same provider interface. The transcript feeds the
-  same brain path as text.
+  configured STT provider. Production uses Gemini 2.5 Flash; ElevenLabs Scribe v2, Groq Whisper,
+  and OpenAI `gpt-4o-transcribe` remain available behind the same provider interface. The transcript
+  feeds the same brain path as text.
 
 ---
 
@@ -197,7 +197,7 @@ recorded demo.
 | Charts | Recharts |
 | Database | Neon Postgres (serverless) via Prisma 6 + `@prisma/adapter-neon` |
 | AI brain | Anthropic Claude (`claude-haiku-4-5-20251001` default, forced tool-use) |
-| Voice STT | ElevenLabs Scribe v2 in production; Groq Whisper/OpenAI `gpt-4o-transcribe` swappable via `STT_PROVIDER` |
+| Voice STT | Gemini 2.5 Flash in production; ElevenLabs/Groq Whisper/OpenAI `gpt-4o-transcribe` swappable via `STT_PROVIDER` |
 | Bot framework | grammY |
 | Deploy | Vercel |
 | Test runner | Vitest |
