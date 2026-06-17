@@ -4,46 +4,94 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-17, Opus — BOT UX + LOGIN PERF SHIPPED)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus AUTOPILOT — TASK 028→033 SHIPPED, 6 deploys, finance audit half-done)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `a153e8d`).** Shipped this session (024/025/027 + bot type/voice fix, 5 deploys):
-  - **BOT TYPE + VOICE FIX (`a153e8d`)** — brain prompt now decides income/expense carefully (DEFAULT EXPENSE;
-    taksi/ovqat/kommunal/telefon-top-up are never income; verb direction berdim/to'ladim=expense vs "menga
-    berishdi"=income; clarify when unsure) — fixes "taksi logged as income". Voice/audio no longer echo the raw
-    "🎤 transcript" to the user (only the parsed card). NOTE: my earlier cleanup over-deleted income "sovg'a"
-    (receiving a gift IS income) — minor (moved to "boshqa kirim", no data loss).
-  - **024** — bot DEBT save-first + working field-edit (name/amount/direction via a LITERAL reply, never
-    re-parsed by the brain; the misheard "Sarvar" counterparty is now fixable). Soft-delete. Spec `docs/tasks/024`.
-  - **025** — pretty multi-line confirmation CARDS (tx + debt); after-edit shows "✅ Yangiladim"; smart
-    edit-category picker (usage-ranked + input-hint) + "✏️ Boshqa" type-your-own. Spec `docs/tasks/025`.
-  - **027** — category TYPE-correctness: an expense word can NO LONGER become an income category (routes to
-    "boshqa kirim/chiqim"); income default "maosh" added; trilingual error/404 + More i18n. Spec `docs/tasks/027`.
-  - **LOGIN PERF FIX** — `ensureDefaultCategories` was 26 sequential upserts on EVERY auth + many bot messages →
-    on a cold Neon DB this made login hang ("Kirilyapti…"). Now ONE `createMany(skipDuplicates)`. Fixes the
-    user-reported "web sekin / boshqa user kirolmayapti".
-  - **DATA CLEANUP RAN ONCE** — `scripts/fix-miscategorized-categories.ts` re-bucketed 5 tx → "boshqa kirim" +
-    deleted 4 mis-typed income categories across 3 users (0 errors; idempotent, safe to re-run).
-- **NEXT — open issues the user raised (frustrated; RESUME HERE):**
-  1. **Income/expense type STILL wrong — needs a CREATIVE fix, not just prompt tweaks.** User: "kirimda
-     oziq-ovqat turibdi, bu qanaqasi?" Despite the 027 guard + prompt rules, type mis-classification persists.
-     FIRST re-investigate WHY income still shows oziq-ovqat after cleanup+guard+deploy (guard live? new data?
-     which surface — edit picker / categories page / a fresh log?). RECOMMENDED creative direction: (a) default
-     everything to EXPENSE, income only on a strong signal; (b) a ONE-TAP type toggle right on the confirmation
-     card (🔴 Chiqim ⇄ 🟢 Kirim) so any error is fixed in one tap, no menu; (c) category strictly follows type
-     (027 guard already does this). The user is OK to even hide the income/expense split if a cleaner UX exists.
-  2. **Keep editing IN THE BOT (not the web).** User: pressing edit somewhere opens the webapp input window;
-     bot-edit is more convenient. Find where edit routes users to the web (a web_app button? the dashboard link?)
-     and make the bot inline-edit the obvious primary path (024/025 already edit in-bot).
-  3. **MULTI-TRANSACTION in one message** — bot saves only the FIRST of several lines (e.g. 6 purchases). Brain
-     returns an ARRAY + save each + reply ONE summary. Delicate brain-schema change → fresh context.
-- **DEFERRED (don't forget — user: "keyinroq, unutib qo'yma"):** `docs/tasks/026` — try Gemini STT (A/B on real
-  Uzbek voice) + harden the brain prompt for garbled STT. Do NOT switch the brain to GPT (prior A/B = no gain).
-- **USER-ONLY:** record the demo video (`docs/demo-script.md`); provider spend caps (Anthropic/ElevenLabs/Groq);
-  rotate the GitHub PAT.
+- **LIVE on prod (oson-moliya.vercel.app, main `5c6293d`).** Shipped this session:
+  - **TASK 033 — debt partial-payment tracking (`5c6293d`).** Audit finding #3 acted on. New
+    `DebtPayment` table (additive migration applied to prod Neon via `prisma db push` — no data
+    loss). Each debt row now shows "Asl / To'landi / Qoldi" 3-line layout when partial-paid; new
+    "+ To'lov" button per open debt opens an add-payment modal (amount + date + note); cumulative
+    paid >= original auto-flips status to settled; deleting a payment re-opens. `getDebtTotals`
+    now subtracts paid → cash-in-hand math from task 032 stays correct under partial payments.
+    POST `/api/debts/[id]/payments`, DELETE `/api/debts/[id]/payments/[paymentId]`. Web only;
+    bot integration deferred. 9 new i18n keys (uz/ru/en). Spec `docs/tasks/033`.
+  - **TASK 032 — Naqd qolgan / cash-in-hand line (`ca13471`).** Audit finding #1 acted on. Home hero
+    card now has a sub-block under "Umumiy balans" labeled "Naqd qolgan" = `balance − givenOpen +
+    takenOpen`. Visible ONLY when there are open debts (else hidden — no noise). Umumiy balans
+    unchanged (net worth). Cash-in-hand reflects real liquidity (lending 3M now actually drops the
+    cash line by 3M, even though it's correctly NOT subtracted from balance). Reuses getDebtTotals
+    + makeSecondaryLine (task 030). uz "Naqd qolgan" · ru "Свободные деньги" · en "Cash on hand".
+    Spec `docs/tasks/032`.
+  - **TASK 031 — remove redundant in-menu flip + add debt explainer (`2b25709`).** User caught that
+    task 029 left the type-flip in BOTH the card AND the edit-picker menu. Removed from the menu;
+    card-flip stays as the single one-tap fix. Also added a 1-line muted explainer on the Debts page
+    (uz/ru/en): "Qarzlar kirim va chiqimga qo'shilmaydi — pulingiz qaytishi kutilyapti." Spec `docs/tasks/031`.
+  - **TASK 030 — dashboard real-bug fixes (`1f8ca38`).** Acted on a third-party AI ("Lovable") UX
+    critique only after fact-checking each claim against current code — 10 of 15 claims were
+    FALSE/outdated, 5 were real. Fixed: (a) `formatDate(null)` → "Invalid Date" string trust-killer
+    on debts; now guards `isNaN` and `null`, returns em-dash. (b) "Berilgan qarz" summary card was
+    green (`--income-wash`) → reads as realized income; switched to neutral surface (`--surface`,
+    `--fg`) since money-lent is an asset-at-risk, not income. (c) Secondary-currency line under
+    Home balance + each of the 3 KPI cells: small muted `≈ $X,XXX` when main = UZS (or UZS
+    equivalent when main = USD/EUR/RUB), via existing CBU rates; omitted when value≈0 or rate
+    missing. (d) FAB padding — already in place (`pb-32` on the 3 mobile screens). Lovable lesson
+    captured in `feedback_truth_over_compliance` memory. Spec `docs/tasks/030`.
+  - **TASK 029 — visual separation of type vs category (`95b07a4`).** Bot UX fix for the user's
+    "kirimda oziq-ovqat" confusion (turned out to be PERCEPTION, not classification). Edit picker no
+    longer shows twin `[🟢 Kirim][🔴 Chiqim]` pills above the category pills — replaced with a SINGLE
+    full-width action button (`🔄 Kirimga aylantirish` or `🔄 Chiqimga aylantirish`, depending on
+    current type). Confirmation card AND updated-card (after edit) gained a NEW row below
+    `[Tahrirlash, O'chirish]` with the same flip-action button → type errors now fixable in ONE tap,
+    no menu dive. New callback `ft:<txId>` flips type + reassigns category to user's default of the
+    new type (`boshqa kirim`/`boshqa chiqim` preferred). Edit-picker message now leads with
+    "✏️ Hozir: 🔴 Chiqim · sartarosh · 70 000 so'm" so the user sees exactly what they're changing.
+    3 new i18n keys + helper across uz/ru/en. Spec `docs/tasks/029`.
+  - **TASK 028 — STT switch ElevenLabs → Gemini 2.5 Flash (`08c1c4e`, dpl `4fjJxXdccQfXmV8MQqRvEA2rZQuW`).**
+    New `GeminiFlashProvider` (`src/lib/stt/gemini.ts`) hits `generateContent` multimodal with inline-base64
+    OGG/Opus + a language-aware "transcribe verbatim" prompt. Wired into `src/lib/stt/index.ts` alongside
+    ElevenLabs/Groq/OpenAI. Vercel envs flipped: `STT_PROVIDER=gemini` + `GEMINI_API_KEY` added; the other
+    provider keys are KEPT for instant rollback (env-flip only, no code change). User chose DIRECT switch
+    (no shadow mode). Spec: `docs/tasks/028-stt-switch-to-gemini.md`. Gates: typecheck 0 · test 124/124 · build.
+    Verified: /login 200, /api/telegram 405 (POST-only, expected). Pushed to origin/main.
+    **NOTE on the Gemini API key format:** Google now issues keys as `AQ.Ab8RN6...` (not the classic `AIza...`)
+    — captured in `playbook_tech_gotchas` so we don't second-guess that format next time.
+- **USER WENT TO SLEEP — autopilot batch COMPLETE.** Both safe + high-impact audit fixes shipped:
+  - ✅ Task 032 (cash-in-hand line) — code only
+  - ✅ Task 033 (debt partial payments) — additive DB migration applied to prod successfully
+  - ✋ Task 034 (recurring transactions) — DRAFT SPEC ONLY (`docs/tasks/034`). 5 design decisions
+    (D1–D5) need user input before implementation. Estimated ~5-6h after decisions. Recommended
+    direction: Vercel Cron + monthly/yearly only + frozen past entries.
+- **Autopilot stop point:** continuing into task 034 would require unilateral design decisions on
+  cron infra vs on-load generation, schedule format granularity, edit-propagation behavior — those
+  are the user's call. Wake-and-decide path is faster + safer than autopilot guessing wrong.
+- **USER ACTION NEEDED on wake — five verdicts plus audit-batch review:**
+  1. **STT verdict (task 028)** — bot voice tests on `@oson_moliya_bot`, 3-5 messages. Gemini OK?
+  2. **Task 029 verdict** — bot tx → Tahrirlash → category pills only (no twin pills); card has 🔄
+  3. **Task 030 verdict** — phone dashboard: USD `≈ $...` lines, "Berilgan" card neutral, "—" dates
+  4. **Task 031 verdict** — bot edit menu no longer has flip button; Debts page has 1-line explainer
+  5. **Task 032 verdict** — home shows new "Naqd qolgan" sub-block when debts open (math: balance
+     − givenOpen + takenOpen). On a no-debts user: identical to before. Math correct on edge cases?
+  6. **Task 033 verdict** (if Opus completes it overnight): partial-payment tracking on each debt
+- **NEXT — agreed plan (after both verdicts):**
+  1. **Spam protection** (added by user 2026-06-17): rate-limit `@oson_moliya_bot` per Telegram user_id (voice
+     costs money — separate, tighter cap). Storage: in-memory or DB? Limits TBD — needs a short spec.
+- **WITHDRAWN this session (decided not to do):**
+  - Old issue #2 "edit-in-bot only" — user reconsidered: "men boshqa applar shunaqa qilarkan dedim, biz app emas".
+  - Old issue #3 "multi-transaction in one message" — user said "hozircha to'xtab tursin".
+  - PAT rotation — user said "shartmas".
+- **DEFERRED (still alive):** none — task 026 (Gemini STT) is now done as part of 028. Brain hardening for
+  garbled STT is dropped (Gemini 2.5 should transcribe cleanly in the first place).
+- **ROLLBACK PLAN if Gemini disappoints:**
+  ```
+  cd C:/Users/localhost/Desktop/pultrack
+  printf "elevenlabs" | npx vercel env rm STT_PROVIDER production --yes
+  printf "elevenlabs" | npx vercel env add STT_PROVIDER production
+  npx vercel --prod --yes
+  ```
+  ElevenLabs key is still set; rollback is ~1 minute.
+- **USER-ONLY:** record the demo video (`docs/demo-script.md`); provider spend caps (Anthropic/Gemini/Groq/
+  ElevenLabs) — user asked "why" → answered (runaway-bill insurance, not urgent for a small bot).
 - Gates each task: typecheck 0 · test 124/124 · build. Deploy: `npx vercel --prod --yes` from repo root.
-- Assessment compliance: Task-01 requirements FULLY met + exceeded (debts, accounts, multi-currency, import,
-  receipt photo). Only the demo recording is outstanding (user-only). Stack note: uses Claude tool-use +
-  ElevenLabs STT (not OpenAI as the task text lists) — justified for Uzbek, documented in README.
 
 ---
 
