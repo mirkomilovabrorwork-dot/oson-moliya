@@ -68,8 +68,8 @@ Expand amounts BEFORE emitting the "amount" field:
 - NEVER invent or guess amounts — if not mentioned, set amount=null
 
 ## Intent classification
-- log_income: user reports money received (sotuv, tushum, kirim, received, получил, etc.)
-- log_expense: user reports money spent (xarajat, chiqim, spent, купил, etc.)
+- log_income: money came IN to the user. Clear income signals: sotdim/sotuv/sotildi (sold/sale), tushum/daromad/foyda, "kirdi/tushdi/keldi" (came in), maosh/oylik/ish haqi OLDIM (received salary), "menga … berdi/berishdi/to'lashdi/qilishdi" (someone paid/gave ME), mijoz to'ladi (client paid), received/получил/доход.
+- log_expense: money went OUT from the user. Signals: to'ladim/to'ladi (paid), sarfladim, ketdi/chiqdi, xarid qildim, oldim (bought), soldim (topped up: telefonga/hisobga soldim), spent/купил/потратил.
 - log_debt: user GAVE or TOOK a loan/debt (qarz berdim/oldim, qarzga berdim, дал/взял в долг, lent/borrowed). Extract counterparty (the OTHER person's name), debt_direction ('given' if the user lent — berdim/дал/lent; 'taken' if borrowed — oldim/взял/borrowed), amount, date. Do NOT classify a loan as income/expense.
   Rules: "X ga qarz berdim" → given, counterparty=X; "X dan qarz oldim" → taken, counterparty=X; missing name → counterparty=null; unclear direction → debt_direction=null.
 - debt_query: user ASKS about existing debts (NOT recording one). Use this when the user wants to SEE their debts — no counterparty + amount in the message, just a question.
@@ -91,6 +91,15 @@ Expand amounts BEFORE emitting the "amount" field:
 - add_category: user wants to add a new category (yangi kategoriya, новая категория, new category, etc.)
 - clarify_needed: intent is log_income/log_expense but required fields (amount or type) cannot be determined, OR non-UZS currency detected
 - unknown: message is unrelated to finance or unclear
+
+## Deciding TYPE (income vs expense) — the MOST COMMON mistake; be careful
+- DEFAULT TO EXPENSE. People log expenses far more often than income. Choose log_income ONLY when there is a CLEAR income signal (a sale, salary/payment RECEIVED, money that came IN, or a gift given TO the user).
+- The ITEM itself usually fixes the type — NEVER label an inherently-expense item as income:
+  - EXPENSE items: taksi, avtobus, benzin, yo'l kira, ovqat/oziq-ovqat/lavash/osh/non, kommunal (svet/gaz/suv/internet), telefon to'ldirish, ijara, soliq, xarid/mahsulot/tovar, kiyim, dori.
+  - INCOME items: sotuv/savdo, maosh/oylik OLINGAN, mijoz/buyurtma to'lovi.
+- Verb direction: "berdim / to'ladim / sarfladim" (I gave/paid/spent) = EXPENSE. "menga berdi / berishdi / qilishdi / to'lashdi / sovg'a qilishdi" (gave/paid to ME) = INCOME. ("X GA qarz berdim" or "X DAN qarz oldim" = log_debt, handled separately.)
+- "soldim" normally means topped-up / put-in (telefonga/hisobga soldim) = EXPENSE, not income.
+- If the type truly cannot be decided AND the item gives no hint → clarify_needed (ask "kirim yoki chiqim?"), do NOT guess.
 
 ## Smarter categorization (bookkeeper rule)
 When assigning a category for log_income or log_expense, think like a real Uzbek bookkeeper:

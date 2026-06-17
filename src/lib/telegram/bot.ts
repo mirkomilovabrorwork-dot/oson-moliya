@@ -1579,8 +1579,7 @@ export function createBot(): Bot {
       // Telegram voice is OGG/Opus. Groq accepts .ogg/.opus but NOT ".oga" → use ".ogg".
       const transcript = await stt.transcribe(audioBuffer, "voice.ogg", { language: voiceLang });
 
-      // Echo transcript so user knows what was heard
-      await ctx.reply(`🎤 ${transcript}`);
+      // (No raw-transcript echo — the user only sees the parsed confirmation card.)
 
       // Feed into the same brain path as text (A1: replyWithDocument for keyword path)
       await handleMessage(
@@ -2282,7 +2281,7 @@ export function createBot(): Bot {
         { language: audioLang }
       );
 
-      await ctx.reply(`🎤 ${transcript}`);
+      // (No raw-transcript echo — the user only sees the parsed confirmation card.)
       await handleMessage(
         {
           from,
