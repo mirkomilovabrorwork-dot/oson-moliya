@@ -4,9 +4,19 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028+029 SHIPPED)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028+029+030 SHIPPED, 3 deploys)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `95b07a4`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `1f8ca38`).** Shipped this session:
+  - **TASK 030 — dashboard real-bug fixes (`1f8ca38`).** Acted on a third-party AI ("Lovable") UX
+    critique only after fact-checking each claim against current code — 10 of 15 claims were
+    FALSE/outdated, 5 were real. Fixed: (a) `formatDate(null)` → "Invalid Date" string trust-killer
+    on debts; now guards `isNaN` and `null`, returns em-dash. (b) "Berilgan qarz" summary card was
+    green (`--income-wash`) → reads as realized income; switched to neutral surface (`--surface`,
+    `--fg`) since money-lent is an asset-at-risk, not income. (c) Secondary-currency line under
+    Home balance + each of the 3 KPI cells: small muted `≈ $X,XXX` when main = UZS (or UZS
+    equivalent when main = USD/EUR/RUB), via existing CBU rates; omitted when value≈0 or rate
+    missing. (d) FAB padding — already in place (`pb-32` on the 3 mobile screens). Lovable lesson
+    captured in `feedback_truth_over_compliance` memory. Spec `docs/tasks/030`.
   - **TASK 029 — visual separation of type vs category (`95b07a4`).** Bot UX fix for the user's
     "kirimda oziq-ovqat" confusion (turned out to be PERCEPTION, not classification). Edit picker no
     longer shows twin `[🟢 Kirim][🔴 Chiqim]` pills above the category pills — replaced with a SINGLE
@@ -26,14 +36,13 @@
     Verified: /login 200, /api/telegram 405 (POST-only, expected). Pushed to origin/main.
     **NOTE on the Gemini API key format:** Google now issues keys as `AQ.Ab8RN6...` (not the classic `AIza...`)
     — captured in `playbook_tech_gotchas` so we don't second-guess that format next time.
-- **USER ACTION NEEDED — two tests on `@oson_moliya_bot`:**
-  1. **STT verdict (task 028)** — send 3-5 voice messages, see if Gemini transcripts are right. If bad →
-     "STT yomon" → I roll back to ElevenLabs in 1 minute (rollback script lower in this file).
-  2. **Task 029 verdict** — send any tx, tap Tahrirlash on the card: you should now see the new full-width
-     `🔄 Kirimga aylantirish` (or Chiqim) action button INSTEAD of twin pills. Category pills below feel
-     separate. Also on the card itself there's now a SECOND keyboard row with the same 🔄 flip button for
-     one-tap type fix. Try flipping a tx via the card button — it should reassign category to "boshqa kirim/
-     chiqim" automatically.
+- **USER ACTION NEEDED — three verdicts:**
+  1. **STT verdict (task 028)** — bot voice tests on `@oson_moliya_bot`, 3-5 messages. Gemini OK or rollback?
+  2. **Task 029 verdict** — bot tx → Tahrirlash → should see new full-width 🔄 action button, not twin pills.
+     Card itself now has a 2nd row with the same 🔄 for one-tap type fix.
+  3. **Task 030 verdict** — open `oson-moliya.vercel.app` on phone: (a) Home balance + the 3 KPI numbers
+     now have small `≈ $...` line below; (b) Qarzlar page — "Berilgan" card is now neutral (was green);
+     (c) any debt with no occurredAt shows `—` instead of "Invalid Date".
 - **NEXT — agreed plan (after both verdicts):**
   1. **Spam protection** (added by user 2026-06-17): rate-limit `@oson_moliya_bot` per Telegram user_id (voice
      costs money — separate, tighter cap). Storage: in-memory or DB? Limits TBD — needs a short spec.
