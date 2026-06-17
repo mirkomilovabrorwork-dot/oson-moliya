@@ -1,5 +1,6 @@
 import { getSessionUser } from "@/lib/auth/session";
 import { getOverview } from "@/lib/services/transactions";
+import { getDebtTotals } from "@/lib/services/debts";
 import { db } from "@/lib/db";
 import { resolveLang, t } from "@/lib/i18n";
 import { BudgetBar } from "@/components/BudgetBar";
@@ -188,6 +189,11 @@ export default async function OverviewPage() {
   const allTimeExpenseUzs = allTimeExpenseAgg._sum.amountUzs ?? 0n;
   const allTimeBalanceUzs = allTimeIncomeUzs - allTimeExpenseUzs;
 
+  // ── Cash-in-hand (task 032) ───────────────────────────────────────────────
+  const { givenOpen, takenOpen } = await getDebtTotals(user.id);
+  const hasOpenDebts = givenOpen > 0n || takenOpen > 0n;
+  const cashInHandUzs = allTimeBalanceUzs - givenOpen + takenOpen;
+
   // Convert all-time balance to main display currency
   const allTimeBalanceMain = formatMoneyFn(
     allTimeBalanceUzs < 0n ? -allTimeBalanceUzs : allTimeBalanceUzs,
@@ -319,6 +325,13 @@ export default async function OverviewPage() {
   }
 
   const balanceSecondary = makeSecondaryLine(allTimeBalanceUzs < 0n ? -allTimeBalanceUzs : allTimeBalanceUzs);
+
+  // Cash-in-hand display (task 032)
+  const cashInHandPositive = cashInHandUzs >= 0n;
+  const cashInHandAbs = cashInHandPositive ? cashInHandUzs : -cashInHandUzs;
+  const cashInHandMain = formatMoneyFn(cashInHandAbs, currency, rates, lang);
+  const cashInHandSecondary = makeSecondaryLine(cashInHandAbs);
+
   const incomeSecondary = makeSecondaryLine(overview.income);
   const expenseSecondary = makeSecondaryLine(overview.expense);
   const netUzs = overview.income >= overview.expense
@@ -356,6 +369,23 @@ export default async function OverviewPage() {
             <p className="text-xs mt-0.5 pl-0.5" style={{ color: "rgba(255,255,255,.65)" }}>
               {balanceSecondary}
             </p>
+          )}
+          {/* Cash-in-hand sub-block (task 032) — only when open debts exist */}
+          {hasOpenDebts && (
+            <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,.18)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wide pl-0.5" style={{ color: "rgba(255,255,255,.80)" }}>
+                {t("home.cash_in_hand", lang)}
+              </p>
+              <p className="text-base sm:text-lg font-bold tabular tracking-normal break-words" style={{ color: "#ffffff" }}>
+                {cashInHandPositive ? "+" : "−"}
+                {cashInHandMain}
+              </p>
+              {cashInHandSecondary && (
+                <p className="text-xs mt-0.5 pl-0.5" style={{ color: "rgba(255,255,255,.65)" }}>
+                  {cashInHandSecondary}
+                </p>
+              )}
+            </div>
           )}
           {/* This-month context: smaller, on the green card */}
           <p
