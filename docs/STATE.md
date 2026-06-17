@@ -4,9 +4,13 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028+029+030 SHIPPED, 3 deploys)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028+029+030+031 SHIPPED, 4 deploys + finance-grade audit DONE)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `1f8ca38`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `2b25709`).** Shipped this session:
+  - **TASK 031 — remove redundant in-menu flip + add debt explainer (`2b25709`).** User caught that
+    task 029 left the type-flip in BOTH the card AND the edit-picker menu. Removed from the menu;
+    card-flip stays as the single one-tap fix. Also added a 1-line muted explainer on the Debts page
+    (uz/ru/en): "Qarzlar kirim va chiqimga qo'shilmaydi — pulingiz qaytishi kutilyapti." Spec `docs/tasks/031`.
   - **TASK 030 — dashboard real-bug fixes (`1f8ca38`).** Acted on a third-party AI ("Lovable") UX
     critique only after fact-checking each claim against current code — 10 of 15 claims were
     FALSE/outdated, 5 were real. Fixed: (a) `formatDate(null)` → "Invalid Date" string trust-killer
