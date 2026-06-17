@@ -4,9 +4,17 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus AUTOPILOT — TASK 028+029+030+031+032 SHIPPED, 5 deploys, finance audit acted on)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus AUTOPILOT — TASK 028→033 SHIPPED, 6 deploys, finance audit half-done)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `ca13471`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `5c6293d`).** Shipped this session:
+  - **TASK 033 — debt partial-payment tracking (`5c6293d`).** Audit finding #3 acted on. New
+    `DebtPayment` table (additive migration applied to prod Neon via `prisma db push` — no data
+    loss). Each debt row now shows "Asl / To'landi / Qoldi" 3-line layout when partial-paid; new
+    "+ To'lov" button per open debt opens an add-payment modal (amount + date + note); cumulative
+    paid >= original auto-flips status to settled; deleting a payment re-opens. `getDebtTotals`
+    now subtracts paid → cash-in-hand math from task 032 stays correct under partial payments.
+    POST `/api/debts/[id]/payments`, DELETE `/api/debts/[id]/payments/[paymentId]`. Web only;
+    bot integration deferred. 9 new i18n keys (uz/ru/en). Spec `docs/tasks/033`.
   - **TASK 032 — Naqd qolgan / cash-in-hand line (`ca13471`).** Audit finding #1 acted on. Home hero
     card now has a sub-block under "Umumiy balans" labeled "Naqd qolgan" = `balance − givenOpen +
     takenOpen`. Visible ONLY when there are open debts (else hidden — no noise). Umumiy balans
@@ -47,11 +55,15 @@
     Verified: /login 200, /api/telegram 405 (POST-only, expected). Pushed to origin/main.
     **NOTE on the Gemini API key format:** Google now issues keys as `AQ.Ab8RN6...` (not the classic `AIza...`)
     — captured in `playbook_tech_gotchas` so we don't second-guess that format next time.
-- **USER WENT TO SLEEP — Opus on AUTOPILOT continuing the audit fixes:**
-  - DONE this autopilot batch: task 032 (cash-in-hand) — code only, no DB changes, safest first
-  - IN PROGRESS / NEXT this autopilot batch: task 033 (debt partial-payment history — additive DB)
-  - DEFERRED till user wakes: task 034 (recurring transactions — too large + multiple design
-    decisions for autopilot)
+- **USER WENT TO SLEEP — autopilot batch COMPLETE.** Both safe + high-impact audit fixes shipped:
+  - ✅ Task 032 (cash-in-hand line) — code only
+  - ✅ Task 033 (debt partial payments) — additive DB migration applied to prod successfully
+  - ✋ Task 034 (recurring transactions) — DRAFT SPEC ONLY (`docs/tasks/034`). 5 design decisions
+    (D1–D5) need user input before implementation. Estimated ~5-6h after decisions. Recommended
+    direction: Vercel Cron + monthly/yearly only + frozen past entries.
+- **Autopilot stop point:** continuing into task 034 would require unilateral design decisions on
+  cron infra vs on-load generation, schedule format granularity, edit-propagation behavior — those
+  are the user's call. Wake-and-decide path is faster + safer than autopilot guessing wrong.
 - **USER ACTION NEEDED on wake — five verdicts plus audit-batch review:**
   1. **STT verdict (task 028)** — bot voice tests on `@oson_moliya_bot`, 3-5 messages. Gemini OK?
   2. **Task 029 verdict** — bot tx → Tahrirlash → category pills only (no twin pills); card has 🔄
