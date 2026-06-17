@@ -18,7 +18,7 @@ import {
 } from "../services/pending";
 import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, formatAmount, getBotLabels, buildPersistentKeyboard, getPersistentKeyboardLabels, type InlineKeyboardButton } from "./reply";
 import { checkExpenseBudgetBreach } from "../services/budgets";
-import { createDebt, listDebts, getDebtTotals } from "../services/debts";
+import { createDebt, updateDebt, deleteDebt, listDebts, getDebtTotals } from "../services/debts";
 import { getSttProvider } from "../stt";
 import { downloadTelegramFile } from "./download";
 import { runAggregation } from "../services/analytics";
@@ -236,6 +236,46 @@ async function showUpdatedTx(
   await ctx.reply(`${head}: ${formatAmount(tx.amountUzs, lang)}, ${typeLabel}${catPart}.` + dash.extraText, {
     reply_markup: { inline_keyboard: rows },
   });
+}
+
+// ── buildDebtCard: reusable debt confirmation/update card ────────────────────
+// Returns the message text + an inline keyboard with [✏️ Tahrirla][🗑 O'chir].
+// `dashRows` from dashboardReplyOptions should be prepended by the caller if needed.
+
+interface DebtCardResult {
+  text: string;
+  editDeleteRow: InlineKeyboardButton[];
+}
+
+function buildDebtCard(
+  debt: { id: string; counterparty: string; amountUzs: bigint; direction: DebtDirection },
+  lang: "uz" | "ru" | "en",
+  mode: "saved" | "updated"
+): DebtCardResult {
+  const headline =
+    mode === "saved"
+      ? (lang === "ru" ? "✅ Долг сохранён:" : lang === "en" ? "✅ Debt saved:" : "✅ Qarz saqlandi:")
+      : (lang === "ru" ? "✅ Долг обновлён:" : lang === "en" ? "✅ Debt updated:" : "✅ Qarz yangilandi:");
+
+  const dirPart =
+    debt.direction === DebtDirection.given
+      ? (lang === "ru" ? `${debt.counterparty} дали` : lang === "en" ? `lent to ${debt.counterparty}` : `${debt.counterparty}ga berdingiz`)
+      : (lang === "ru" ? `у ${debt.counterparty} взяли` : lang === "en" ? `borrowed from ${debt.counterparty}` : `${debt.counterparty}dan oldingiz`);
+
+  const amtStr = formatAmount(debt.amountUzs, lang);
+  const text =
+    lang === "ru"
+      ? `${headline} вы ${dirPart} ${amtStr}.`
+      : lang === "en"
+      ? `${headline} you ${dirPart} ${amtStr}.`
+      : `${headline} ${dirPart} ${amtStr}.`;
+
+  const editDeleteRow: InlineKeyboardButton[] = [
+    { text: lang === "ru" ? "✏️ Изменить" : lang === "en" ? "✏️ Edit" : "✏️ Tahrirla", callback_data: `de:${debt.id}` },
+    { text: lang === "ru" ? "🗑 Удалить" : lang === "en" ? "🗑 Delete" : "🗑 O'chir", callback_data: `dx:${debt.id}` },
+  ];
+
+  return { text, editDeleteRow };
 }
 
 // ── A1: module-level report builder (shared by command + keyword path) ───────
@@ -493,6 +533,64 @@ async function handleMessage(
     }
   }
 
+  // Editing a debt field via typed text (literal — never re-parsed by brain)
+  if (pending && pending.intent === "edit_debt") {
+    const ed = pending.draft as Record<string, unknown>;
+    const debtId = ed.debtId as string;
+    const elang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    const elabels = getBotLabels(elang);
+
+    if (ed.field === "name") {
+      const newName = text.trim();
+      if (!newName) {
+        await ctx.reply(
+          elang === "ru" ? "Введите имя." : elang === "en" ? "Please enter a name." : "Ismni yozing."
+        );
+        return;
+      }
+      const updated = await updateDebt(debtId, user.id, { counterparty: newName });
+      if (!updated) {
+        await clearPendingAction(user.id);
+        await ctx.reply(elabels.notFoundMsg);
+        return;
+      }
+      await clearPendingAction(user.id);
+      const card = buildDebtCard(updated, elang, "updated");
+      const dash = await dashboardReplyOptions(user.id);
+      await ctx.reply(card.text + dash.extraText, {
+        reply_markup: { inline_keyboard: [...dash.dashRows, card.editDeleteRow] },
+      });
+      return;
+    }
+
+    if (ed.field === "amount") {
+      const amt = parseAmountUzs(text);
+      if (amt === null || amt <= 0n) {
+        await ctx.reply(
+          elang === "ru"
+            ? "Не понял сумму. Напишите числом, напр. 50 000."
+            : elang === "en"
+            ? "Couldn't read the amount. Write a number, e.g. 50 000."
+            : "Summani tushunmadim. Raqamda yozing, masalan 50 000."
+        );
+        return;
+      }
+      const updated = await updateDebt(debtId, user.id, { amountUzs: amt });
+      if (!updated) {
+        await clearPendingAction(user.id);
+        await ctx.reply(elabels.notFoundMsg);
+        return;
+      }
+      await clearPendingAction(user.id);
+      const card = buildDebtCard(updated, elang, "updated");
+      const dash = await dashboardReplyOptions(user.id);
+      await ctx.reply(card.text + dash.extraText, {
+        reply_markup: { inline_keyboard: [...dash.dashRows, card.editDeleteRow] },
+      });
+      return;
+    }
+  }
+
   // Run brain
   let brainResult;
   try {
@@ -623,56 +721,50 @@ async function handleMessage(
       return;
     }
 
-    // Store draft pending for confirmation
+    // Direction known — save immediately (no pre-confirm step)
+    if (direction !== null) {
+      const created = await createDebt({
+        userId: user.id,
+        counterparty,
+        amountUzs: BigInt(amount),
+        direction: direction === "given" ? DebtDirection.given : DebtDirection.taken,
+        note: null,
+        occurredAt: dateStringToUtc(dateStr),
+      });
+      await clearPendingAction(user.id);
+      const card = buildDebtCard(created, lang, "saved");
+      const dashDebt = await dashboardReplyOptions(user.id);
+      await ctx.reply(card.text + dashDebt.extraText, {
+        reply_markup: {
+          inline_keyboard: [...dashDebt.dashRows, card.editDeleteRow],
+        },
+      });
+      return;
+    }
+
+    // Direction unknown — store draft and ask
     await upsertPendingAction(user.id, {
       intent: "confirm_debt",
-      draft: { counterparty, direction, amount, dateStr },
+      draft: { counterparty, direction: null, amount, dateStr },
       question: "",
     });
 
-    // Format draft summary
     const amountStr = formatAmount(BigInt(amount), lang);
-    const dirLabel =
-      direction === "given"
-        ? (lang === "ru" ? "↗️ Вы дали" : lang === "en" ? "↗️ You lent" : "↗️ Siz berdingiz")
-        : direction === "taken"
-        ? (lang === "ru" ? "↙️ Вы взяли" : lang === "en" ? "↙️ You borrowed" : "↙️ Siz oldingiz")
-        : (lang === "ru" ? "❓ Направление неизвестно" : lang === "en" ? "❓ Direction unknown" : "❓ Yo'nalish noma'lum");
-
-    const dateLabel =
-      dateStr === "today"
-        ? (lang === "ru" ? "сегодня" : lang === "en" ? "today" : "bugun")
-        : dateStr === "yesterday"
-        ? (lang === "ru" ? "вчера" : lang === "en" ? "yesterday" : "kecha")
-        : dateStr;
-
-    const summary =
-      (lang === "ru"
-        ? `📋 Понял долг:\n👤 ${counterparty}\n💰 ${amountStr}\n${dirLabel}\n📅 ${dateLabel}`
+    const dirQuestion =
+      lang === "ru"
+        ? `📋 Понял долг:\n👤 ${counterparty}\n💰 ${amountStr}\n\nВы дали или взяли?`
         : lang === "en"
-        ? `📋 Got it — debt:\n👤 ${counterparty}\n💰 ${amountStr}\n${dirLabel}\n📅 ${dateLabel}`
-        : `📋 Qarz tushundim:\n👤 ${counterparty}\n💰 ${amountStr}\n${dirLabel}\n📅 ${dateLabel}`);
+        ? `📋 Got it — debt:\n👤 ${counterparty}\n💰 ${amountStr}\n\nDid you lend or borrow?`
+        : `📋 Qarz tushundim:\n👤 ${counterparty}\n💰 ${amountStr}\n\nYo'nalishini tanlang:`;
 
-    // Build keyboard based on whether direction is known
-    let rows: InlineKeyboardButton[][];
-    if (direction !== null) {
-      rows = [[
-        { text: lang === "ru" ? "✅ Подтвердить" : lang === "en" ? "✅ Confirm" : "✅ Tasdiqlash", callback_data: "dbt:ok" },
-        { text: lang === "ru" ? "✏️ Изменить" : lang === "en" ? "✏️ Edit" : "✏️ O'zgartirish", callback_data: "dbt:edit" },
-      ]];
-    } else {
-      rows = [
-        [
+    await ctx.reply(dirQuestion, {
+      reply_markup: {
+        inline_keyboard: [[
           { text: lang === "ru" ? "↗️ Я дал" : lang === "en" ? "↗️ I lent" : "↗️ Men berdim", callback_data: "dd:given" },
           { text: lang === "ru" ? "↙️ Я взял" : lang === "en" ? "↙️ I borrowed" : "↙️ Men oldim", callback_data: "dd:taken" },
-        ],
-        [
-          { text: lang === "ru" ? "✏️ Изменить" : lang === "en" ? "✏️ Edit" : "✏️ O'zgartirish", callback_data: "dbt:edit" },
-        ],
-      ];
-    }
-
-    await ctx.reply(summary, { reply_markup: { inline_keyboard: rows } });
+        ]],
+      },
+    });
     return;
   }
 
@@ -1778,76 +1870,6 @@ export function createBot(): Bot {
         return;
       }
 
-      // ── dbt:ok — confirm a pending debt ───────────────────────────────────
-      if (data === "dbt:ok") {
-        const pendingDebt = await getPendingAction(user.id);
-        if (!pendingDebt || pendingDebt.intent !== "confirm_debt") {
-          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
-          await ctx.reply(labels.expiredMsg);
-          return;
-        }
-        const draft = pendingDebt.draft as Record<string, unknown>;
-        const debtCounterparty = draft.counterparty as string;
-        const debtAmount = draft.amount as number;
-        const debtDirection = draft.direction as "given" | "taken";
-        const debtDateStr = (draft.dateStr as string) ?? "today";
-
-        if (!debtCounterparty || !debtAmount || !debtDirection) {
-          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
-          await ctx.reply(labels.expiredMsg);
-          return;
-        }
-
-        await createDebt({
-          userId: user.id,
-          counterparty: debtCounterparty,
-          amountUzs: BigInt(debtAmount),
-          direction: debtDirection === "given" ? DebtDirection.given : DebtDirection.taken,
-          note: null,
-          occurredAt: dateStringToUtc(debtDateStr),
-        });
-        await clearPendingAction(user.id);
-
-        const amtStr = formatAmount(BigInt(debtAmount), lang);
-        const dirPart =
-          debtDirection === "given"
-            ? (lang === "ru" ? `${debtCounterparty} дали` : lang === "en" ? `lent to ${debtCounterparty}` : `${debtCounterparty}ga berdingiz`)
-            : (lang === "ru" ? `у ${debtCounterparty} взяли` : lang === "en" ? `borrowed from ${debtCounterparty}` : `${debtCounterparty}dan oldingiz`);
-        const savedMsg =
-          lang === "ru"
-            ? `✅ Долг сохранён: вы ${dirPart} ${amtStr}.`
-            : lang === "en"
-            ? `✅ Debt saved: you ${dirPart} ${amtStr}.`
-            : `✅ Qarz saqlandi: ${dirPart} ${amtStr}.`;
-
-        const dashDebt = await dashboardReplyOptions(user.id);
-        await ctx.answerCallbackQuery();
-        await ctx.reply(savedMsg + dashDebt.extraText, {
-          reply_markup: dashDebt.reply_markup,
-        });
-        return;
-      }
-
-      // ── dbt:edit — cancel pending debt, ask user to retype ────────────────
-      if (data === "dbt:edit") {
-        await clearPendingAction(user.id);
-        const retypeMsg =
-          lang === "ru"
-            ? "Напишите заново — например: \"Сарвару 2 млн в долг дал\"."
-            : lang === "en"
-            ? "Write it again — e.g. \"Lent 2 mln to Sarvar\"."
-            : "Qaytadan yozing — masalan: \"Sarvarga 2 mln qarz berdim\".";
-        await ctx.answerCallbackQuery();
-        await ctx.reply(retypeMsg, {
-          reply_markup: {
-            force_reply: true,
-            input_field_placeholder:
-              lang === "ru" ? "Сарвару 2 млн в долг" : lang === "en" ? "Lent 2 mln to Sarvar" : "Sarvarga 2 mln qarz berdim",
-          },
-        });
-        return;
-      }
-
       // ── dd:given / dd:taken — direction chosen for a direction-unknown debt ─
       if (data === "dd:given" || data === "dd:taken") {
         const pendingDir = await getPendingAction(user.id);
@@ -1862,7 +1884,7 @@ export function createBot(): Bot {
         const debtDateStr = (draft.dateStr as string) ?? "today";
         const chosenDirection: "given" | "taken" = data === "dd:given" ? "given" : "taken";
 
-        await createDebt({
+        const createdDirDebt = await createDebt({
           userId: user.id,
           counterparty: debtCounterparty,
           amountUzs: BigInt(debtAmount),
@@ -1872,23 +1894,144 @@ export function createBot(): Bot {
         });
         await clearPendingAction(user.id);
 
-        const amtStr2 = formatAmount(BigInt(debtAmount), lang);
-        const dirPart2 =
-          chosenDirection === "given"
-            ? (lang === "ru" ? `${debtCounterparty} дали` : lang === "en" ? `lent to ${debtCounterparty}` : `${debtCounterparty}ga berdingiz`)
-            : (lang === "ru" ? `у ${debtCounterparty} взяли` : lang === "en" ? `borrowed from ${debtCounterparty}` : `${debtCounterparty}dan oldingiz`);
-        const savedMsg2 =
-          lang === "ru"
-            ? `✅ Долг сохранён: вы ${dirPart2} ${amtStr2}.`
-            : lang === "en"
-            ? `✅ Debt saved: you ${dirPart2} ${amtStr2}.`
-            : `✅ Qarz saqlandi: ${dirPart2} ${amtStr2}.`;
-
+        const cardDir = buildDebtCard(createdDirDebt, lang, "saved");
         const dashDir = await dashboardReplyOptions(user.id);
         await ctx.answerCallbackQuery();
-        await ctx.reply(savedMsg2 + dashDir.extraText, {
-          reply_markup: dashDir.reply_markup,
+        await ctx.reply(cardDir.text + dashDir.extraText, {
+          reply_markup: { inline_keyboard: [...dashDir.dashRows, cardDir.editDeleteRow] },
         });
+        return;
+      }
+
+      // ── de:<id> — open field picker for a saved debt ──────────────────────
+      if (data.startsWith("de:")) {
+        const debtId = data.slice(3);
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Что изменить?" : lang === "en" ? "What to edit?" : "Nimani o'zgartirish?",
+          {
+            reply_markup: {
+              inline_keyboard: [[
+                { text: lang === "ru" ? "✏️ Имя" : lang === "en" ? "✏️ Name" : "✏️ Ism", callback_data: `def:n:${debtId}` },
+                { text: lang === "ru" ? "💰 Сумма" : lang === "en" ? "💰 Amount" : "💰 Summa", callback_data: `def:a:${debtId}` },
+                { text: lang === "ru" ? "↔️ Тип" : lang === "en" ? "↔️ Direction" : "↔️ Yo'nalishi", callback_data: `def:d:${debtId}` },
+              ]],
+            },
+          }
+        );
+        return;
+      }
+
+      // ── def:n:<id> — edit debt name ───────────────────────────────────────
+      if (data.startsWith("def:n:")) {
+        const debtId = data.slice(6);
+        await upsertPendingAction(user.id, {
+          intent: "edit_debt",
+          draft: { debtId, field: "name" },
+          question: "",
+        });
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Введите новое имя:" : lang === "en" ? "Enter the new name:" : "Yangi ismni yozing:",
+          { reply_markup: { force_reply: true } }
+        );
+        return;
+      }
+
+      // ── def:a:<id> — edit debt amount ─────────────────────────────────────
+      if (data.startsWith("def:a:")) {
+        const debtId = data.slice(6);
+        await upsertPendingAction(user.id, {
+          intent: "edit_debt",
+          draft: { debtId, field: "amount" },
+          question: "",
+        });
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Введите новую сумму:" : lang === "en" ? "Enter the new amount:" : "Yangi summani yozing:",
+          { reply_markup: { force_reply: true } }
+        );
+        return;
+      }
+
+      // ── def:d:<id> — edit debt direction ─────────────────────────────────
+      if (data.startsWith("def:d:")) {
+        const debtId = data.slice(6);
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Выберите новое направление:" : lang === "en" ? "Choose new direction:" : "Yo'nalishini tanlang:",
+          {
+            reply_markup: {
+              inline_keyboard: [[
+                { text: lang === "ru" ? "↗️ Я дал" : lang === "en" ? "↗️ I lent" : "↗️ Men berdim", callback_data: `ded:g:${debtId}` },
+                { text: lang === "ru" ? "↙️ Я взял" : lang === "en" ? "↙️ I borrowed" : "↙️ Men oldim", callback_data: `ded:t:${debtId}` },
+              ]],
+            },
+          }
+        );
+        return;
+      }
+
+      // ── ded:g:<id> / ded:t:<id> — apply direction edit ───────────────────
+      if (data.startsWith("ded:g:") || data.startsWith("ded:t:")) {
+        const isGiven = data.startsWith("ded:g:");
+        const debtId = data.slice(6);
+        const newDir = isGiven ? DebtDirection.given : DebtDirection.taken;
+        const updatedDirDebt = await updateDebt(debtId, user.id, { direction: newDir });
+        if (!updatedDirDebt) {
+          await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
+          await ctx.reply(labels.notFoundMsg);
+          return;
+        }
+        const cardDed = buildDebtCard(updatedDirDebt, lang, "updated");
+        const dashDed = await dashboardReplyOptions(user.id);
+        await ctx.answerCallbackQuery();
+        await ctx.reply(cardDed.text + dashDed.extraText, {
+          reply_markup: { inline_keyboard: [...dashDed.dashRows, cardDed.editDeleteRow] },
+        });
+        return;
+      }
+
+      // ── dx:<id> — ask delete confirmation ─────────────────────────────────
+      if (data.startsWith("dx:")) {
+        const debtId = data.slice(3);
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Удалить этот долг?" : lang === "en" ? "Delete this debt?" : "Bu qarzni o'chirasizmi?",
+          {
+            reply_markup: {
+              inline_keyboard: [[
+                { text: lang === "ru" ? "Да, удалить" : lang === "en" ? "Yes, delete" : "Ha, o'chir", callback_data: `dxk:${debtId}` },
+                { text: lang === "ru" ? "Нет" : lang === "en" ? "No" : "Yo'q", callback_data: "noop:cancel" },
+              ]],
+            },
+          }
+        );
+        return;
+      }
+
+      // ── dxk:<id> — confirm debt deletion ─────────────────────────────────
+      if (data.startsWith("dxk:")) {
+        const debtId = data.slice(4);
+        const deleted = await deleteDebt(debtId, user.id);
+        if (!deleted) {
+          await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
+          await ctx.reply(labels.notFoundMsg);
+          return;
+        }
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "🗑 Долг удалён." : lang === "en" ? "🗑 Debt deleted." : "🗑 Qarz o'chirildi."
+        );
+        return;
+      }
+
+      // ── noop:cancel — dismiss silently ────────────────────────────────────
+      if (data === "noop:cancel") {
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Отменено." : lang === "en" ? "Cancelled." : "Bekor qilindi."
+        );
         return;
       }
 

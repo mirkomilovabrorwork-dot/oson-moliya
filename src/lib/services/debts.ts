@@ -15,6 +15,7 @@ export interface UpdateDebtInput {
   amountUzs?: bigint;
   note?: string | null;
   occurredAt?: Date;
+  direction?: DebtDirection;
 }
 
 export interface DebtTotals {
@@ -77,6 +78,7 @@ export async function updateDebt(
       amountUzs: input.amountUzs,
       note: input.note,
       occurredAt: input.occurredAt,
+      direction: input.direction,
     },
   });
 }

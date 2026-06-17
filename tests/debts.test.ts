@@ -37,7 +37,7 @@ vi.mock("@/lib/db", () => ({
   }),
 }));
 
-import { getDebtTotals, settleDebt, deleteDebt, createDebt } from "@/lib/services/debts";
+import { getDebtTotals, settleDebt, deleteDebt, createDebt, updateDebt } from "@/lib/services/debts";
 import { DebtDirection, DebtStatus } from "@prisma/client";
 
 // Per-run unique prefix to avoid cross-test collisions
@@ -230,5 +230,58 @@ describe("createDebt", () => {
     const occurred = (createArg.occurredAt as Date).getTime();
     expect(occurred).toBeGreaterThanOrEqual(before - 5);
     expect(occurred).toBeLessThanOrEqual(after + 5);
+  });
+});
+
+// ── updateDebt ────────────────────────────────────────────────────────────────
+
+describe("updateDebt", () => {
+  const userId = `user-${RUN}-update`;
+  const debtId = `debt-${RUN}-update`;
+
+  const baseDebt = {
+    id: debtId,
+    userId,
+    counterparty: "OldName",
+    amountUzs: 100_000n,
+    direction: DebtDirection.given,
+    status: DebtStatus.open,
+    note: null,
+    occurredAt: new Date(),
+    settledAt: null,
+    createdAt: new Date(),
+    deletedAt: null,
+  };
+
+  it("persists a new counterparty literally (no brain parsing)", async () => {
+    const updated = { ...baseDebt, counterparty: "Sarvar" };
+    mockDebtFindFirst.mockResolvedValueOnce(baseDebt);
+    mockDebtUpdate.mockResolvedValueOnce(updated);
+
+    const result = await updateDebt(debtId, userId, { counterparty: "Sarvar" });
+    expect(result).not.toBeNull();
+    expect(result!.counterparty).toBe("Sarvar");
+    const updateArg = mockDebtUpdate.mock.calls[0][0].data;
+    expect(updateArg.counterparty).toBe("Sarvar");
+  });
+
+  it("persists a new direction", async () => {
+    const updated = { ...baseDebt, direction: DebtDirection.taken };
+    mockDebtFindFirst.mockResolvedValueOnce(baseDebt);
+    mockDebtUpdate.mockResolvedValueOnce(updated);
+
+    const result = await updateDebt(debtId, userId, { direction: DebtDirection.taken });
+    expect(result).not.toBeNull();
+    expect(result!.direction).toBe(DebtDirection.taken);
+    const updateArg = mockDebtUpdate.mock.calls[0][0].data;
+    expect(updateArg.direction).toBe(DebtDirection.taken);
+  });
+
+  it("returns null when debt not found (owner check)", async () => {
+    mockDebtFindFirst.mockResolvedValueOnce(null);
+
+    const result = await updateDebt(debtId, "wrong-user", { counterparty: "X" });
+    expect(result).toBeNull();
+    expect(mockDebtUpdate).not.toHaveBeenCalled();
   });
 });
