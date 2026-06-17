@@ -1,6 +1,14 @@
 import { DebtDirection, DebtStatus } from "@prisma/client";
 import { db } from "../db";
 
+export interface AddDebtPaymentInput {
+  debtId: string;
+  userId: string;
+  amountUzs: bigint;
+  occurredAt: Date;
+  note?: string | null;
+}
+
 export interface CreateDebtInput {
   userId: string;
   counterparty: string;
@@ -99,21 +107,126 @@ export async function deleteDebt(id: string, userId: string) {
 export async function getDebtTotals(userId: string): Promise<DebtTotals> {
   const prisma = db as import("@prisma/client").PrismaClient;
 
-  // One groupBy query — no N+1
-  const groups = await prisma.debt.groupBy({
-    by: ["direction"],
+  // Fetch all open debts with their payments in one query
+  const openDebts = await prisma.debt.findMany({
     where: { userId, status: DebtStatus.open, deletedAt: null },
-    _sum: { amountUzs: true },
+    select: {
+      direction: true,
+      amountUzs: true,
+      payments: {
+        where: { deletedAt: null },
+        select: { amountUzs: true },
+      },
+    },
   });
 
   let givenOpen = 0n;
   let takenOpen = 0n;
 
-  for (const g of groups) {
-    const sum = (g._sum.amountUzs ?? 0n) as bigint;
-    if (g.direction === DebtDirection.given) givenOpen = sum;
-    else takenOpen = sum;
+  for (const debt of openDebts) {
+    const totalPaid = debt.payments.reduce((sum, p) => sum + (p.amountUzs as bigint), 0n);
+    const remaining = (debt.amountUzs as bigint) - totalPaid;
+    const rem = remaining > 0n ? remaining : 0n;
+    if (debt.direction === DebtDirection.given) givenOpen += rem;
+    else takenOpen += rem;
   }
 
   return { givenOpen, takenOpen };
+}
+
+export async function getDebtWithPayments(debtId: string, userId: string) {
+  const prisma = db as import("@prisma/client").PrismaClient;
+  const debt = await prisma.debt.findFirst({
+    where: { id: debtId, userId, deletedAt: null },
+    include: {
+      payments: {
+        where: { deletedAt: null },
+        orderBy: { occurredAt: "desc" },
+      },
+    },
+  });
+  if (!debt) return null;
+  const totalPaid = debt.payments.reduce((sum, p) => sum + (p.amountUzs as bigint), 0n);
+  const remaining = (debt.amountUzs as bigint) - totalPaid;
+  return { ...debt, remaining: remaining > 0n ? remaining : 0n };
+}
+
+export async function addDebtPayment(input: AddDebtPaymentInput) {
+  const prisma = db as import("@prisma/client").PrismaClient;
+
+  // Validate ownership + existence
+  const debt = await prisma.debt.findFirst({
+    where: { id: input.debtId, userId: input.userId, deletedAt: null },
+    include: {
+      payments: { where: { deletedAt: null }, select: { amountUzs: true } },
+    },
+  });
+  if (!debt) return null;
+
+  if (input.amountUzs <= 0n) {
+    throw new Error("AMOUNT_INVALID");
+  }
+
+  const totalPaid = debt.payments.reduce((sum, p) => sum + (p.amountUzs as bigint), 0n);
+  const remaining = (debt.amountUzs as bigint) - totalPaid;
+
+  if (input.amountUzs > remaining) {
+    throw new Error("EXCEEDS_REMAINING");
+  }
+
+  const newTotalPaid = totalPaid + input.amountUzs;
+  const fullyPaid = newTotalPaid >= (debt.amountUzs as bigint);
+
+  const [payment, updatedDebt] = await prisma.$transaction([
+    prisma.debtPayment.create({
+      data: {
+        debtId: input.debtId,
+        amountUzs: input.amountUzs,
+        occurredAt: input.occurredAt,
+        note: input.note ?? null,
+      },
+    }),
+    prisma.debt.update({
+      where: { id: input.debtId },
+      data: fullyPaid
+        ? { status: DebtStatus.settled, settledAt: new Date() }
+        : {},
+    }),
+  ]);
+
+  return { payment, debt: updatedDebt };
+}
+
+export async function deleteDebtPayment(paymentId: string, userId: string) {
+  const prisma = db as import("@prisma/client").PrismaClient;
+
+  // Find the payment and verify ownership via the debt
+  const payment = await prisma.debtPayment.findFirst({
+    where: { id: paymentId, deletedAt: null },
+    include: { debt: { select: { id: true, userId: true, amountUzs: true, status: true } } },
+  });
+  if (!payment || payment.debt.userId !== userId) return null;
+
+  // Soft-delete the payment
+  const deleted = await prisma.debtPayment.update({
+    where: { id: paymentId },
+    data: { deletedAt: new Date() },
+  });
+
+  // Recalculate: if debt was settled, check whether it's still fully paid
+  if (payment.debt.status === DebtStatus.settled) {
+    const remaining = await prisma.debtPayment.aggregate({
+      where: { debtId: payment.debt.id, deletedAt: null },
+      _sum: { amountUzs: true },
+    });
+    const totalPaid = (remaining._sum.amountUzs ?? 0n) as bigint;
+    if (totalPaid < (payment.debt.amountUzs as bigint)) {
+      await prisma.debt.update({
+        where: { id: payment.debt.id },
+        data: { status: DebtStatus.open, settledAt: null },
+      });
+    }
+  }
+
+  return deleted;
 }

@@ -148,7 +148,23 @@ model Debt {
   deletedAt    DateTime?
   createdAt    DateTime      @default(now())
 
+  payments     DebtPayment[]
+
   @@index([userId, status])
+}
+
+model DebtPayment {
+  id         String    @id @default(cuid())
+  debtId     String
+  debt       Debt      @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  amountUzs  BigInt
+  occurredAt DateTime
+  note       String?
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([debtId])
+  @@index([debtId, deletedAt])
 }
 
 model Account {

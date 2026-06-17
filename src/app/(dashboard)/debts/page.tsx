@@ -9,6 +9,7 @@ import { serializeBigInt } from "@/lib/serialize";
 import { DebtsClient } from "./DebtsClient";
 import { getRates } from "@/lib/rates";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
+import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +23,28 @@ export default async function DebtsPage() {
   const currency: DisplayCurrency = (["UZS", "USD", "EUR", "RUB"].includes(rawCurrencyRaw) ? rawCurrencyRaw : "UZS") as DisplayCurrency;
   const rates: Rates = await getRates();
 
-  const [debts, totals] = await Promise.all([
+  const prisma = db as import("@prisma/client").PrismaClient;
+
+  const [debts, totals, paymentSums] = await Promise.all([
     listDebts(user.id),
     getDebtTotals(user.id),
+    prisma.debtPayment.groupBy({
+      by: ["debtId"],
+      where: { deletedAt: null, debt: { userId: user.id } },
+      _sum: { amountUzs: true },
+    }),
   ]);
 
-  // Serialize BigInt for client component
-  const serializedDebts = serializeBigInt(debts) as Array<{
+  // Build a map of debtId → paidUzs (BigInt)
+  const paidMap = new Map<string, bigint>();
+  for (const row of paymentSums) {
+    paidMap.set(row.debtId, (row._sum.amountUzs ?? 0n) as bigint);
+  }
+
+  // Serialize BigInt for client component, adding paidUzs per debt
+  const serializedDebts = (serializeBigInt(
+    debts.map((d) => ({ ...d, paidUzs: paidMap.get(d.id) ?? 0n }))
+  )) as Array<{
     id: string;
     counterparty: string;
     amountUzs: string;
@@ -37,6 +53,7 @@ export default async function DebtsPage() {
     note: string | null;
     occurredAt: string;
     settledAt: string | null;
+    paidUzs: string;
   }>;
 
   const serializedTotals = serializeBigInt(totals) as {
