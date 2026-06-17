@@ -212,6 +212,7 @@ const uz: Dictionary = {
   // ── Home page
   "home.balance": "Bu oy natijasi",
   "home.total_balance": "Umumiy balans",
+  "home.cash_in_hand": "Naqd qolgan",
   "home.this_month_context": "Bu oy: +{income} −{expense}",
   "home.expense_overview": "Xarajatlar sharhi",
   "home.total": "Jami",
@@ -552,6 +553,7 @@ const ru: Dictionary = {
   // ── Home page
   "home.balance": "Итог за месяц",
   "home.total_balance": "Общий баланс",
+  "home.cash_in_hand": "Свободные деньги",
   "home.this_month_context": "Этот месяц: +{income} −{expense}",
   "home.expense_overview": "Обзор расходов",
   "home.total": "Всего",
@@ -892,6 +894,7 @@ const en: Dictionary = {
   // ── Home page
   "home.balance": "This month's result",
   "home.total_balance": "Total balance",
+  "home.cash_in_hand": "Cash on hand",
   "home.this_month_context": "This month: +{income} −{expense}",
   "home.expense_overview": "Expense overview",
   "home.total": "Total",
