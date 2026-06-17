@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Mock DB ───────────────────────────────────────────────────────────────────
 
-const mockDebtGroupBy = vi.fn();
+const mockDebtFindMany = vi.fn();
 const mockDebtFindFirst = vi.fn();
 const mockDebtUpdate = vi.fn();
 const mockDebtDelete = vi.fn();
@@ -24,12 +24,12 @@ vi.mock("@/lib/db", () => ({
     get(_target, prop) {
       if (prop === "debt") {
         return {
-          groupBy: mockDebtGroupBy,
+          groupBy: vi.fn().mockResolvedValue([]),
           findFirst: mockDebtFindFirst,
           update: mockDebtUpdate,
           delete: mockDebtDelete,
           create: mockDebtCreate,
-          findMany: vi.fn().mockResolvedValue([]),
+          findMany: mockDebtFindMany,
         };
       }
       return undefined;
@@ -51,9 +51,10 @@ beforeEach(() => {
 
 describe("getDebtTotals", () => {
   it("sums given and taken open debts separately", async () => {
-    mockDebtGroupBy.mockResolvedValueOnce([
-      { direction: DebtDirection.given, _sum: { amountUzs: 3_000_000n } },
-      { direction: DebtDirection.taken, _sum: { amountUzs: 1_500_000n } },
+    mockDebtFindMany.mockResolvedValueOnce([
+      { direction: DebtDirection.given, amountUzs: 2_000_000n, payments: [] },
+      { direction: DebtDirection.given, amountUzs: 1_000_000n, payments: [] },
+      { direction: DebtDirection.taken, amountUzs: 1_500_000n, payments: [] },
     ]);
 
     const totals = await getDebtTotals(`user-${RUN}-1`);
@@ -62,7 +63,7 @@ describe("getDebtTotals", () => {
   });
 
   it("returns 0n for each direction when no open debts exist", async () => {
-    mockDebtGroupBy.mockResolvedValueOnce([]);
+    mockDebtFindMany.mockResolvedValueOnce([]);
 
     const totals = await getDebtTotals(`user-${RUN}-2`);
     expect(totals.givenOpen).toBe(0n);
@@ -70,8 +71,8 @@ describe("getDebtTotals", () => {
   });
 
   it("handles only given-direction debts (takenOpen stays 0n)", async () => {
-    mockDebtGroupBy.mockResolvedValueOnce([
-      { direction: DebtDirection.given, _sum: { amountUzs: 500_000n } },
+    mockDebtFindMany.mockResolvedValueOnce([
+      { direction: DebtDirection.given, amountUzs: 500_000n, payments: [] },
     ]);
 
     const totals = await getDebtTotals(`user-${RUN}-3`);
@@ -80,8 +81,8 @@ describe("getDebtTotals", () => {
   });
 
   it("handles only taken-direction debts (givenOpen stays 0n)", async () => {
-    mockDebtGroupBy.mockResolvedValueOnce([
-      { direction: DebtDirection.taken, _sum: { amountUzs: 800_000n } },
+    mockDebtFindMany.mockResolvedValueOnce([
+      { direction: DebtDirection.taken, amountUzs: 800_000n, payments: [] },
     ]);
 
     const totals = await getDebtTotals(`user-${RUN}-4`);
@@ -89,23 +90,28 @@ describe("getDebtTotals", () => {
     expect(totals.takenOpen).toBe(800_000n);
   });
 
-  it("treats null _sum.amountUzs as 0n (no N+1, uses groupBy result)", async () => {
-    mockDebtGroupBy.mockResolvedValueOnce([
-      { direction: DebtDirection.given, _sum: { amountUzs: null } },
+  it("subtracts partial payments from open debt totals", async () => {
+    mockDebtFindMany.mockResolvedValueOnce([
+      {
+        direction: DebtDirection.given,
+        amountUzs: 500_000n,
+        payments: [{ amountUzs: 200_000n }],
+      },
     ]);
 
     const totals = await getDebtTotals(`user-${RUN}-5`);
-    expect(totals.givenOpen).toBe(0n);
+    expect(totals.givenOpen).toBe(300_000n);
     expect(totals.takenOpen).toBe(0n);
   });
 
-  it("passes status:open filter to groupBy (only one groupBy call, no extra queries)", async () => {
-    mockDebtGroupBy.mockResolvedValueOnce([]);
+  it("passes status:open and deletedAt:null filter to findMany (only one query)", async () => {
+    mockDebtFindMany.mockResolvedValueOnce([]);
 
     await getDebtTotals(`user-${RUN}-6`);
-    expect(mockDebtGroupBy).toHaveBeenCalledTimes(1);
-    const [callArgs] = mockDebtGroupBy.mock.calls;
+    expect(mockDebtFindMany).toHaveBeenCalledTimes(1);
+    const [callArgs] = mockDebtFindMany.mock.calls;
     expect(callArgs[0].where.status).toBe(DebtStatus.open);
+    expect(callArgs[0].where.deletedAt).toBeNull();
   });
 });
 

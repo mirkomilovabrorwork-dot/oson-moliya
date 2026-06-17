@@ -18,6 +18,7 @@ interface DebtRow {
   note: string | null;
   occurredAt: string;
   settledAt: string | null;
+  paidUzs: string;
 }
 
 interface DebtTotals {
@@ -92,6 +93,14 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
 
   // Action sheet
   const [actionSheetDebt, setActionSheetDebt] = useState<DebtRow | null>(null);
+
+  // Add-payment form
+  const [paymentTarget, setPaymentTarget] = useState<DebtRow | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentDate, setPaymentDate] = useState("");
+  const [paymentNote, setPaymentNote] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   // A4: Set today's date on mount (client-side only) to avoid SSR/hydration mismatch.
   useEffect(() => {
@@ -254,6 +263,58 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
     },
     [lang, router, refreshTotals]
   );
+
+  const openPaymentModal = useCallback((debt: DebtRow) => {
+    setPaymentTarget(debt);
+    setPaymentAmount("");
+    setPaymentDate(new Date().toISOString().slice(0, 10));
+    setPaymentNote("");
+    setPaymentError(null);
+  }, []);
+
+  const handleAddPayment = useCallback(async () => {
+    if (!paymentTarget || !paymentAmount.trim()) return;
+
+    // Client-side: check amount does not exceed remaining
+    const originalAmt = BigInt(paymentTarget.amountUzs);
+    const paidAmt = BigInt(paymentTarget.paidUzs);
+    const remaining = originalAmt - paidAmt;
+    const enteredAmt = BigInt(paymentAmount.replace(/\s/g, "").replace(/\D/g, "") || "0");
+    if (enteredAmt <= 0n || enteredAmt > remaining) {
+      setPaymentError(t("debt.payment.exceeds", lang));
+      return;
+    }
+
+    setPaymentLoading(true);
+    setPaymentError(null);
+    try {
+      const res = await fetch(`/api/debts/${paymentTarget.id}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amountUzs: paymentAmount.replace(/\s/g, ""),
+          occurredAt: paymentDate ? new Date(paymentDate).toISOString() : new Date().toISOString(),
+          note: paymentNote.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json() as { error?: string };
+        if (errData.error?.includes("remaining") || errData.error?.includes("EXCEEDS")) {
+          setPaymentError(t("debt.payment.exceeds", lang));
+        } else {
+          setPaymentError(t("error.generic", lang));
+        }
+        return;
+      }
+      setPaymentTarget(null);
+      showToast(t("debt.payment.saved", lang));
+      router.refresh();
+    } catch {
+      setPaymentError(t("error.generic", lang));
+    } finally {
+      setPaymentLoading(false);
+    }
+  }, [paymentTarget, paymentAmount, paymentDate, paymentNote, lang, router]);
 
   const visible = debts.filter((d) => {
     if (tab === "given") return d.direction === "given";
@@ -522,6 +583,117 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         </div>
       )}
 
+      {/* Add-payment modal */}
+      {paymentTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(15,23,42,0.5)" }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPaymentTarget(null);
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-[16px] p-6 space-y-4"
+            style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-base" style={{ color: "var(--fg)" }}>
+                {t("debt.payment.modal_title", lang)}
+              </h3>
+              <button
+                onClick={() => setPaymentTarget(null)}
+                className="p-1.5 rounded-lg"
+                style={{ color: "var(--fg-subtle)" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Remaining hint */}
+            {(() => {
+              const orig = BigInt(paymentTarget.amountUzs);
+              const paid = BigInt(paymentTarget.paidUzs);
+              const rem = orig - paid;
+              return (
+                <p className="text-xs" style={{ color: "var(--fg-muted)" }}>
+                  {t("debt.remaining", lang)}: {formatMoney(String(rem > 0n ? rem : 0n))} UZS
+                </p>
+              );
+            })()}
+
+            {paymentError && (
+              <div
+                className="text-sm px-3 py-2 rounded-[12px]"
+                style={{ background: "var(--expense-wash)", color: "var(--expense)" }}
+              >
+                {paymentError}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--fg-muted)" }}>
+                {t("debt.payment.amount_label", lang)}
+              </label>
+              <input
+                autoFocus
+                type="text"
+                inputMode="numeric"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                className={inputCls}
+                style={inputStyle}
+                placeholder={t("debt.amount_placeholder", lang)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--fg-muted)" }}>
+                {t("debt.payment.date_label", lang)}
+              </label>
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className={inputCls}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--fg-muted)" }}>
+                {t("debt.note", lang)}
+              </label>
+              <input
+                type="text"
+                value={paymentNote}
+                onChange={(e) => setPaymentNote(e.target.value)}
+                className={inputCls}
+                style={inputStyle}
+                placeholder={t("debt.note_placeholder", lang)}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setPaymentTarget(null)}
+                className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold"
+                style={{ border: "1px solid var(--border)", color: "var(--fg-muted)" }}
+              >
+                {t("common.cancel", lang)}
+              </button>
+              <button
+                onClick={handleAddPayment}
+                disabled={paymentLoading || !paymentAmount.trim()}
+                className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold disabled:opacity-60"
+                style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
+              >
+                {paymentLoading ? t("form.submitting", lang) : t("common.save", lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Debt explainer — one-liner so users know debts aren't counted in income/expense */}
       <p className="text-xs mb-4" style={{ color: "var(--fg-subtle)" }}>
         {t("debt.explainer", lang)}
@@ -624,30 +796,38 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
             {visible.map((debt, idx) => {
               const isSettled = debt.status === "settled";
               const isGiven = debt.direction === "given";
+              const paidUzs = BigInt(debt.paidUzs ?? "0");
+              const origUzs = BigInt(debt.amountUzs);
+              const remainingUzs = origUzs - paidUzs;
+              const hasPartialPayment = !isSettled && paidUzs > 0n;
               return (
-                <button
+                <div
                   key={debt.id}
-                  onClick={() => openActionSheet(debt)}
-                  className="row-hover w-full flex items-center gap-3 px-5 py-4 text-left transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-4 text-left"
                   style={{
                     borderTop: idx === 0 ? undefined : "1px solid var(--border)",
                     opacity: isSettled ? 0.6 : 1,
                     minHeight: "64px",
                   }}
                 >
-                  {/* Direction icon */}
-                  <div
+                  {/* Direction icon — clicking opens action sheet */}
+                  <button
+                    onClick={() => openActionSheet(debt)}
                     className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
                     style={{
                       background: isGiven ? "var(--income-wash)" : "var(--expense-wash)",
                       color: isGiven ? "var(--income)" : "var(--expense)",
                     }}
+                    aria-label={t("debt.edit.title", lang)}
                   >
                     {isGiven ? "↑" : "↓"}
-                  </div>
+                  </button>
 
-                  {/* Main content */}
-                  <div className="flex-1 min-w-0">
+                  {/* Main content — clicking opens action sheet */}
+                  <button
+                    onClick={() => openActionSheet(debt)}
+                    className="row-hover flex-1 min-w-0 text-left transition-colors"
+                  >
                     <div className="flex items-center gap-2 flex-wrap">
                       <p
                         className="font-semibold text-sm"
@@ -673,30 +853,63 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                       {formatDate(debt.occurredAt, lang)}
                       {debt.note ? ` · ${debt.note}` : ""}
                     </p>
-                  </div>
+                    {hasPartialPayment && (
+                      <p className="text-xs mt-0.5" style={{ color: "var(--fg-muted)" }}>
+                        {t("debt.original", lang)}: {formatMoney(debt.amountUzs)}
+                        {" · "}
+                        {t("debt.paid", lang)}: {formatMoney(String(paidUzs))}
+                        {" · "}
+                        {t("debt.remaining", lang)}: {formatMoney(String(remainingUzs > 0n ? remainingUzs : 0n))}
+                      </p>
+                    )}
+                  </button>
 
-                  {/* Amount (tabular) */}
-                  <div className="text-right shrink-0">
-                    <p
-                      className="font-bold text-sm tabular-nums"
-                      style={{ color: isGiven ? "var(--income)" : "var(--expense)" }}
+                  {/* Right side: amount + optional "+ To'lov" button */}
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <button
+                      onClick={() => openActionSheet(debt)}
+                      className="text-right"
                     >
-                      {isGiven ? "+" : "−"}{formatMoney(debt.amountUzs)}
-                    </p>
-                    <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
-                      {t("common.currency", lang)}
-                    </p>
+                      <p
+                        className="font-bold text-sm tabular-nums"
+                        style={{ color: isGiven ? "var(--income)" : "var(--expense)" }}
+                      >
+                        {isGiven ? "+" : "−"}{hasPartialPayment ? formatMoney(String(remainingUzs > 0n ? remainingUzs : 0n)) : formatMoney(debt.amountUzs)}
+                      </p>
+                      <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
+                        {t("common.currency", lang)}
+                      </p>
+                    </button>
+                    {!isSettled && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openPaymentModal(debt);
+                        }}
+                        className="text-xs px-2 py-1 rounded-[8px] font-medium transition-colors"
+                        style={{
+                          background: "var(--surface-sunken)",
+                          color: "var(--accent)",
+                          border: "1px solid var(--border)",
+                          minHeight: "28px",
+                        }}
+                      >
+                        {t("debt.add_payment", lang)}
+                      </button>
+                    )}
                   </div>
 
                   {/* Chevron affordance */}
-                  <span
+                  <button
+                    onClick={() => openActionSheet(debt)}
                     className="shrink-0 text-base leading-none select-none ml-1"
                     style={{ color: "var(--fg-subtle)" }}
                     aria-hidden="true"
+                    tabIndex={-1}
                   >
                     ›
-                  </span>
-                </button>
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -796,6 +1009,29 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                     </svg>
                   </span>
                   <span className="text-sm font-medium">{t("common.edit", lang)}</span>
+                </button>
+              )}
+
+              {/* Add payment — only for open debts */}
+              {actionSheetDebt.status === "open" && (
+                <button
+                  onClick={() => {
+                    openPaymentModal(actionSheetDebt);
+                    closeActionSheet();
+                  }}
+                  className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors"
+                  style={{ color: "var(--fg)" }}
+                >
+                  <span
+                    className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: "var(--surface-sunken)" }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--accent)" }}>
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 8v8M8 12h8" />
+                    </svg>
+                  </span>
+                  <span className="text-sm font-medium">{t("debt.add_payment", lang)}</span>
                 </button>
               )}
 
