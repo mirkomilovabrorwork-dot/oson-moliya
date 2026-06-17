@@ -53,6 +53,9 @@ export function getBotLabels(lang: string): {
   editAmountLabel: string;
   editFixWhatPrompt: string;
   editAmountPrompt: string;
+  // Type-flip buttons (edit picker + confirmation card)
+  flipToIncomeBtn: string;
+  flipToExpenseBtn: string;
 } {
   if (lang === "ru") {
     return {
@@ -84,6 +87,8 @@ export function getBotLabels(lang: string): {
       editAmountLabel: "💰 Сумма",
       editFixWhatPrompt: "Что исправить?",
       editAmountPrompt: "Напишите новую сумму (напр. 50 000):",
+      flipToIncomeBtn: "🔄 Сделать доходом",
+      flipToExpenseBtn: "🔄 Сделать расходом",
     };
   } else if (lang === "en") {
     return {
@@ -115,6 +120,8 @@ export function getBotLabels(lang: string): {
       editAmountLabel: "💰 Amount",
       editFixWhatPrompt: "Fix what?",
       editAmountPrompt: "Write the new amount (e.g. 50 000):",
+      flipToIncomeBtn: "🔄 Switch to income",
+      flipToExpenseBtn: "🔄 Switch to expense",
     };
   } else {
     return {
@@ -146,8 +153,31 @@ export function getBotLabels(lang: string): {
       editAmountLabel: "💰 Summa",
       editFixWhatPrompt: "Nimani to'g'irlaymiz?",
       editAmountPrompt: "Yangi summani yozing (masalan 50 000):",
+      flipToIncomeBtn: "🔄 Kirimga aylantirish",
+      flipToExpenseBtn: "🔄 Chiqimga aylantirish",
     };
   }
+}
+
+/**
+ * Build the header text for the edit-picker message.
+ * Shows the CURRENT type + category + amount + a "fix what?" prompt line.
+ * Example (uz): "✏️ Hozir: 🔴 Chiqim · oziq-ovqat · 50 000 so'm\nNimani to'g'irlaymiz?"
+ */
+export function editPickerHeader(
+  typeIcon: string,
+  typeWord: string,
+  categoryName: string,
+  formattedAmount: string,
+  lang: string
+): string {
+  if (lang === "ru") {
+    return `✏️ Сейчас: ${typeIcon} ${typeWord} · ${categoryName} · ${formattedAmount}\nЧто исправить?`;
+  }
+  if (lang === "en") {
+    return `✏️ Now: ${typeIcon} ${typeWord} · ${categoryName} · ${formattedAmount}\nFix what?`;
+  }
+  return `✏️ Hozir: ${typeIcon} ${typeWord} · ${categoryName} · ${formattedAmount}\nNimani to'g'irlaymiz?`;
 }
 
 /**

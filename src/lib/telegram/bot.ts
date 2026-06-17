@@ -17,7 +17,7 @@ import {
   upsertPendingAction,
   clearPendingAction,
 } from "../services/pending";
-import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, formatAmount, getBotLabels, buildPersistentKeyboard, getPersistentKeyboardLabels, type InlineKeyboardButton } from "./reply";
+import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, formatAmount, getBotLabels, buildPersistentKeyboard, getPersistentKeyboardLabels, editPickerHeader, type InlineKeyboardButton } from "./reply";
 import { checkExpenseBudgetBreach } from "../services/budgets";
 import { createDebt, updateDebt, deleteDebt, listDebts, getDebtTotals } from "../services/debts";
 import { getSttProvider } from "../stt";
@@ -194,9 +194,15 @@ async function finalizeLog(
     { text: labels.editBtn, callback_data: `e:${tx.id}` },
     { text: labels.deleteBtn, callback_data: `d:${tx.id}` },
   ];
+  const isExpenseCard = tx.type === TxType.expense;
+  const flipCardRow: InlineKeyboardButton[] = [{
+    text: isExpenseCard ? labels.flipToIncomeBtn : labels.flipToExpenseBtn,
+    callback_data: `ft:${tx.id}`,
+  }];
   const keyboardRows: InlineKeyboardButton[][] = [
     ...dashConfirm.dashRows,
     actionRow,
+    flipCardRow,
   ];
 
   await ctx.reply(confirmation + budgetWarning + dashConfirm.extraText, {
@@ -243,12 +249,17 @@ async function showUpdatedTx(
     headline: updatedHeadline,
   });
   const dash = await dashboardReplyOptions(user.id);
+  const isExpenseUpdated = tx.type === TxType.expense;
   const rows: InlineKeyboardButton[][] = [
     ...dash.dashRows,
     [
       { text: labels.editBtn, callback_data: `e:${tx.id}` },
       { text: labels.deleteBtn, callback_data: `d:${tx.id}` },
     ],
+    [{
+      text: isExpenseUpdated ? labels.flipToIncomeBtn : labels.flipToExpenseBtn,
+      callback_data: `ft:${tx.id}`,
+    }],
   ];
   await ctx.reply(cardText + dash.extraText, {
     reply_markup: { inline_keyboard: rows },
@@ -1749,7 +1760,7 @@ export function createBot(): Bot {
         const txId = data.slice(2);
         const tx = await prisma.transaction.findFirst({
           where: { id: txId, userId: user.id, deletedAt: null },
-          select: { id: true, type: true, note: true },
+          select: { id: true, type: true, note: true, amountUzs: true, category: { select: { name: true } } },
         });
         if (!tx) {
           await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
@@ -1759,13 +1770,15 @@ export function createBot(): Bot {
         await clearPendingAction(user.id);
         await upsertPendingAction(user.id, { intent: "edit_tx", draft: { txId }, question: "" });
 
-        // One window: type toggle + the user's categories + amount/delete — all one tap.
+        // One window: single full-width flip-type button + the user's categories + amount/delete — all one tap.
         const editCats = await getSmartCategories(user.id, tx.type, tx.note ?? null, 6);
+        const isExpenseEdit = tx.type === TxType.expense;
         const rows: InlineKeyboardButton[][] = [];
-        rows.push([
-          { text: labels.incomeBtn, callback_data: "et:income" },
-          { text: labels.expenseBtn, callback_data: "et:expense" },
-        ]);
+        // Single full-width action button to flip type (visually distinct from 2-per-row category pills below)
+        rows.push([{
+          text: isExpenseEdit ? labels.flipToIncomeBtn : labels.flipToExpenseBtn,
+          callback_data: isExpenseEdit ? "et:income" : "et:expense",
+        }]);
         const catBtns: InlineKeyboardButton[] = editCats.map((c) => ({ text: c.name, callback_data: `ec:${c.id}` }));
         for (let i = 0; i < catBtns.length; i += 2) rows.push(catBtns.slice(i, i + 2));
         rows.push([
@@ -1775,9 +1788,16 @@ export function createBot(): Bot {
           { text: labels.editAmountLabel, callback_data: "ef:amt" },
           { text: labels.deleteBtn, callback_data: `d:${txId}` },
         ]);
+        const typeIcon = isExpenseEdit ? "🔴" : "🟢";
+        const typeWord = isExpenseEdit
+          ? (lang === "ru" ? "Расход" : lang === "en" ? "Expense" : "Chiqim")
+          : (lang === "ru" ? "Доход" : lang === "en" ? "Income" : "Kirim");
+        const catName = tx.category?.name ?? (lang === "ru" ? "—" : lang === "en" ? "—" : "—");
+        const amtStr = formatAmount(tx.amountUzs, lang);
+        const headerText = editPickerHeader(typeIcon, typeWord, catName, amtStr, lang);
         await ctx.answerCallbackQuery();
         await ctx.reply(
-          labels.editFixWhatPrompt,
+          headerText,
           { reply_markup: { inline_keyboard: rows } }
         );
         return;
@@ -1885,6 +1905,46 @@ export function createBot(): Bot {
         await upsertPendingAction(user.id, { intent: "logged", draft: { lastTransactionId: txId }, question: "", lastTransactionId: txId });
         await ctx.answerCallbackQuery();
         await showUpdatedTx({ reply: (t, o) => ctx.reply(t, o) }, prisma, user, txId, lang);
+        return;
+      }
+
+      // ── ft:<txId> — flip transaction type from the confirmation card ────────
+      if (data.startsWith("ft:")) {
+        const ftTxId = data.slice(3);
+        const ftTx = await prisma.transaction.findFirst({
+          where: { id: ftTxId, userId: user.id, deletedAt: null },
+          select: { id: true, type: true },
+        });
+        if (!ftTx) {
+          await ctx.answerCallbackQuery({ text: labels.notFoundMsg });
+          await ctx.reply(labels.notFoundMsg);
+          return;
+        }
+        const ftNewType = ftTx.type === TxType.expense ? TxType.income : TxType.expense;
+        const ftDefaultName = ftNewType === TxType.income ? "boshqa kirim" : "boshqa chiqim";
+        // Prefer user's default category for the new type; fall back to first owned category of that type.
+        let ftCategoryId: string | null = null;
+        const ftDefaultCat = await prisma.category.findFirst({
+          where: { userId: user.id, name: ftDefaultName, type: ftNewType },
+          select: { id: true },
+        });
+        if (ftDefaultCat) {
+          ftCategoryId = ftDefaultCat.id;
+        } else {
+          const ftFallbackCat = await prisma.category.findFirst({
+            where: { userId: user.id, type: ftNewType },
+            select: { id: true },
+          });
+          ftCategoryId = ftFallbackCat?.id ?? null;
+        }
+        await prisma.transaction.update({
+          where: { id: ftTxId, userId: user.id },
+          data: { type: ftNewType, ...(ftCategoryId ? { categoryId: ftCategoryId } : {}) },
+        });
+        await clearPendingAction(user.id);
+        await upsertPendingAction(user.id, { intent: "logged", draft: { lastTransactionId: ftTxId }, question: "", lastTransactionId: ftTxId });
+        await ctx.answerCallbackQuery();
+        await showUpdatedTx({ reply: (t, o) => ctx.reply(t, o) }, prisma, user, ftTxId, lang);
         return;
       }
 
