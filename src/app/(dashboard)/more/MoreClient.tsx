@@ -144,7 +144,7 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
           ? "Ошибка сохранения"
           : lang === "en"
           ? "Save failed"
-          : "Saqlash muvaffaqiyatsiz"
+          : "Saqlash muvaffaqiyatsiz" // uz (explicit fallback for any non-ru/en lang)
       );
     } finally {
       setCurrencyLoading(false);

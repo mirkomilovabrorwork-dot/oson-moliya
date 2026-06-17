@@ -51,19 +51,20 @@ export const DEFAULT_CATEGORIES = CANONICAL_CATEGORY_DEFS.map((c) => ({
  */
 export async function ensureDefaultCategories(userId: string): Promise<void> {
   const prisma = db as import("@prisma/client").PrismaClient;
-  for (const cat of DEFAULT_CATEGORIES) {
-    await prisma.category.upsert({
-      where: { userId_name_type: { userId, name: cat.name, type: cat.type } },
-      create: {
-        userId,
-        name: cat.name,
-        type: cat.type,
-        emoji: cat.emoji,
-        isDefault: true,
-      },
-      update: {},
-    });
-  }
+  // PERF: one INSERT ... ON CONFLICT DO NOTHING instead of N sequential upserts.
+  // This runs on every login + many bot messages; on a cold Neon DB the old
+  // per-category loop (26 round-trips) made login hang ("Kirilyapti…"). The
+  // unique index [userId,name,type] makes skipDuplicates safe + idempotent.
+  await prisma.category.createMany({
+    data: DEFAULT_CATEGORIES.map((cat) => ({
+      userId,
+      name: cat.name,
+      type: cat.type,
+      emoji: cat.emoji,
+      isDefault: true,
+    })),
+    skipDuplicates: true,
+  });
 }
 
 /**
@@ -78,8 +79,19 @@ export async function resolveOrCreateCategory(
   type: TxType
 ): Promise<string> {
   const txTypeStr = type === TxType.income ? "income" : "expense";
-  const canonical = findCanonical(name, txTypeStr);
-  const normalizedName = canonical ? canonical.key : name.toLowerCase().trim();
+  let canonical = findCanonical(name, txTypeStr);
+  let normalizedName = canonical ? canonical.key : name.toLowerCase().trim();
+
+  // Guard: if the name has no same-type canonical but IS canonical for the OPPOSITE
+  // type, route to the same-type generic bucket instead of creating a mis-typed row.
+  if (!canonical) {
+    const opp = findCanonical(name);
+    if (opp && opp.type !== txTypeStr) {
+      const fbKey = type === TxType.income ? "boshqa kirim" : "boshqa chiqim";
+      canonical = findCanonical(fbKey, txTypeStr);
+      normalizedName = fbKey;
+    }
+  }
 
   const prisma = db as import("@prisma/client").PrismaClient;
   const existing = await prisma.category.findUnique({

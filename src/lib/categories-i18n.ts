@@ -23,6 +23,7 @@ export const CANONICAL_CATEGORY_DEFS: CanonicalCategoryDef[] = [
   // Income
   { key: "sotuv",         type: "income",  uz: "sotuv",         ru: "продажа",           en: "sales",           emoji: "💰" },
   { key: "xizmat",        type: "income",  uz: "xizmat",        ru: "услуга",            en: "service",         emoji: "🛠" },
+  { key: "maosh",         type: "income",  uz: "maosh",         ru: "оклад",             en: "wage",            emoji: "💼" },
   { key: "boshqa kirim",  type: "income",  uz: "boshqa kirim",  ru: "прочий доход",      en: "other income",    emoji: "➕" },
   // Expense
   { key: "oziq-ovqat",         type: "expense", uz: "oziq-ovqat",         ru: "продукты",           en: "food",                emoji: "🍽" },

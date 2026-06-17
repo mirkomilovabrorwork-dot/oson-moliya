@@ -1,6 +1,32 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 
-export default function NotFound() {
+type Lang = "uz" | "ru" | "en";
+
+const STRINGS: Record<Lang, { heading: string; body: string; home: string }> = {
+  uz: {
+    heading: "Sahifa topilmadi",
+    body: "Bu sahifa mavjud emas yoki ko'chirilgan bo'lishi mumkin.",
+    home: "Bosh sahifaga qaytish",
+  },
+  ru: {
+    heading: "Страница не найдена",
+    body: "Эта страница не существует или была перемещена.",
+    home: "На главную",
+  },
+  en: {
+    heading: "Page not found",
+    body: "This page does not exist or may have been moved.",
+    home: "Go home",
+  },
+};
+
+export default async function NotFound() {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get("pultrack_lang")?.value;
+  const lang: Lang = raw === "ru" || raw === "en" || raw === "uz" ? raw : "uz";
+  const s = STRINGS[lang];
+
   return (
     <div
       className="min-h-screen flex items-center justify-center p-6"
@@ -14,17 +40,17 @@ export default function NotFound() {
           404
         </p>
         <h1 className="text-lg font-medium" style={{ color: "var(--fg)" }}>
-          Sahifa topilmadi
+          {s.heading}
         </h1>
         <p className="text-sm" style={{ color: "var(--fg-muted)" }}>
-          Bu sahifa mavjud emas yoki ko&apos;chirilgan bo&apos;lishi mumkin.
+          {s.body}
         </p>
         <Link
           href="/"
           className="inline-block mt-2 w-full py-2.5 rounded-lg text-sm font-medium transition-all text-center"
           style={{ background: "var(--accent-gradient)", color: "#fff" }}
         >
-          Bosh sahifaga qaytish
+          {s.home}
         </Link>
       </div>
     </div>
