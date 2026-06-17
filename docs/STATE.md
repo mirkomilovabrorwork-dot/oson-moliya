@@ -4,9 +4,16 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028+029+030+031 SHIPPED, 4 deploys + finance-grade audit DONE)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus AUTOPILOT — TASK 028+029+030+031+032 SHIPPED, 5 deploys, finance audit acted on)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `2b25709`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `ca13471`).** Shipped this session:
+  - **TASK 032 — Naqd qolgan / cash-in-hand line (`ca13471`).** Audit finding #1 acted on. Home hero
+    card now has a sub-block under "Umumiy balans" labeled "Naqd qolgan" = `balance − givenOpen +
+    takenOpen`. Visible ONLY when there are open debts (else hidden — no noise). Umumiy balans
+    unchanged (net worth). Cash-in-hand reflects real liquidity (lending 3M now actually drops the
+    cash line by 3M, even though it's correctly NOT subtracted from balance). Reuses getDebtTotals
+    + makeSecondaryLine (task 030). uz "Naqd qolgan" · ru "Свободные деньги" · en "Cash on hand".
+    Spec `docs/tasks/032`.
   - **TASK 031 — remove redundant in-menu flip + add debt explainer (`2b25709`).** User caught that
     task 029 left the type-flip in BOTH the card AND the edit-picker menu. Removed from the menu;
     card-flip stays as the single one-tap fix. Also added a 1-line muted explainer on the Debts page
@@ -40,13 +47,19 @@
     Verified: /login 200, /api/telegram 405 (POST-only, expected). Pushed to origin/main.
     **NOTE on the Gemini API key format:** Google now issues keys as `AQ.Ab8RN6...` (not the classic `AIza...`)
     — captured in `playbook_tech_gotchas` so we don't second-guess that format next time.
-- **USER ACTION NEEDED — three verdicts:**
-  1. **STT verdict (task 028)** — bot voice tests on `@oson_moliya_bot`, 3-5 messages. Gemini OK or rollback?
-  2. **Task 029 verdict** — bot tx → Tahrirlash → should see new full-width 🔄 action button, not twin pills.
-     Card itself now has a 2nd row with the same 🔄 for one-tap type fix.
-  3. **Task 030 verdict** — open `oson-moliya.vercel.app` on phone: (a) Home balance + the 3 KPI numbers
-     now have small `≈ $...` line below; (b) Qarzlar page — "Berilgan" card is now neutral (was green);
-     (c) any debt with no occurredAt shows `—` instead of "Invalid Date".
+- **USER WENT TO SLEEP — Opus on AUTOPILOT continuing the audit fixes:**
+  - DONE this autopilot batch: task 032 (cash-in-hand) — code only, no DB changes, safest first
+  - IN PROGRESS / NEXT this autopilot batch: task 033 (debt partial-payment history — additive DB)
+  - DEFERRED till user wakes: task 034 (recurring transactions — too large + multiple design
+    decisions for autopilot)
+- **USER ACTION NEEDED on wake — five verdicts plus audit-batch review:**
+  1. **STT verdict (task 028)** — bot voice tests on `@oson_moliya_bot`, 3-5 messages. Gemini OK?
+  2. **Task 029 verdict** — bot tx → Tahrirlash → category pills only (no twin pills); card has 🔄
+  3. **Task 030 verdict** — phone dashboard: USD `≈ $...` lines, "Berilgan" card neutral, "—" dates
+  4. **Task 031 verdict** — bot edit menu no longer has flip button; Debts page has 1-line explainer
+  5. **Task 032 verdict** — home shows new "Naqd qolgan" sub-block when debts open (math: balance
+     − givenOpen + takenOpen). On a no-debts user: identical to before. Math correct on edge cases?
+  6. **Task 033 verdict** (if Opus completes it overnight): partial-payment tracking on each debt
 - **NEXT — agreed plan (after both verdicts):**
   1. **Spam protection** (added by user 2026-06-17): rate-limit `@oson_moliya_bot` per Telegram user_id (voice
      costs money — separate, tighter cap). Storage: in-memory or DB? Limits TBD — needs a short spec.
