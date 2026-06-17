@@ -4,46 +4,46 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-17, Opus — BOT UX + LOGIN PERF SHIPPED)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028 STT GEMINI SHIPPED)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `a153e8d`).** Shipped this session (024/025/027 + bot type/voice fix, 5 deploys):
-  - **BOT TYPE + VOICE FIX (`a153e8d`)** — brain prompt now decides income/expense carefully (DEFAULT EXPENSE;
-    taksi/ovqat/kommunal/telefon-top-up are never income; verb direction berdim/to'ladim=expense vs "menga
-    berishdi"=income; clarify when unsure) — fixes "taksi logged as income". Voice/audio no longer echo the raw
-    "🎤 transcript" to the user (only the parsed card). NOTE: my earlier cleanup over-deleted income "sovg'a"
-    (receiving a gift IS income) — minor (moved to "boshqa kirim", no data loss).
-  - **024** — bot DEBT save-first + working field-edit (name/amount/direction via a LITERAL reply, never
-    re-parsed by the brain; the misheard "Sarvar" counterparty is now fixable). Soft-delete. Spec `docs/tasks/024`.
-  - **025** — pretty multi-line confirmation CARDS (tx + debt); after-edit shows "✅ Yangiladim"; smart
-    edit-category picker (usage-ranked + input-hint) + "✏️ Boshqa" type-your-own. Spec `docs/tasks/025`.
-  - **027** — category TYPE-correctness: an expense word can NO LONGER become an income category (routes to
-    "boshqa kirim/chiqim"); income default "maosh" added; trilingual error/404 + More i18n. Spec `docs/tasks/027`.
-  - **LOGIN PERF FIX** — `ensureDefaultCategories` was 26 sequential upserts on EVERY auth + many bot messages →
-    on a cold Neon DB this made login hang ("Kirilyapti…"). Now ONE `createMany(skipDuplicates)`. Fixes the
-    user-reported "web sekin / boshqa user kirolmayapti".
-  - **DATA CLEANUP RAN ONCE** — `scripts/fix-miscategorized-categories.ts` re-bucketed 5 tx → "boshqa kirim" +
-    deleted 4 mis-typed income categories across 3 users (0 errors; idempotent, safe to re-run).
-- **NEXT — open issues the user raised (frustrated; RESUME HERE):**
-  1. **Income/expense type STILL wrong — needs a CREATIVE fix, not just prompt tweaks.** User: "kirimda
-     oziq-ovqat turibdi, bu qanaqasi?" Despite the 027 guard + prompt rules, type mis-classification persists.
-     FIRST re-investigate WHY income still shows oziq-ovqat after cleanup+guard+deploy (guard live? new data?
-     which surface — edit picker / categories page / a fresh log?). RECOMMENDED creative direction: (a) default
-     everything to EXPENSE, income only on a strong signal; (b) a ONE-TAP type toggle right on the confirmation
-     card (🔴 Chiqim ⇄ 🟢 Kirim) so any error is fixed in one tap, no menu; (c) category strictly follows type
-     (027 guard already does this). The user is OK to even hide the income/expense split if a cleaner UX exists.
-  2. **Keep editing IN THE BOT (not the web).** User: pressing edit somewhere opens the webapp input window;
-     bot-edit is more convenient. Find where edit routes users to the web (a web_app button? the dashboard link?)
-     and make the bot inline-edit the obvious primary path (024/025 already edit in-bot).
-  3. **MULTI-TRANSACTION in one message** — bot saves only the FIRST of several lines (e.g. 6 purchases). Brain
-     returns an ARRAY + save each + reply ONE summary. Delicate brain-schema change → fresh context.
-- **DEFERRED (don't forget — user: "keyinroq, unutib qo'yma"):** `docs/tasks/026` — try Gemini STT (A/B on real
-  Uzbek voice) + harden the brain prompt for garbled STT. Do NOT switch the brain to GPT (prior A/B = no gain).
-- **USER-ONLY:** record the demo video (`docs/demo-script.md`); provider spend caps (Anthropic/ElevenLabs/Groq);
-  rotate the GitHub PAT.
+- **LIVE on prod (oson-moliya.vercel.app, main `08c1c4e`).** Just shipped:
+  - **TASK 028 — STT switch ElevenLabs → Gemini 2.5 Flash (`08c1c4e`, dpl `4fjJxXdccQfXmV8MQqRvEA2rZQuW`).**
+    New `GeminiFlashProvider` (`src/lib/stt/gemini.ts`) hits `generateContent` multimodal with inline-base64
+    OGG/Opus + a language-aware "transcribe verbatim" prompt. Wired into `src/lib/stt/index.ts` alongside
+    ElevenLabs/Groq/OpenAI. Vercel envs flipped: `STT_PROVIDER=gemini` + `GEMINI_API_KEY` added; the other
+    provider keys are KEPT for instant rollback (env-flip only, no code change). User chose DIRECT switch
+    (no shadow mode). Spec: `docs/tasks/028-stt-switch-to-gemini.md`. Gates: typecheck 0 · test 124/124 · build.
+    Verified: /login 200, /api/telegram 405 (POST-only, expected). Pushed to origin/main.
+    **NOTE on the Gemini API key format:** Google now issues keys as `AQ.Ab8RN6...` (not the classic `AIza...`)
+    — captured in `playbook_tech_gotchas` so we don't second-guess that format next time.
+- **USER ACTION NEEDED NOW — real Uzbek voice test on `@oson_moliya_bot`:**
+  - Send 3-5 voice messages with typical Uzbek phrasing (expense + income + mixed slang).
+  - If transcripts look bad → say "STT yomon" → I roll back in 1 minute: `STT_PROVIDER=elevenlabs` + redeploy.
+  - If transcripts look good → say "STT yaxshi" → we move to the next item.
+- **NEXT — agreed plan (after STT verdict):**
+  1. **Type tugmalarini vizual ajratish** (was issue #1 — root cause was UX, NOT misclassification). User said
+     "asli to'g'ri ekan faqat kirimni ostida turgani uchun unga tegishli debman". Make 🟢 KIRIM / 🔴 CHIQIM
+     buttons look DIFFERENT from category buttons (header-style row vs pill buttons) so users don't read them
+     as "another category". Brain classification stays.
+  2. **Spam protection** (added by user 2026-06-17): rate-limit `@oson_moliya_bot` per Telegram user_id (voice
+     costs money — separate, tighter cap). Storage: in-memory or DB? Limits TBD — needs a short spec.
+- **WITHDRAWN this session (decided not to do):**
+  - Old issue #2 "edit-in-bot only" — user reconsidered: "men boshqa applar shunaqa qilarkan dedim, biz app emas".
+  - Old issue #3 "multi-transaction in one message" — user said "hozircha to'xtab tursin".
+  - PAT rotation — user said "shartmas".
+- **DEFERRED (still alive):** none — task 026 (Gemini STT) is now done as part of 028. Brain hardening for
+  garbled STT is dropped (Gemini 2.5 should transcribe cleanly in the first place).
+- **ROLLBACK PLAN if Gemini disappoints:**
+  ```
+  cd C:/Users/localhost/Desktop/pultrack
+  printf "elevenlabs" | npx vercel env rm STT_PROVIDER production --yes
+  printf "elevenlabs" | npx vercel env add STT_PROVIDER production
+  npx vercel --prod --yes
+  ```
+  ElevenLabs key is still set; rollback is ~1 minute.
+- **USER-ONLY:** record the demo video (`docs/demo-script.md`); provider spend caps (Anthropic/Gemini/Groq/
+  ElevenLabs) — user asked "why" → answered (runaway-bill insurance, not urgent for a small bot).
 - Gates each task: typecheck 0 · test 124/124 · build. Deploy: `npx vercel --prod --yes` from repo root.
-- Assessment compliance: Task-01 requirements FULLY met + exceeded (debts, accounts, multi-currency, import,
-  receipt photo). Only the demo recording is outstanding (user-only). Stack note: uses Claude tool-use +
-  ElevenLabs STT (not OpenAI as the task text lists) — justified for Uzbek, documented in README.
 
 ---
 
