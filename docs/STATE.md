@@ -4,7 +4,7 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — TASK 044+045 DEPLOYED to prod; 046 staged+pushed, awaiting user's LIVE bot test)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044+045 DEPLOYED; 046 + 047 (finance-secretary Q&A) STAGED, awaiting ONE combined LIVE bot test)
 
 - **✅ LIVE on prod: TASK 044 + 045 (deployment `dpl_63QCxw16UymUW6H3ZKL36rpiziGe`, target=production, `oson-moliya.vercel.app`).** User chose "deploy only the safe two; hold the bot change." Verified live: /login 200 · /api/telegram 405 · /api/backup 401 (new route serving the prod domain). Prod Neon got the additive columns via `prisma db push` (in sync, no data loss) BEFORE the deploy. Deploy method (for the record): the 3 commits are stacked on worktree branch `claude/eloquent-agnesi-2a94d2`; to ship 044+045 WITHOUT 046, deployed the tree at commit `32476d8` (detached checkout → copied main repo's `.vercel/project.json` to link → `vercel --prod` → switched back). Branch pushed to `origin/claude/eloquent-agnesi-2a94d2` (backup).
   - **TASK 044 — spam protection v2 (`59992cb`) — DEPLOYED.** Self-critical finding: the bot ALREADY had an
@@ -27,13 +27,23 @@
     PURELY ADDITIVE, no existing intent's rules/dispatch touched** (verified in diff). 13 matcher +
     4 schema tests. NO DB change. ⚠️ Live Telegram classification is UNVERIFIED — needs the user to
     send real voice/text on @oson_moliya_bot AFTER deploy. Rollback = redeploy previous.
-  - **▶ HOW TO DEPLOY 046 WHEN USER IS READY (resolved: user chose to hold it):** the full branch HEAD
-    (`2b72c99`+) already contains 046; just deploy the worktree as-is. From the worktree:
-    `cp <main-repo>/.vercel/project.json .vercel/` (link) → `npx vercel --prod --yes` → `rm -rf .vercel`.
-    NO prod DB change needed (046 added no columns). THEN the user sends real voice/text on
-    @oson_moliya_bot: "Sarvar 2 mln qaytardi" (→ given-debt payment), "Sarvarga 500 ming to'ladim"
-    (→ taken-debt payment), "Sarvar hammasini qaytardi" (→ repay_all), and a name with 2 open debts
-    (→ picker buttons). If classification regresses → rollback = `vercel --prod` from commit `32476d8`.
+  - **🟡 TASK 047 — finance-secretary Q&A, smart hybrid (`4839ff3`) — STAGED + PUSHED, NOT DEPLOYED.**
+    Plan: `docs/tasks/047-finance-secretary-master-plan.md`. AI understands → DB computes exact number →
+    AI phrases naturally (number guaranteed by code; falls back to template; timeout-safe). New:
+    `account_query` (cash-on-hand + per-account balance, "qancha pulim bor"), finance_query `metric:"top"`
+    (eng katta), `compareToPrevious` (oy⇄oy), the **day/month groupBy BUG fixed** (was a silent wrong
+    answer), debt_query+counterparty ("Sarvar qancha qarzdor"). Built via a **5-agent parallel wave**
+    (analytics/accounts/debts/answer/schema, distinct files) + **serial bot.ts integration** + my review.
+    Additive schema, NO DB change. 58 new unit tests. Gates: typecheck 0 / test 204 / build green (mine).
+    Phrasing applied to single-figure answers; structured answers stay templated (cheaper/safer).
+    ⚠️ LLM classification + phrasing quality UNVERIFIED here — needs the live bot test (combined with 046).
+  - **▶ HOW TO DEPLOY 046 + 047 TOGETHER (both are brain changes; deploy in ONE shot):** branch HEAD already
+    contains both. From the worktree: `cp <main-repo>/.vercel/project.json .vercel/` (link) →
+    `npx vercel --prod --yes` → `rm -rf .vercel`. NO prod DB change (neither added columns). THEN the user
+    live-tests on @oson_moliya_bot — debt-repay: "Sarvar 2 mln qaytardi" / "Sarvarga 500 ming to'ladim" /
+    "Sarvar hammasini qaytardi" / a 2-open-debt name (picker); Q&A: "qancha pulim bor", "kassada qancha",
+    "bu oy qancha chiqim", "o'tgan oyga nisbatan", "eng katta xarajatim", "Sarvar menga qancha qarzdor".
+    If classification regresses → rollback = `vercel --prod` from commit `32476d8` (= 044+045 only).
   - **CRITICAL ANALYSIS — budget trend (deferred "smaller" item): RECOMMEND AGAINST building blind.**
     The `Budget` model stores only the CURRENT limit (no historical limits), so a budget-vs-limit trend
     would compare past actuals to today's limit = MISLEADING. An honest "spending trend over months"
