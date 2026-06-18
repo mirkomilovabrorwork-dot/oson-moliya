@@ -10,6 +10,7 @@ import { BulkDeleteDialog } from "@/components/BulkDeleteDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn, formatTxMoney as formatTxMoneyFn } from "@/lib/currency";
 import { translateCategoryName } from "@/lib/categories-i18n";
+import { CategoryMark } from "@/components/CategoryMark";
 
 interface TxRow {
   id: string;
@@ -491,12 +492,7 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
               style={{ borderBottom: "1px solid var(--border)" }}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span
-                  className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 text-sm"
-                  style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
-                >
-                  {actionSheetTx.categoryEmoji ?? (actionSheetTx.type === "income" ? "+" : "−")}
-                </span>
+                <CategoryMark name={actionSheetTx.categoryName} type={actionSheetTx.type} size="md" />
                 <div className="min-w-0">
                   <p className="font-semibold text-sm truncate" style={{ color: "var(--fg)" }}>
                     {translateCategoryName(actionSheetTx.categoryName, lang) ?? t("form.category_none", lang)}
@@ -846,16 +842,7 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                     aria-hidden="true"
                   />
                 )}
-                <span
-                  className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 text-sm"
-                  style={{
-                    background: "var(--surface-sunken)",
-                    color: "var(--fg-muted)",
-                  }}
-                  aria-hidden="true"
-                >
-                  {tx.categoryEmoji ?? (tx.type === "income" ? "+" : "-")}
-                </span>
+                <CategoryMark name={tx.categoryName} type={tx.type} size="md" />
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 min-w-0">
@@ -865,17 +852,6 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                     >
                       {translateCategoryName(tx.categoryName, lang) ?? t("form.category_none", lang)}
                     </p>
-                    <span
-                      className="text-[11px] font-medium shrink-0"
-                      style={{
-                        color:
-                          tx.type === "income"
-                            ? "var(--income)"
-                            : "var(--expense)",
-                      }}
-                    >
-                      {t(`form.type.${tx.type}`, lang)}
-                    </span>
                   </div>
                   <p className="text-xs truncate" style={{ color: "var(--fg-subtle)" }}>
                     {formatDate(tx.occurredAt, lang)}
@@ -935,12 +911,6 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                     className="px-4 py-3 text-left font-medium text-xs"
                     style={{ color: "var(--fg-subtle)" }}
                   >
-                    {t("transactions.type", lang)}
-                  </th>
-                  <th
-                    className="px-4 py-3 text-left font-medium text-xs"
-                    style={{ color: "var(--fg-subtle)" }}
-                  >
                     {t("transactions.category", lang)}
                   </th>
                   <th
@@ -984,25 +954,14 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                     >
                       {formatDate(tx.occurredAt, lang)}
                     </td>
-                    <td className="px-4 py-3.5">
-                      <span
-                        className="text-xs font-medium"
-                        style={{
-                          color:
-                            tx.type === "income"
-                              ? "var(--income)"
-                              : "var(--expense)",
-                        }}
-                      >
-                        {t(`form.type.${tx.type}`, lang)}
-                      </span>
-                    </td>
                     <td
                       className="px-4 py-3.5 text-sm"
                       style={{ color: "var(--fg-muted)" }}
                     >
-                      {tx.categoryEmoji ? `${tx.categoryEmoji} ` : ""}
-                      {translateCategoryName(tx.categoryName, lang) ?? "—"}
+                      <span className="flex items-center gap-2">
+                        <CategoryMark name={tx.categoryName} type={tx.type} size="sm" />
+                        {translateCategoryName(tx.categoryName, lang) ?? "—"}
+                      </span>
                     </td>
                     <td
                       className="px-4 py-3.5 text-right"

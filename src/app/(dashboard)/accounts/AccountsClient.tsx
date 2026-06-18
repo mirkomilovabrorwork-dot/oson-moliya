@@ -9,6 +9,7 @@ import { Toast } from "@/components/Toast";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn } from "@/lib/currency";
+import { AccountIcon } from "@/components/CategoryMark";
 
 // Local types — all BigInt fields are serialized to string
 interface AccountRow {
@@ -42,11 +43,6 @@ function formatMoney(s: string): string {
   return (n < 0 ? "-" : "") + parts.join(" ");
 }
 
-const TYPE_ICONS: Record<string, string> = {
-  cash: "💵",
-  card: "💳",
-  other: "🏦",
-};
 
 const inputStyle = {
   border: "1px solid var(--border-strong)",
@@ -262,7 +258,18 @@ export function AccountsClient({ accounts: initial, totalBalance: initialTotal, 
             border: "1px dashed var(--border-strong)",
           }}
         >
-          <span style={{ fontSize: 36 }}>🏦</span>
+          <span
+            style={{
+              width: 48,
+              height: 48,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--fg-muted)",
+            }}
+          >
+            <AccountIcon type="other" size={32} />
+          </span>
           <p className="font-medium text-center" style={{ color: "var(--fg-muted)" }}>
             {t("account.empty", lang)}
           </p>
@@ -285,11 +292,11 @@ export function AccountsClient({ accounts: initial, totalBalance: initialTotal, 
               >
                 {/* Icon */}
                 <span
-                  className="w-11 h-11 rounded-[12px] flex items-center justify-center shrink-0 text-xl"
-                  style={{ background: "var(--surface-sunken)" }}
+                  className="w-11 h-11 rounded-[12px] flex items-center justify-center shrink-0"
+                  style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)" }}
                   aria-hidden="true"
                 >
-                  {TYPE_ICONS[acc.type] ?? "🏦"}
+                  <AccountIcon type={acc.type} size={22} />
                 </span>
 
                 {/* Info */}
@@ -544,7 +551,7 @@ function AccountModal({
                     : { color: "var(--fg-subtle)" }
                 }
               >
-                <span aria-hidden="true">{TYPE_ICONS[opt]}</span>
+                <span aria-hidden="true"><AccountIcon type={opt} size={18} /></span>
                 <span className="hidden sm:inline">{t(`account.type.${opt}`, lang)}</span>
               </button>
             ))}

@@ -16,6 +16,7 @@ import { getRates } from "@/lib/rates";
 import type { DisplayCurrency } from "@/lib/rates";
 import { formatMoney as formatMoneyFn, formatNative, convertNativeToMain } from "@/lib/currency";
 import { translateCategoryName } from "@/lib/categories-i18n";
+import { CategoryMark } from "@/components/CategoryMark";
 import type { Rates } from "@/lib/rates";
 import { tashkentMonthRange } from "@/lib/dates";
 
@@ -680,15 +681,7 @@ export default async function OverviewPage() {
                   }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span
-                      className="w-9 h-9 rounded-[12px] flex items-center justify-center shrink-0 text-sm"
-                      style={{
-                        background: "var(--surface-sunken)",
-                        color: "var(--fg-muted)",
-                      }}
-                    >
-                      {tx.category?.emoji ?? (tx.type === "income" ? "↑" : "↓")}
-                    </span>
+                    <CategoryMark name={tx.category?.name} type={tx.type} size="sm" />
                     <div className="min-w-0">
                       <p
                         className="text-sm font-medium truncate"

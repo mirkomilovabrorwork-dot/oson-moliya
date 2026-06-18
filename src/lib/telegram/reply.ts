@@ -61,105 +61,105 @@ export function getBotLabels(lang: string): {
 } {
   if (lang === "ru") {
     return {
-      incomeBtn: "🟢 Доход",
-      expenseBtn: "🔴 Расход",
-      deleteBtn: "🗑 Удалить",
-      editBtn: "✏️ Изменить",
-      confirmDeleteBtn: "✅ Да, удалить",
+      incomeBtn: "Доход",
+      expenseBtn: "Расход",
+      deleteBtn: "Удалить",
+      editBtn: "Изменить",
+      confirmDeleteBtn: "Да, удалить",
       cancelBtn: "Нет",
-      deletedMsg: "🗑 Удалено.",
+      deletedMsg: "Удалено.",
       expiredMsg: "Время вышло, напишите заново.",
       notFoundMsg: "Не найдено.",
       cancelledMsg: "Отменено.",
-      otherCategoryBtn: "✏️ Другое",
+      otherCategoryBtn: "Другое",
       typeCategoryPrompt: "Напишите название категории (например: еда)",
       categoryExpiredMsg: "Время вышло, напишите заново.",
       botErrorMsg: "Извините, произошла ошибка. Пожалуйста, попробуйте ещё раз.",
-      rateLimitMsg: "⏳ Подождите немного — слишком много запросов. Попробуйте через 10 минут.",
-      audioTooLongMsg: "🎤 Аудио слишком длинное. Пожалуйста, отправьте запись короче 60 секунд или напишите сообщение.",
+      rateLimitMsg: "Подождите немного — слишком много запросов. Попробуйте через 10 минут.",
+      audioTooLongMsg: "Аудио слишком длинное. Пожалуйста, отправьте запись короче 60 секунд или напишите сообщение.",
       voiceDownloadErrMsg: "Не удалось загрузить голосовое сообщение.",
       voiceTranscribeErrMsg: "Не удалось распознать голос. Пожалуйста, напишите сообщение или попробуйте ещё раз.",
-      photoTooLargeMsg: "🖼 Фото слишком большое (более 5 МБ). Пожалуйста, отправьте фото меньшего размера.",
+      photoTooLargeMsg: "Фото слишком большое (более 5 МБ). Пожалуйста, отправьте фото меньшего размера.",
       photoDownloadErrMsg: "Не удалось загрузить фото. Попробуйте ещё раз.",
       photoProcessErrMsg: "Произошла ошибка при обработке фото. Пожалуйста, попробуйте ещё раз.",
-      receiptHeader: "🧾 Прочитал чек:",
+      receiptHeader: "Прочитал чек:",
       receiptNoAmountMsg: "Не смог определить сумму из чека. Напишите вручную или пришлите более чёткое фото.",
       audioDownloadErrMsg: "Не удалось загрузить аудиофайл.",
       audioTranscribeErrMsg: "Не удалось распознать аудио. Напишите сообщение.",
-      editAmountLabel: "💰 Сумма",
+      editAmountLabel: "Сумма",
       editFixWhatPrompt: "Что исправить?",
       editAmountPrompt: "Напишите новую сумму (напр. 50 000):",
-      flipToIncomeBtn: "🔄 Сделать доходом",
-      flipToExpenseBtn: "🔄 Сделать расходом",
-      costlyLimitMsg: "🎤 Дневной лимит голосовых/фото исчерпан. Завтра снова — или напишите текстом (текст без лимита).",
+      flipToIncomeBtn: "Сделать доходом",
+      flipToExpenseBtn: "Сделать расходом",
+      costlyLimitMsg: "Дневной лимит голосовых/фото исчерпан. Завтра снова — или напишите текстом (текст без лимита).",
     };
   } else if (lang === "en") {
     return {
-      incomeBtn: "🟢 Income",
-      expenseBtn: "🔴 Expense",
-      deleteBtn: "🗑 Delete",
-      editBtn: "✏️ Edit",
-      confirmDeleteBtn: "✅ Yes, delete",
+      incomeBtn: "Income",
+      expenseBtn: "Expense",
+      deleteBtn: "Delete",
+      editBtn: "Edit",
+      confirmDeleteBtn: "Yes, delete",
       cancelBtn: "No",
-      deletedMsg: "🗑 Deleted.",
+      deletedMsg: "Deleted.",
       expiredMsg: "Expired, please write again.",
       notFoundMsg: "Not found.",
       cancelledMsg: "Cancelled.",
-      otherCategoryBtn: "✏️ Other",
+      otherCategoryBtn: "Other",
       typeCategoryPrompt: "Type the category name (e.g. food)",
       categoryExpiredMsg: "Expired, please write again.",
       botErrorMsg: "Sorry, something went wrong. Please try again.",
-      rateLimitMsg: "⏳ Please wait — too many requests. Try again in 10 minutes.",
-      audioTooLongMsg: "🎤 Audio is too long. Please send a voice message under 60 seconds or type a message.",
+      rateLimitMsg: "Please wait — too many requests. Try again in 10 minutes.",
+      audioTooLongMsg: "Audio is too long. Please send a voice message under 60 seconds or type a message.",
       voiceDownloadErrMsg: "Could not download the voice file.",
       voiceTranscribeErrMsg: "Could not transcribe the voice message. Please send a text message or try again.",
-      photoTooLargeMsg: "🖼 Photo is too large (over 5 MB). Please send a smaller photo.",
+      photoTooLargeMsg: "Photo is too large (over 5 MB). Please send a smaller photo.",
       photoDownloadErrMsg: "Could not download photo. Please try again.",
       photoProcessErrMsg: "An error occurred while processing the photo. Please try again.",
-      receiptHeader: "🧾 Read receipt:",
+      receiptHeader: "Read receipt:",
       receiptNoAmountMsg: "Could not read the total from the receipt. Please type it manually or send a clearer photo.",
       audioDownloadErrMsg: "Could not download the audio file.",
       audioTranscribeErrMsg: "Could not transcribe the audio. Please send a text message.",
-      editAmountLabel: "💰 Amount",
+      editAmountLabel: "Amount",
       editFixWhatPrompt: "Fix what?",
       editAmountPrompt: "Write the new amount (e.g. 50 000):",
-      flipToIncomeBtn: "🔄 Switch to income",
-      flipToExpenseBtn: "🔄 Switch to expense",
-      costlyLimitMsg: "🎤 Daily voice/photo limit reached. Try again tomorrow — or type your message (text is unlimited).",
+      flipToIncomeBtn: "Switch to income",
+      flipToExpenseBtn: "Switch to expense",
+      costlyLimitMsg: "Daily voice/photo limit reached. Try again tomorrow — or type your message (text is unlimited).",
     };
   } else {
     return {
-      incomeBtn: "🟢 Kirim",
-      expenseBtn: "🔴 Chiqim",
-      deleteBtn: "🗑 O'chirish",
-      editBtn: "✏️ Tahrirlash",
-      confirmDeleteBtn: "✅ Ha, o'chir",
+      incomeBtn: "Kirim",
+      expenseBtn: "Chiqim",
+      deleteBtn: "O'chirish",
+      editBtn: "Tahrirlash",
+      confirmDeleteBtn: "Ha, o'chir",
       cancelBtn: "Yo'q",
-      deletedMsg: "🗑 O'chirildi.",
+      deletedMsg: "O'chirildi.",
       expiredMsg: "Muddati tugadi, qaytadan yozing.",
       notFoundMsg: "Topilmadi.",
       cancelledMsg: "Bekor qilindi.",
-      otherCategoryBtn: "✏️ Boshqa",
+      otherCategoryBtn: "Boshqa",
       typeCategoryPrompt: "Kategoriya nomini yozing (masalan: ovqat)",
       categoryExpiredMsg: "Muddati tugadi, qaytadan yozing.",
       botErrorMsg: "Kechirasiz, xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.",
-      rateLimitMsg: "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring.",
-      audioTooLongMsg: "🎤 Audio juda uzun. Iltimos, 60 soniyadan qisqaroq ovozli xabar yuboring yoki yozma xabar kiriting.",
+      rateLimitMsg: "Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring.",
+      audioTooLongMsg: "Audio juda uzun. Iltimos, 60 soniyadan qisqaroq ovozli xabar yuboring yoki yozma xabar kiriting.",
       voiceDownloadErrMsg: "Ovozli faylni yuklab bo'lmadi.",
       voiceTranscribeErrMsg: "Ovozni tanib bo'lmadi. Iltimos, yozma xabar yuboring yoki qaytadan urinib ko'ring.",
-      photoTooLargeMsg: "🖼 Rasm juda katta (5 MB dan oshiq). Iltimos, kichikroq rasm yuboring.",
+      photoTooLargeMsg: "Rasm juda katta (5 MB dan oshiq). Iltimos, kichikroq rasm yuboring.",
       photoDownloadErrMsg: "Rasmni yuklab bo'lmadi. Qaytadan urinib ko'ring.",
       photoProcessErrMsg: "Rasmni qayta ishlashda xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.",
-      receiptHeader: "🧾 Chekdan o'qidim:",
+      receiptHeader: "Chekdan o'qidim:",
       receiptNoAmountMsg: "Chekdan summani aniqlay olmadim. Iltimos qo'lda yozing yoki aniqroq rasm yuboring.",
       audioDownloadErrMsg: "Audio faylni yuklab bo'lmadi.",
       audioTranscribeErrMsg: "Ovozni tanib bo'lmadi. Yozma xabar yuboring.",
-      editAmountLabel: "💰 Summa",
+      editAmountLabel: "Summa",
       editFixWhatPrompt: "Nimani to'g'irlaymiz?",
       editAmountPrompt: "Yangi summani yozing (masalan 50 000):",
-      flipToIncomeBtn: "🔄 Kirimga aylantirish",
-      flipToExpenseBtn: "🔄 Chiqimga aylantirish",
-      costlyLimitMsg: "🎤 Bugungi ovoz/rasm limiti tugadi. Ertaga yana mumkin — yoki hozir yozma xabar yuboring (matn cheksiz).",
+      flipToIncomeBtn: "Kirimga aylantirish",
+      flipToExpenseBtn: "Chiqimga aylantirish",
+      costlyLimitMsg: "Bugungi ovoz/rasm limiti tugadi. Ertaga yana mumkin — yoki hozir yozma xabar yuboring (matn cheksiz).",
     };
   }
 }
@@ -167,22 +167,22 @@ export function getBotLabels(lang: string): {
 /**
  * Build the header text for the edit-picker message.
  * Shows the CURRENT type + category + amount + a "fix what?" prompt line.
- * Example (uz): "✏️ Hozir: 🔴 Chiqim · oziq-ovqat · 50 000 so'm\nNimani to'g'irlaymiz?"
+ * Example (uz): "Hozir: Chiqim · oziq-ovqat · 50 000 so'm\nNimani to'g'irlaymiz?"
  */
 export function editPickerHeader(
-  typeIcon: string,
+  _typeIcon: string,
   typeWord: string,
   categoryName: string,
   formattedAmount: string,
   lang: string
 ): string {
   if (lang === "ru") {
-    return `✏️ Сейчас: ${typeIcon} ${typeWord} · ${categoryName} · ${formattedAmount}\nЧто исправить?`;
+    return `Сейчас: ${typeWord} · ${categoryName} · ${formattedAmount}\nЧто исправить?`;
   }
   if (lang === "en") {
-    return `✏️ Now: ${typeIcon} ${typeWord} · ${categoryName} · ${formattedAmount}\nFix what?`;
+    return `Now: ${typeWord} · ${categoryName} · ${formattedAmount}\nFix what?`;
   }
-  return `✏️ Hozir: ${typeIcon} ${typeWord} · ${categoryName} · ${formattedAmount}\nNimani to'g'irlaymiz?`;
+  return `Hozir: ${typeWord} · ${categoryName} · ${formattedAmount}\nNimani to'g'irlaymiz?`;
 }
 
 /**
@@ -216,12 +216,12 @@ export function getPersistentKeyboardLabels(lang: "uz" | "ru" | "en"): {
   help: string;
 } {
   if (lang === "ru") {
-    return { report: "📊 Отчёт", sayt: "📈 Графики", lang: "🌐 Язык", help: "❓ Помощь" };
+    return { report: "Отчёт", sayt: "Графики", lang: "Язык", help: "Помощь" };
   }
   if (lang === "en") {
-    return { report: "📊 Report", sayt: "📈 Charts", lang: "🌐 Language", help: "❓ Help" };
+    return { report: "Report", sayt: "Charts", lang: "Language", help: "Help" };
   }
-  return { report: "📊 Hisobot", sayt: "📈 Grafik", lang: "🌐 Til", help: "❓ Yordam" };
+  return { report: "Hisobot", sayt: "Grafik", lang: "Til", help: "Yordam" };
 }
 
 /**
@@ -242,7 +242,7 @@ export async function dashboardReplyOptions(
   // Localhost fallback: magic-link as plain text
   const raw = await issueMagicToken(userId);
   const url = `${env.APP_URL}/api/auth/verify?token=${raw}`;
-  return { extraText: `\n\n📊 Dashboard: ${url}`, dashRows: [] };
+  return { extraText: `\n\nDashboard: ${url}`, dashRows: [] };
 }
 
 /** Format a localized budget overspend warning to append to a confirmation reply */
@@ -257,11 +257,11 @@ export function formatBudgetAlert(params: {
   const limit = formatAmount(limitUzs, language);
 
   if (language === "ru") {
-    return `⚠️ Внимание: по категории "${categoryName}" в этом месяце потрачено ${spent} — превышен лимит ${limit}.`;
+    return `Внимание: по категории "${categoryName}" в этом месяце потрачено ${spent} — превышен лимит ${limit}.`;
   } else if (language === "en") {
-    return `⚠️ Heads up: you've spent ${spent} on "${categoryName}" this month — over your ${limit} limit.`;
+    return `Heads up: you've spent ${spent} on "${categoryName}" this month — over your ${limit} limit.`;
   } else {
-    return `⚠️ Eslatma: "${categoryName}" bo'yicha bu oy ${spent} sarfladingiz — ${limit} limitidan oshdi.`;
+    return `Eslatma: "${categoryName}" bo'yicha bu oy ${spent} sarfladingiz — ${limit} limitidan oshdi.`;
   }
 }
 
@@ -275,41 +275,27 @@ export function formatConfirmation(params: {
   headline?: string; // optional override; if absent use Saqladim/Сохранил/Saved
 }): string {
   const { amount, type, categoryName, date, language, headline } = params;
-  const amountStr = formatAmount(amount, language);
+  // Prefix the amount with +/− to convey direction (no type word, no colour emoji)
+  const sign = type === "income" ? "+" : "−";
+  const amountStr = sign + formatAmount(amount, language);
 
   const headLine =
     headline ??
-    (language === "ru" ? "✅ Сохранил" : language === "en" ? "✅ Saved" : "✅ Saqladim");
-
-  const typeEmoji = type === "income" ? "🟢" : "🔴";
-  const typeLabel =
-    type === "income"
-      ? language === "ru"
-        ? "Доход"
-        : language === "en"
-        ? "Income"
-        : "Kirim"
-      : language === "ru"
-      ? "Расход"
-      : language === "en"
-      ? "Expense"
-      : "Chiqim";
+    (language === "ru" ? "Сохранено" : language === "en" ? "Saved" : "Saqlandi");
 
   let dateLabel: string;
   if (date === "today") {
-    dateLabel = language === "ru" ? "Сегодня" : language === "en" ? "Today" : "Bugun";
+    dateLabel = language === "ru" ? "сегодня" : language === "en" ? "today" : "bugun";
   } else if (date === "yesterday") {
-    dateLabel = language === "ru" ? "Вчера" : language === "en" ? "Yesterday" : "Kecha";
+    dateLabel = language === "ru" ? "вчера" : language === "en" ? "yesterday" : "kecha";
   } else {
     dateLabel = date;
   }
 
-  const lines = [
-    headLine,
-    `${typeEmoji} ${typeLabel} · ${amountStr}`,
-  ];
-  if (categoryName) lines.push(`🗂 ${categoryName}`);
-  lines.push(`📅 ${dateLabel}`);
+  // One compact line: amount · category · date
+  const parts = [amountStr];
+  if (categoryName) parts.push(categoryName);
+  parts.push(dateLabel);
 
-  return lines.join("\n");
+  return headLine + "\n" + parts.join(" · ");
 }
