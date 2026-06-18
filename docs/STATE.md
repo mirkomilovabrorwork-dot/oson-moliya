@@ -4,9 +4,16 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→040 SHIPPED, 11 deploys; NEXT = task 038 undo+Savatcha)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→040 SHIPPED, 12 deploys; bot-side debt/recurring DEFERRED pending real-Telegram test)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `12ec1e2`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `c40bf8e`).** Shipped this session:
+  - **TASK 038 — Undo toast + Savatcha (`c40bf8e`).** The restore half of the delete overhaul.
+    Toast gained an action button; after any delete (single/bulk) on Transactions/Debts/Recurring an
+    "O'chirildi · Bekor qilish" toast restores it (bulk = restore all). New POST .../[id]/restore
+    routes (ownership-scoped, soft-deleted only) + restoreDebt/restoreRule. New /trash ("Savatcha",
+    linked from More) lists soft-deleted rows from the last 30 days with "Qaytarish". Verified on a
+    375px preview: delete→undo restores; /trash→Qaytarish returns the row to active + removes from
+    trash. Category/Account stay hard-delete (separate task). Spec `docs/tasks/038`.
   - **TASK 039 — Home hero declutter (`12ec1e2` batch).** User (on a real screen): hero too busy.
     Removed the duplicate "Bu oy: +X −Y" line (KPI grid below already shows it). Debt-aside now short
     + direction-clear: "↗️ {amount} qarz berilgan — qaytishi kutiladi" (lent) / "↘️ ... qarz olingan
