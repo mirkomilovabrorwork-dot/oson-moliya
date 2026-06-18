@@ -4,9 +4,21 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→037 SHIPPED, 10 deploys; NEXT = task 038 undo+Savatcha)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→040 SHIPPED, 11 deploys; NEXT = task 038 undo+Savatcha)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `5cd79ce`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `12ec1e2`).** Shipped this session:
+  - **TASK 039 — Home hero declutter (`12ec1e2` batch).** User (on a real screen): hero too busy.
+    Removed the duplicate "Bu oy: +X −Y" line (KPI grid below already shows it). Debt-aside now short
+    + direction-clear: "↗️ {amount} qarz berilgan — qaytishi kutiladi" (lent) / "↘️ ... qarz olingan
+    — qaytarish kerak" (borrowed) — arrow + berilgan/olingan readable at a glance. Verified on 375px.
+  - **TASK 040 — Anthropic prompt caching on the bot brain (`12ec1e2` batch).** Behavior-preserving
+    reorder: static rule block → cacheable PREFIX (cache_control ephemeral), date/categories/reply-
+    lang → dynamic suffix. SAME output. Honest: ~$0 saving at today's volume, prep for scale (~90%
+    input cost cut at hundreds of users). Cost research verdict: STAY on Haiku — cheapest reliable
+    Uzbek tool-use; GPT already A/B'd (no gain); cheaper models risk misclassifying a low-resource
+    language. NOTE: 039 + 040 were done IN PARALLEL (2 agents, independent files page.tsx vs brain.ts)
+    — answering the user's "why not use parallel agents like a commander" point.
+  - **TASK 037 — graduated delete confirmation + bulk multi-select (`5cd79ce`).** Shipped:
   - **TASK 037 — graduated delete confirmation + bulk multi-select (`5cd79ce`).** User: typing
     "o'chirish" for every single delete is too heavy; no way to select+delete many. Fixed with 3
     tiers: ConfirmDialog (NEW, light 2-button for one item, NO typing) used by all 5 list clients;
