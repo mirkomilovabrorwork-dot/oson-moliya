@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { BulkDeleteDialog } from "@/components/BulkDeleteDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn } from "@/lib/currency";
 
@@ -90,6 +92,15 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
   // Action loading
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Single-item delete dialog
+  const [deleteDialogDebt, setDeleteDialogDebt] = useState<DebtRow | null>(null);
+
+  // Bulk select mode
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Action sheet
   const [actionSheetDebt, setActionSheetDebt] = useState<DebtRow | null>(null);
@@ -221,7 +232,6 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
 
   const handleSettle = useCallback(
     async (id: string) => {
-      if (!confirm(t("debt.settle", lang) + "?")) return;
       setSettlingId(id);
       try {
         const res = await fetch(`/api/debts/${id}`, {
@@ -245,13 +255,15 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
   );
 
   const handleDelete = useCallback(
-    async (id: string) => {
-      if (!confirm(t("debt.delete.confirm", lang))) return;
+    async () => {
+      if (!deleteDialogDebt) return;
+      const id = deleteDialogDebt.id;
       setDeletingId(id);
       try {
         const res = await fetch(`/api/debts/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error();
         setDebts((prev) => prev.filter((d) => d.id !== id));
+        setDeleteDialogDebt(null);
         showToast(t("debt.deleted", lang));
         await refreshTotals();
         router.refresh();
@@ -261,8 +273,32 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         setDeletingId(null);
       }
     },
-    [lang, router, refreshTotals]
+    [deleteDialogDebt, lang, router, refreshTotals]
   );
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setBulkDeleting(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) =>
+          fetch(`/api/debts/${id}`, { method: "DELETE" })
+        )
+      );
+      setDebts((prev) => prev.filter((d) => !selectedIds.has(d.id)));
+      const n = selectedIds.size;
+      setBulkDialogOpen(false);
+      setSelectedIds(new Set());
+      setSelectMode(false);
+      showToast(t("bulk.deleted_toast", lang).replace("{n}", String(n)));
+      await refreshTotals();
+      router.refresh();
+    } catch {
+      showToast(t("error.generic", lang), "error");
+    } finally {
+      setBulkDeleting(false);
+    }
+  }, [selectedIds, lang, router, refreshTotals]);
 
   const openPaymentModal = useCallback((debt: DebtRow) => {
     setPaymentTarget(debt);
@@ -331,6 +367,36 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
   return (
     <>
       {toast && <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
+
+      {/* Single-item delete dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteDialogDebt)}
+        title={t("confirm.delete_title", lang)}
+        message={
+          deleteDialogDebt
+            ? t("confirm.delete_one", lang).replace("{item}", deleteDialogDebt.counterparty)
+            : ""
+        }
+        confirmLabel={t("confirm.delete", lang)}
+        cancelLabel={t("confirm.cancel", lang)}
+        danger
+        loading={Boolean(deletingId)}
+        onCancel={() => { if (!deletingId) setDeleteDialogDebt(null); }}
+        onConfirm={handleDelete}
+      />
+
+      {/* Bulk delete dialog */}
+      <BulkDeleteDialog
+        open={bulkDialogOpen}
+        count={selectedIds.size}
+        itemsPreview={debts
+          .filter((d) => selectedIds.has(d.id))
+          .map((d) => `${d.counterparty} · ${formatMoney(d.amountUzs)}`)}
+        loading={bulkDeleting}
+        lang={lang}
+        onConfirm={handleBulkDelete}
+        onCancel={() => setBulkDialogOpen(false)}
+      />
 
       {/* Add modal */}
       {showAdd && (
@@ -743,8 +809,8 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         </div>
       </div>
 
-      {/* Header row: tabs only (add button replaced by fixed FAB below) */}
-      <div className="flex items-center gap-3 mb-4">
+      {/* Header row: tabs + Tanlash toggle */}
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
         {/* Segmented tabs */}
         <div
           className="flex rounded-[12px] p-1 gap-1"
@@ -769,7 +835,51 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
             </button>
           ))}
         </div>
+
+        {/* Select mode toggle */}
+        {visible.length > 0 && (
+          <button
+            onClick={() => {
+              setSelectMode((v) => !v);
+              setSelectedIds(new Set());
+            }}
+            className="ml-auto px-3.5 py-2 rounded-full text-xs font-semibold min-h-[44px] transition-all"
+            style={
+              selectMode
+                ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
+                : { background: "transparent", color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }
+            }
+          >
+            {t("bulk.select", lang)}
+          </button>
+        )}
       </div>
+
+      {/* Sticky bulk action bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <div
+          className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 rounded-[12px] mb-3"
+          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
+        >
+          <span className="flex-1 text-sm font-semibold" style={{ color: "var(--fg)" }}>
+            {t("bulk.selected_count", lang).replace("{n}", String(selectedIds.size))}
+          </span>
+          <button
+            onClick={() => { setSelectedIds(new Set()); setSelectMode(false); }}
+            className="px-3 py-1.5 rounded-full text-xs font-medium"
+            style={{ border: "1px solid var(--border)", color: "var(--fg-muted)" }}
+          >
+            {t("bulk.cancel", lang)}
+          </button>
+          <button
+            onClick={() => setBulkDialogOpen(true)}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={{ background: "var(--expense)", color: "#fff" }}
+          >
+            {t("bulk.delete", lang)}
+          </button>
+        </div>
+      )}
 
       {/* Debt list */}
       <div
@@ -826,22 +936,51 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                     minHeight: "64px",
                   }}
                 >
-                  {/* Direction icon — clicking opens action sheet */}
-                  <button
-                    onClick={() => openActionSheet(debt)}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
-                    style={{
-                      background: isGiven ? "var(--income-wash)" : "var(--expense-wash)",
-                      color: isGiven ? "var(--income)" : "var(--expense)",
-                    }}
-                    aria-label={t("debt.edit.title", lang)}
-                  >
-                    {isGiven ? "↑" : "↓"}
-                  </button>
+                  {/* Checkbox in select mode */}
+                  {selectMode && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(debt.id)}
+                      onChange={(e) => {
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(debt.id); else next.delete(debt.id);
+                          return next;
+                        });
+                      }}
+                      style={{ accentColor: "var(--expense)", width: 18, height: 18, flexShrink: 0 }}
+                      aria-label={debt.counterparty}
+                    />
+                  )}
 
-                  {/* Main content — clicking opens action sheet */}
+                  {/* Direction icon — clicking opens action sheet (hidden in select mode) */}
+                  {!selectMode && (
+                    <button
+                      onClick={() => openActionSheet(debt)}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
+                      style={{
+                        background: isGiven ? "var(--income-wash)" : "var(--expense-wash)",
+                        color: isGiven ? "var(--income)" : "var(--expense)",
+                      }}
+                      aria-label={t("debt.edit.title", lang)}
+                    >
+                      {isGiven ? "↑" : "↓"}
+                    </button>
+                  )}
+
+                  {/* Main content — clicking opens action sheet (or toggles selection) */}
                   <button
-                    onClick={() => openActionSheet(debt)}
+                    onClick={() => {
+                      if (selectMode) {
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(debt.id)) next.delete(debt.id); else next.add(debt.id);
+                          return next;
+                        });
+                      } else {
+                        openActionSheet(debt);
+                      }
+                    }}
                     className="row-hover flex-1 min-w-0 text-left transition-colors"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
@@ -1055,7 +1194,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
               <button
                 onClick={() => {
                   closeActionSheet();
-                  void handleDelete(actionSheetDebt.id);
+                  setDeleteDialogDebt(actionSheetDebt);
                 }}
                 disabled={deletingId === actionSheetDebt.id}
                 className="w-full flex items-center gap-4 px-5 min-h-[52px] transition-colors disabled:opacity-40"

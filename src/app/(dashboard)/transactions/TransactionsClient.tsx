@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
-import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { BulkDeleteDialog } from "@/components/BulkDeleteDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn, formatTxMoney as formatTxMoneyFn } from "@/lib/currency";
 import { translateCategoryName } from "@/lib/categories-i18n";
@@ -167,6 +168,12 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TxRow | null>(null);
 
+  // Bulk select state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
   // Action sheet state — which transaction is open
   const [actionSheetTx, setActionSheetTx] = useState<TxRow | null>(null);
 
@@ -268,6 +275,30 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
     [deleteTarget, lang, router]
   );
 
+  // Bulk delete handler
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setBulkDeleting(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) =>
+          fetch(`/api/transactions/${id}`, { method: "DELETE" })
+        )
+      );
+      const n = selectedIds.size;
+      setRows((r) => r.filter((tx) => !selectedIds.has(tx.id)));
+      setBulkDialogOpen(false);
+      setSelectedIds(new Set());
+      setSelectMode(false);
+      showToast(t("bulk.deleted_toast", lang).replace("{n}", String(n)));
+      router.refresh();
+    } catch {
+      showToast(t("error.generic", lang), "error");
+    } finally {
+      setBulkDeleting(false);
+    }
+  }, [selectedIds, lang, router]);
+
   // Open edit modal
   const openEdit = (tx: TxRow) => {
     setEditing({
@@ -347,28 +378,41 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
         <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />
       )}
 
-      <TypedDeleteDialog
+      <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title={t("delete.typed.title", lang)}
-        warning={t("delete.typed.warning", lang)}
-        description={t("transactions.delete.confirm", lang)}
-        targetLabel={
+        title={t("confirm.delete_title", lang)}
+        message={
           deleteTarget
-            ? `${deleteTarget.type === "income" ? "+" : "-"}${formatTxMoney(deleteTarget)} · ${
-                translateCategoryName(deleteTarget.categoryName, lang) ?? t("form.category_none", lang)
-              }`
-            : undefined
+            ? t("confirm.delete_one", lang).replace(
+                "{item}",
+                `${deleteTarget.type === "income" ? "+" : "−"}${formatTxMoney(deleteTarget)} · ${
+                  translateCategoryName(deleteTarget.categoryName, lang) ?? t("form.category_none", lang)
+                }`
+              )
+            : ""
         }
-        requiredWord={t("delete.typed.word", lang)}
-        inputLabel={t("delete.typed.input_label", lang)}
-        instruction={t("delete.typed.instruction", lang)}
-        confirmLabel={t("common.delete", lang)}
-        cancelLabel={t("common.cancel", lang)}
+        confirmLabel={t("confirm.delete", lang)}
+        cancelLabel={t("confirm.cancel", lang)}
+        danger
         loading={Boolean(deletingId)}
         onCancel={() => {
           if (!deletingId) setDeleteTarget(null);
         }}
         onConfirm={handleDelete}
+      />
+
+      <BulkDeleteDialog
+        open={bulkDialogOpen}
+        count={selectedIds.size}
+        itemsPreview={rows
+          .filter((tx) => selectedIds.has(tx.id))
+          .map((tx) => `${tx.type === "income" ? "+" : "−"}${formatTxMoney(tx)} · ${
+            translateCategoryName(tx.categoryName, lang) ?? t("form.category_none", lang)
+          }`)}
+        loading={bulkDeleting}
+        lang={lang}
+        onConfirm={handleBulkDelete}
+        onCancel={() => setBulkDialogOpen(false)}
       />
 
       {/* ── Transaction action sheet ── */}
@@ -499,6 +543,32 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
         />
       </div>
 
+      {/* ── Bulk action bar (shown when items selected) ── */}
+      {selectMode && selectedIds.size > 0 && (
+        <div
+          className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 rounded-[12px]"
+          style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
+        >
+          <span className="flex-1 text-sm font-semibold" style={{ color: "var(--fg)" }}>
+            {t("bulk.selected_count", lang).replace("{n}", String(selectedIds.size))}
+          </span>
+          <button
+            onClick={() => { setSelectedIds(new Set()); setSelectMode(false); }}
+            className="px-3 py-1.5 rounded-full text-xs font-medium"
+            style={{ border: "1px solid var(--border)", color: "var(--fg-muted)" }}
+          >
+            {t("bulk.cancel", lang)}
+          </button>
+          <button
+            onClick={() => setBulkDialogOpen(true)}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={{ background: "var(--expense)", color: "#fff" }}
+          >
+            {t("bulk.delete", lang)}
+          </button>
+        </div>
+      )}
+
       {/* ── Chip filters ── */}
       <div className="flex flex-wrap gap-2 items-center">
         {/* Type chips — v3: selected = accent-wash bg + accent border + accent text */}
@@ -572,6 +642,24 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
             style={{ background: "var(--expense-wash)", color: "var(--expense)" }}
           >
             ✕ {t("transactions.filter.reset", lang)}
+          </button>
+        )}
+
+        {/* Tanlash toggle */}
+        {filtered.length > 0 && (
+          <button
+            onClick={() => {
+              setSelectMode((v) => !v);
+              setSelectedIds(new Set());
+            }}
+            className="ml-auto flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all min-h-[44px]"
+            style={
+              selectMode
+                ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
+                : { background: "transparent", color: "var(--fg-muted)", border: "1px solid var(--border-strong)" }
+            }
+          >
+            {t("bulk.select", lang)}
           </button>
         )}
       </div>
@@ -678,10 +766,29 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
             {pagedRows.map((tx, idx) => (
               <button
                 key={tx.id}
-                onClick={() => openActionSheet(tx)}
+                onClick={() => {
+                  if (selectMode) {
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(tx.id)) next.delete(tx.id); else next.add(tx.id);
+                      return next;
+                    });
+                  } else {
+                    openActionSheet(tx);
+                  }
+                }}
                 className="row-hover w-full flex items-center gap-3 px-4 py-3.5 transition-colors text-left"
                 style={{ borderTop: idx === 0 ? undefined : "1px solid var(--border)", minHeight: "64px" }}
               >
+                {selectMode && (
+                  <input
+                    type="checkbox"
+                    readOnly
+                    checked={selectedIds.has(tx.id)}
+                    style={{ accentColor: "var(--expense)", width: 18, height: 18, flexShrink: 0 }}
+                    aria-hidden="true"
+                  />
+                )}
                 <span
                   className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 text-sm"
                   style={{
@@ -789,9 +896,22 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                 {pagedRows.map((tx) => (
                   <tr
                     key={tx.id}
-                    onClick={() => openActionSheet(tx)}
+                    onClick={() => {
+                      if (selectMode) {
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(tx.id)) next.delete(tx.id); else next.add(tx.id);
+                          return next;
+                        });
+                      } else {
+                        openActionSheet(tx);
+                      }
+                    }}
                     className="row-hover transition-colors cursor-pointer"
-                    style={{ borderTop: "1px solid var(--border)" }}
+                    style={{
+                      borderTop: "1px solid var(--border)",
+                      background: selectMode && selectedIds.has(tx.id) ? "var(--expense-wash)" : undefined,
+                    }}
                   >
                     <td
                       className="px-4 py-3.5 whitespace-nowrap text-sm"
