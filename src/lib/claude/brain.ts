@@ -33,7 +33,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
   const todayStr = getTashkentDateString();
   const categories = input.categoryNames ?? [];
 
-  const systemPrompt = buildSystemPrompt(todayStr, categories, input.user.language);
+  const { staticPrefix, dynamicSuffix } = buildSystemPrompt(todayStr, categories, input.user.language);
 
   // Inject pending context only when waiting for a user answer (clarify_needed).
   // Do NOT inject for intent:"logged" — it carries an empty question and would
@@ -48,7 +48,10 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
   const response = await client.messages.create({
     model: env.CLAUDE_MODEL,
     max_tokens: 1024,
-    system: systemPrompt,
+    system: [
+      { type: "text", text: staticPrefix, cache_control: { type: "ephemeral" } },
+      { type: "text", text: dynamicSuffix },
+    ],
     tools: [RECORD_INTENT_TOOL],
     tool_choice: { type: "tool", name: "record_intent" },
     messages: [{ role: "user", content: userMessage }],

@@ -1,5 +1,11 @@
 /**
- * Builds the system prompt for the Claude brain.
+ * Builds the system prompt for the Claude brain, split into a static prefix
+ * (cacheable) and a dynamic suffix (date + categories, appended at the end).
+ *
+ * The static prefix never changes between calls/users and can be marked with
+ * cache_control in the Anthropic API.  The dynamic suffix varies per call but
+ * is kept small so the cache hit rate on the prefix is high.
+ *
  * Date is injected as Asia/Tashkent today-date.
  * Categories are injected so Claude can normalise category names.
  */
@@ -7,7 +13,7 @@ export function buildSystemPrompt(
   todayTashkent: string,
   categories: string[],
   replyLang: string = "uz"
-): string {
+): { staticPrefix: string; dynamicSuffix: string } {
   const catList =
     categories.length > 0
       ? `Known categories for this user (REUSE these — do NOT create near-duplicates across languages):
@@ -15,11 +21,7 @@ ${categories.map((c) => `  • ${c}`).join("\n")}
 Match logistika/логистика/logistics → pick the existing one. Create a new category only when genuinely different.`
       : "No categories yet (use defaults or infer from context)";
 
-  return `You are the AI assistant of "Oson Moliya", a friendly Telegram finance helper for Uzbekistan small businesses. Parse each message and call the record_intent tool. Be warm and concise — never robotic. NEVER tell the user you are a "parser" or mention any internal tool/product/code name.
-
-Today's date (Asia/Tashkent, UTC+5): ${todayTashkent}
-
-${catList}
+  const staticPrefix = `You are the AI assistant of "Oson Moliya", a friendly Telegram finance helper for Uzbekistan small businesses. Parse each message and call the record_intent tool. Be warm and concise — never robotic. NEVER tell the user you are a "parser" or mention any internal tool/product/code name.
 
 Your task: parse EVERY incoming text message and call the "record_intent" tool with structured fields.
 ALWAYS call the tool — never reply in plain text.
@@ -41,11 +43,6 @@ If currency is unclear (e.g. just "100" with no context) → default UZS.
 Unsupported currencies (£, ¥, dirham, etc.) → set intent="clarify_needed", missing_fields=["amount"], reply_text asks to enter in so'm or a supported currency.
 
 reply_text for a confirmed foreign-currency log should mention BOTH the foreign amount and confirm logging (e.g. "✅ Yozildi: 100 USD (transport), bugun.").
-
-## Reply language (STRICT)
-The user has chosen their interface language: ${replyLang} (uz = Uzbek, ru = Russian, en = English).
-ALWAYS write reply_text in ${replyLang}, no matter what language the incoming message is written in.
-Still parse the message correctly whatever language the user typed in. Set the "language" field to "${replyLang}".
 
 ## Noisy voice input (Uzbek speech-to-text is often imperfect)
 Many messages come from Uzbek VOICE transcription and contain phonetic errors or merged words.
@@ -164,4 +161,16 @@ Do NOT mention any internal tool or product name.
 For correct_transaction/delete_transaction: briefly confirm the action in the user's language.
 For add_category: briefly confirm in the user's language.
 `;
+
+  const dynamicSuffix = `## Reply language (STRICT)
+The user has chosen their interface language: ${replyLang} (uz = Uzbek, ru = Russian, en = English).
+ALWAYS write reply_text in ${replyLang}, no matter what language the incoming message is written in.
+Still parse the message correctly whatever language the user typed in. Set the "language" field to "${replyLang}".
+
+## Session context
+Today's date (Asia/Tashkent, UTC+5): ${todayTashkent}
+
+${catList}`;
+
+  return { staticPrefix, dynamicSuffix };
 }
