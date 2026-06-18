@@ -13,6 +13,7 @@ const envSchema = z.object({
   TELEGRAM_WEBHOOK_SECRET: z.string().min(1),
   APP_URL: z.string().default("http://localhost:3000"),
   AUTH_SECRET: z.string().min(16).optional(),
+  CRON_SECRET: z.string().min(1),
   /** Local dev only — bypasses Telegram magic-link auth for headless QA.
    *  BLOCKED at startup when NODE_ENV=production. */
   ALLOW_INSECURE_DEV: z.string().optional(),
