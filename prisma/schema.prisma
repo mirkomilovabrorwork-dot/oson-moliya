@@ -89,6 +89,7 @@ model Transaction {
   note             String?
   occurredAt       DateTime
   source           String    @default("bot")
+  rateToUzs        Float?    // entry-time so'm per 1 unit of originalCurrency; null for UZS / legacy
   deletedAt        DateTime?
   createdAt        DateTime  @default(now())
   recurringRuleId  String?

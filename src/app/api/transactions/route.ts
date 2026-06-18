@@ -191,6 +191,7 @@ export async function POST(request: NextRequest): Promise<Response> {
   let resolvedAmountUzs: bigint;
   let resolvedOriginalCurrency: string | null = null;
   let resolvedOriginalAmount: bigint | null = null;
+  let resolvedRateToUzs: number | null = null;
 
   if (data.nativeAmount != null && data.currency && data.currency !== "UZS") {
     // Multi-currency path: fetch live CBU rates, convert to UZS, store original
@@ -201,6 +202,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const rates = await getRates();
     resolvedAmountUzs = convertToUzs(nativeFloat, data.currency, rates);
     resolvedOriginalCurrency = data.currency;
+    resolvedRateToUzs = rates[data.currency as keyof typeof rates] ?? null;
     // Store original amount as the native amount rounded to nearest integer
     // (consistent with bot.ts convention: BigInt(Math.round(nativeFloat)))
     resolvedOriginalAmount = BigInt(Math.round(nativeFloat));
@@ -257,6 +259,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     amountUzs: resolvedAmountUzs,
     originalCurrency: resolvedOriginalCurrency,
     originalAmount: resolvedOriginalAmount,
+    rateToUzs: resolvedRateToUzs,
     note: data.note ?? null,
     occurredAt: data.occurredAt ? new Date(data.occurredAt) : new Date(),
     source: "dashboard",

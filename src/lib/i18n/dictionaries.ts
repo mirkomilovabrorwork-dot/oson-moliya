@@ -387,6 +387,8 @@ const uz: Dictionary = {
   "recurring.every_year": "Har yil {day} {month}",
   "recurring.saved": "Saqlandi",
   "recurring.deleted": "O'chirildi",
+  // ── Transaction rate label
+  "tx.rate_label": "kurs",
   // ── ConfirmDialog (single-item delete)
   "confirm.delete_title": "O'chirilsinmi?",
   "confirm.delete_one": "{item} o'chirilsinmi?",
@@ -801,6 +803,8 @@ const ru: Dictionary = {
   "recurring.every_year": "Каждый год {day} {month}",
   "recurring.saved": "Сохранено",
   "recurring.deleted": "Удалено",
+  // ── Transaction rate label
+  "tx.rate_label": "курс",
   // ── ConfirmDialog (single-item delete)
   "confirm.delete_title": "Удалить?",
   "confirm.delete_one": "Удалить {item}?",
@@ -1215,6 +1219,8 @@ const en: Dictionary = {
   "recurring.every_year": "Every year on {day} {month}",
   "recurring.saved": "Saved",
   "recurring.deleted": "Deleted",
+  // ── Transaction rate label
+  "tx.rate_label": "rate",
   // ── ConfirmDialog (single-item delete)
   "confirm.delete_title": "Delete?",
   "confirm.delete_one": "Delete {item}?",

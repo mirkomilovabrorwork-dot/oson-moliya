@@ -17,6 +17,7 @@ interface TxRow {
   amountUzs: string;
   originalCurrency: string | null;
   originalAmount: string | null;
+  rateToUzs: number | null;
   categoryId: string | null;
   categoryName: string | null;
   categoryEmoji: string | null;
@@ -66,6 +67,11 @@ function formatDate(iso: string, lang: string): string {
   const mon = MONTHS[key][m];
   const dd = String(d).padStart(2, "0");
   return `${dd} ${mon} ${y}`;
+}
+
+/** Format a rate number with narrow non-breaking space groups, e.g. 12800 → "12 800" */
+function formatRate(rate: number): string {
+  return Math.round(rate).toLocaleString("fr-FR").replace(/ /g, " ");
 }
 
 // Derive "YYYY-MM-DD" in Tashkent timezone from an ISO string — used for filter boundary.
@@ -890,6 +896,14 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                     {tx.type === "income" ? "+" : "−"}
                     {formatTxMoney(tx)}
                   </span>
+                  {tx.originalCurrency && tx.rateToUzs != null && (
+                    <span
+                      className="text-xs whitespace-nowrap"
+                      style={{ color: "var(--fg-subtle)" }}
+                    >
+                      {tx.originalAmount} {tx.originalCurrency} · {t("tx.rate_label", lang)} {formatRate(tx.rateToUzs)} · {formatRate(Number(tx.amountUzs))} {t("common.currency", lang)}
+                    </span>
+                  )}
                   <span
                     className="text-base leading-none select-none"
                     style={{ color: "var(--fg-subtle)" }}
@@ -991,7 +1005,7 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                       {translateCategoryName(tx.categoryName, lang) ?? "—"}
                     </td>
                     <td
-                      className="px-4 py-3.5 text-right font-semibold tabular whitespace-nowrap"
+                      className="px-4 py-3.5 text-right"
                       style={{
                         color:
                           tx.type === "income"
@@ -999,8 +1013,18 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
                             : "var(--expense)",
                       }}
                     >
-                      {tx.type === "income" ? "+" : "−"}
-                      {formatTxMoney(tx)}
+                      <span className="font-semibold tabular whitespace-nowrap">
+                        {tx.type === "income" ? "+" : "−"}
+                        {formatTxMoney(tx)}
+                      </span>
+                      {tx.originalCurrency && tx.rateToUzs != null && (
+                        <span
+                          className="block text-xs whitespace-nowrap mt-0.5"
+                          style={{ color: "var(--fg-subtle)" }}
+                        >
+                          {tx.originalAmount} {tx.originalCurrency} · {t("tx.rate_label", lang)} {formatRate(tx.rateToUzs)} · {formatRate(Number(tx.amountUzs))} {t("common.currency", lang)}
+                        </span>
+                      )}
                     </td>
                     <td
                       className="px-4 py-3.5 text-xs hidden sm:table-cell"

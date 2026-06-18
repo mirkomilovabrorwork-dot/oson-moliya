@@ -17,6 +17,8 @@ export interface CreateTransactionInput {
   originalCurrency?: string | null;
   /** Original foreign amount in whole units (e.g. 100 for $100). Null/undefined for plain UZS. */
   originalAmount?: bigint | null;
+  /** Entry-time so'm per 1 unit of originalCurrency (e.g. 12800 for USD). Null for UZS / legacy. */
+  rateToUzs?: number | null;
   note?: string | null;
   occurredAt?: Date;
   source?: string;
@@ -33,6 +35,7 @@ export async function createTransaction(input: CreateTransactionInput) {
       amountUzs: input.amountUzs,
       originalCurrency: input.originalCurrency ?? null,
       originalAmount: input.originalAmount ?? null,
+      rateToUzs: input.rateToUzs ?? null,
       note: input.note ?? null,
       occurredAt: input.occurredAt ?? new Date(),
       source: input.source ?? "bot",
