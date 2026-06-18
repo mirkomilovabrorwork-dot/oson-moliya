@@ -750,28 +750,36 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
               </div>
             )}
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-medium" style={{ color: "var(--fg-muted)" }}>
-                  {paymentTarget.direction === "given" ? t("debt.return.amount_label", lang) : t("debt.repay.amount_label", lang)}
-                </label>
-                {/* Fix C: "Hammasi" — one-tap fill of full remaining amount */}
+            {/* "Hammasi" — PRIMARY one-tap full repayment (most debts are repaid in full).
+                Full-width accent button showing the remaining amount; fills the input. */}
+            {(() => {
+              const orig = BigInt(paymentTarget.amountUzs);
+              const paid = BigInt(paymentTarget.paidUzs);
+              const rem = orig - paid;
+              const remStr = String(rem > 0n ? rem : 0n);
+              const isAll = paymentAmount.replace(/\s/g, "").replace(/\D/g, "") === remStr;
+              return (
                 <button
                   type="button"
-                  onClick={() => {
-                    const orig = BigInt(paymentTarget.amountUzs);
-                    const paid = BigInt(paymentTarget.paidUzs);
-                    const rem = orig - paid;
-                    setPaymentAmount(String(rem > 0n ? rem : 0n));
-                  }}
-                  className="text-xs font-semibold px-2 py-0.5 rounded-[8px] transition-colors"
-                  style={{ background: "var(--surface-sunken)", color: "var(--accent)", border: "1px solid var(--border)" }}
+                  onClick={() => setPaymentAmount(remStr)}
+                  className="w-full py-3 rounded-[12px] text-sm font-bold transition-all flex items-center justify-center gap-2"
+                  style={
+                    isAll
+                      ? { background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }
+                      : { background: "var(--accent-wash)", color: "var(--accent)", border: "1.5px solid var(--accent)" }
+                  }
                 >
-                  {t("debt.payment.all", lang)}
+                  {isAll ? "✓ " : "↩️ "}
+                  {t("debt.payment.all", lang)} · {formatMoney(remStr)}
                 </button>
-              </div>
+              );
+            })()}
+
+            <div>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--fg-muted)" }}>
+                {t("debt.payment.partial_label", lang)}
+              </label>
               <input
-                autoFocus
                 type="text"
                 inputMode="numeric"
                 value={paymentAmount}
