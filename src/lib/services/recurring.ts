@@ -111,6 +111,18 @@ export async function deleteRule(id: string, userId: string) {
   return true;
 }
 
+export async function restoreRule(id: string, userId: string) {
+  const existing = await prisma.recurringRule.findFirst({
+    where: { id, userId, deletedAt: { not: null } },
+  });
+  if (!existing) return null;
+  return prisma.recurringRule.update({
+    where: { id },
+    data: { deletedAt: null },
+    include: { category: true },
+  });
+}
+
 export async function pauseRule(id: string, userId: string) {
   const existing = await prisma.recurringRule.findFirst({ where: { id, userId, deletedAt: null } });
   if (!existing) return null;

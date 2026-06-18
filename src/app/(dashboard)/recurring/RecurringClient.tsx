@@ -82,8 +82,18 @@ const inputCls = "w-full rounded-[12px] px-3 py-2.5 text-sm transition-all focus
 export function RecurringClient({ rules: initial, categories, lang }: Props) {
   const router = useRouter();
   const [rules, setRules] = useState<RuleRow[]>(initial);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const showToast = (message: string, type: "success" | "error" = "success") => setToast({ message, type });
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null>(null);
+  const showToast = (
+    message: string,
+    type: "success" | "error" = "success",
+    actionLabel?: string,
+    onAction?: () => void
+  ) => setToast({ message, type, actionLabel, onAction });
 
   // Add form state
   // Delete state
@@ -152,13 +162,28 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
   const handleDelete = useCallback(async () => {
     if (!deleteTargetRule) return;
     const id = deleteTargetRule.id;
+    const deleted = deleteTargetRule;
     setDeletingRuleId(id);
     try {
       const res = await fetch(`/api/recurring/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setRules((prev) => prev.filter((r) => r.id !== id));
       setDeleteTargetRule(null);
-      showToast(t("recurring.deleted", lang));
+      showToast(
+        t("recurring.deleted", lang),
+        "success",
+        t("undo.action", lang),
+        async () => {
+          try {
+            await fetch(`/api/recurring/${id}/restore`, { method: "POST" });
+            setRules((prev) => [deleted, ...prev]);
+            showToast(t("undo.restored", lang));
+            router.refresh();
+          } catch {
+            showToast(t("error.generic", lang), "error");
+          }
+        }
+      );
       router.refresh();
     } catch {
       showToast(t("error.generic", lang), "error");
@@ -202,7 +227,15 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
 
   return (
     <>
-      {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDone={() => setToast(null)}
+          actionLabel={toast.actionLabel}
+          onAction={toast.onAction}
+        />
+      )}
 
       <ConfirmDialog
         open={Boolean(deleteTargetRule)}
