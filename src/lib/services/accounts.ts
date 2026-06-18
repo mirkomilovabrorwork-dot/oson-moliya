@@ -135,6 +135,71 @@ export async function getTotalBalance(userId: string): Promise<bigint> {
   return accounts.reduce((sum, a) => sum + a.balance, 0n);
 }
 
+// ---------------------------------------------------------------------------
+// T2 additions — finance secretary (task 047)
+// ---------------------------------------------------------------------------
+
+/**
+ * Total cash across ALL user accounts (sum of computed balances).
+ * Reuses listAccounts which already computes balance = initialBalanceUzs + income − expense.
+ */
+export async function getCashOnHand(userId: string): Promise<bigint> {
+  const accounts = await listAccounts(userId);
+  return accounts.reduce((sum, a) => sum + a.balance, 0n);
+}
+
+/**
+ * Per-account balances for the user.
+ * Reuses listAccounts so the balance formula is never duplicated.
+ */
+export async function getAccountBalances(
+  userId: string
+): Promise<{ id: string; name: string; type: string; balance: bigint }[]> {
+  const accounts = await listAccounts(userId);
+  return accounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    type: a.type as string,
+    balance: a.balance,
+  }));
+}
+
+// Normalize: trim, lowercase, collapse internal whitespace
+function normAccount(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export interface AccountMatchResult {
+  status: "none" | "one" | "many";
+  matches: { id: string; name: string }[];
+}
+
+/**
+ * Pure function — match an account by name from a pre-fetched list.
+ * Strategy mirrors matchOpenDebts in debtMatch.ts:
+ *   1. Normalized exact match; if zero hits, fall back to
+ *   2. Substring match (either-way).
+ * Empty query → none.
+ */
+export function matchAccountByName(
+  accounts: { id: string; name: string }[],
+  name: string
+): AccountMatchResult {
+  const q = normAccount(name);
+  if (!q) return { status: "none", matches: [] };
+
+  let hits = accounts.filter((a) => normAccount(a.name) === q);
+  if (hits.length === 0) {
+    hits = accounts.filter((a) => {
+      const n = normAccount(a.name);
+      return n.includes(q) || q.includes(n);
+    });
+  }
+  if (hits.length === 0) return { status: "none", matches: [] };
+  if (hits.length === 1) return { status: "one", matches: hits };
+  return { status: "many", matches: hits };
+}
+
 /**
  * Ensure the user has at least one account. If none exist, create a "Naqd"
  * (cash) account. Returns the id of the default account (the first one by

@@ -461,6 +461,136 @@ describe("RecordIntentSchema — repay_debt", () => {
   });
 });
 
+// ── RecordIntentSchema — 047 secretary ────────────────────────────────────────
+
+describe("RecordIntentSchema — 047 secretary", () => {
+  // account_query with account_name
+  it("accepts account_query with account_name='kassa'", () => {
+    const data = parseOk({
+      intent: "account_query",
+      language: "uz",
+      confidence: 0.95,
+      reply_text: "Yuklanmoqda...",
+      missing_fields: [],
+      account_name: "kassa",
+    });
+    expect(data?.intent).toBe("account_query");
+    expect(data?.account_name).toBe("kassa");
+  });
+
+  // account_query without account_name (total cash)
+  it("accepts account_query with account_name=null (total)", () => {
+    const data = parseOk({
+      intent: "account_query",
+      language: "ru",
+      confidence: 0.92,
+      reply_text: "Загружаю...",
+      missing_fields: [],
+      account_name: null,
+    });
+    expect(data?.intent).toBe("account_query");
+    expect(data?.account_name).toBeNull();
+  });
+
+  // account_query with account_name omitted entirely (optional)
+  it("accepts account_query with account_name omitted", () => {
+    const data = parseOk({
+      intent: "account_query",
+      language: "en",
+      confidence: 0.9,
+      reply_text: "Loading...",
+      missing_fields: [],
+    });
+    expect(data?.intent).toBe("account_query");
+    expect(data?.account_name).toBeUndefined();
+  });
+
+  // finance_query metric "top" + limit
+  it("accepts finance_query with metric='top' and limit=5", () => {
+    const data = parseOk({
+      intent: "finance_query",
+      language: "uz",
+      confidence: 0.93,
+      reply_text: "Hisoblanmoqda...",
+      missing_fields: [],
+      query: {
+        metric: "top",
+        type: "expense",
+        period: "this_month",
+        limit: 5,
+      },
+    });
+    expect(data?.query?.metric).toBe("top");
+    expect(data?.query?.limit).toBe(5);
+  });
+
+  // finance_query compareToPrevious true
+  it("accepts finance_query with compareToPrevious=true", () => {
+    const data = parseOk({
+      intent: "finance_query",
+      language: "uz",
+      confidence: 0.91,
+      reply_text: "Hisoblanmoqda...",
+      missing_fields: [],
+      query: {
+        metric: "sum",
+        type: "expense",
+        period: "this_month",
+        compareToPrevious: true,
+      },
+    });
+    expect(data?.query?.compareToPrevious).toBe(true);
+  });
+
+  // finance_query compareToPrevious defaults to false when omitted
+  it("finance_query compareToPrevious defaults to false when omitted", () => {
+    const data = parseOk({
+      intent: "finance_query",
+      language: "en",
+      confidence: 0.88,
+      reply_text: "Computing...",
+      missing_fields: [],
+      query: {
+        metric: "net",
+        period: "this_week",
+      },
+    });
+    expect(data?.query?.compareToPrevious).toBe(false);
+  });
+
+  // debt_query with counterparty
+  it("accepts debt_query with counterparty and direction=given", () => {
+    const data = parseOk({
+      intent: "debt_query",
+      language: "uz",
+      confidence: 0.94,
+      reply_text: "Qarzlar yuklanmoqda...",
+      missing_fields: [],
+      counterparty: "Sarvar",
+      debt_direction: "given",
+    });
+    expect(data?.intent).toBe("debt_query");
+    expect(data?.counterparty).toBe("Sarvar");
+    expect(data?.debt_direction).toBe("given");
+  });
+
+  // debt_query with counterparty (I owe them — taken)
+  it("accepts debt_query with counterparty and direction=taken", () => {
+    const data = parseOk({
+      intent: "debt_query",
+      language: "uz",
+      confidence: 0.92,
+      reply_text: "Qarzlar yuklanmoqda...",
+      missing_fields: [],
+      counterparty: "Akmal",
+      debt_direction: "taken",
+    });
+    expect(data?.intent).toBe("debt_query");
+    expect(data?.counterparty).toBe("Akmal");
+    expect(data?.debt_direction).toBe("taken");
+  });
+});
+
 // ── log_income / log_expense ──────────────────────────────────────────────────
 
 describe("RecordIntentSchema — log_income / log_expense", () => {

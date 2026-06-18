@@ -19,12 +19,14 @@ import {
 } from "../services/pending";
 import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, formatAmount, getBotLabels, buildPersistentKeyboard, getPersistentKeyboardLabels, editPickerHeader, type InlineKeyboardButton } from "./reply";
 import { checkExpenseBudgetBreach } from "../services/budgets";
-import { createDebt, updateDebt, deleteDebt, listDebts, getDebtTotals, addDebtPayment, getDebtWithPayments, listOpenDebtsWithRemaining } from "../services/debts";
+import { createDebt, updateDebt, deleteDebt, listDebts, getDebtTotals, addDebtPayment, getDebtWithPayments, listOpenDebtsWithRemaining, getCounterpartyDebt } from "../services/debts";
 import { matchOpenDebts } from "../services/debtMatch";
 import { getSttProvider } from "../stt";
 import { downloadTelegramFile } from "./download";
-import { runAggregation } from "../services/analytics";
+import { runAggregation, compareSpend, topTransactions } from "../services/analytics";
 import type { FinanceQuery } from "../types";
+import { getCashOnHand, getAccountBalances, matchAccountByName } from "../services/accounts";
+import { phraseAnswer } from "../claude/answer";
 import { extractReceipt } from "../claude/receipt";
 import { buildMonthlyReportXlsx } from "../report/excel";
 import { InputFile } from "grammy";
@@ -500,6 +502,22 @@ async function applyRepayment(
   await ctx.reply(text + dash.extraText, {
     reply_markup: { inline_keyboard: [...dash.dashRows] },
   });
+}
+
+// ── replyNatural: thin phrasing wrapper (single-figure answers only) ──────────
+// Use ONLY for single-figure answers. For multi-line/structured answers reply
+// with the deterministic template text directly (cleaner + safer + cheaper).
+
+async function replyNatural(
+  reply: (t: string) => Promise<unknown>,
+  question: string,
+  lang: "uz" | "ru" | "en",
+  headline: string,
+  numbers: string[],
+  fallbackText: string
+): Promise<void> {
+  const natural = await phraseAnswer({ question, lang, headline, numbers, detail: fallbackText });
+  await reply(natural ?? fallbackText);
 }
 
 // ── Shared message-handling logic (text + voice share this path) ─────────────
@@ -1147,6 +1165,60 @@ async function handleMessage(
   if (intent.intent === "debt_query") {
     try {
       const intentAny = intent as Record<string, unknown>;
+      const cpQuery = (intentAny.counterparty as string | null | undefined)?.trim() || null;
+
+      // Per-counterparty branch (new in T6)
+      if (cpQuery) {
+        const r = await getCounterpartyDebt(user.id, cpQuery);
+        if (r.matches.length === 0) {
+          const noMatch =
+            lang === "ru"
+              ? `С "${cpQuery}" нет открытых долгов.`
+              : lang === "en"
+              ? `No open debts with "${cpQuery}".`
+              : `${cpQuery} bilan ochiq qarz yo'q.`;
+          await ctx.reply(noMatch);
+          return;
+        }
+
+        // Build per-person summary
+        const lines: string[] = [];
+        const givenFmt = formatAmount(r.givenRemaining, lang);
+        const takenFmt = formatAmount(r.takenRemaining, lang);
+
+        if (lang === "ru") {
+          if (r.givenRemaining > 0n) lines.push(`💰 ${cpQuery} вам должен: ${givenFmt}`);
+          if (r.takenRemaining > 0n) lines.push(`💸 Вы должны ${cpQuery}: ${takenFmt}`);
+        } else if (lang === "en") {
+          if (r.givenRemaining > 0n) lines.push(`💰 ${cpQuery} owes you: ${givenFmt}`);
+          if (r.takenRemaining > 0n) lines.push(`💸 You owe ${cpQuery}: ${takenFmt}`);
+        } else {
+          if (r.givenRemaining > 0n) lines.push(`💰 ${cpQuery} sizga qarzdor: ${givenFmt}`);
+          if (r.takenRemaining > 0n) lines.push(`💸 Siz ${cpQuery}ga qarzdorsiz: ${takenFmt}`);
+        }
+
+        // Single-figure net → use phraseAnswer; multi-line → template
+        const hasGiven = r.givenRemaining > 0n;
+        const hasTaken = r.takenRemaining > 0n;
+        if (hasGiven !== hasTaken) {
+          // Exactly one direction — single figure
+          const singleFmt = hasGiven ? givenFmt : takenFmt;
+          const fallback = lines.join("\n");
+          await replyNatural(
+            (t) => ctx.reply(t),
+            text,
+            lang,
+            `debt with ${cpQuery}`,
+            [singleFmt],
+            fallback
+          );
+        } else {
+          // Both directions or both zero — template
+          await ctx.reply(lines.join("\n"));
+        }
+        return;
+      }
+
       const dirFilter = intentAny.debt_direction as "given" | "taken" | null | undefined ?? null;
 
       // Fetch totals + open debts (optionally filtered by direction)
@@ -1242,6 +1314,129 @@ async function handleMessage(
     return;
   }
 
+  // ── account_query ─────────────────────────────────────────────────────────
+  if (intent.intent === "account_query") {
+    try {
+      const accountName = (intent as Record<string, unknown>).account_name as string | null | undefined;
+      const acctNameStr = accountName?.trim() || null;
+
+      if (!acctNameStr) {
+        // No specific account — return total cash on hand
+        const accts = await getAccountBalances(user.id);
+        if (accts.length === 0) {
+          const hint =
+            lang === "ru"
+              ? "У вас пока нет счетов. Добавьте счёт в приложении."
+              : lang === "en"
+              ? "You have no accounts yet. Add one in the app."
+              : "Hozircha hisobingiz yo'q. Ilovada hisob qo'shing.";
+          await ctx.reply(hint);
+          return;
+        }
+        const total = await getCashOnHand(user.id);
+        const totalFmt = formatAmount(total, lang);
+        const fallbackTotal =
+          lang === "ru"
+            ? `У вас всего: ${totalFmt}`
+            : lang === "en"
+            ? `You have a total of: ${totalFmt}`
+            : `Sizda jami ${totalFmt} bor`;
+        await replyNatural(
+          (t) => ctx.reply(t),
+          text,
+          lang,
+          "cash on hand",
+          [totalFmt],
+          fallbackTotal
+        );
+        return;
+      }
+
+      // Specific account requested
+      const accts = await getAccountBalances(user.id);
+      if (accts.length === 0) {
+        const noAcct =
+          lang === "ru"
+            ? "У вас пока нет счетов. Добавьте счёт в приложении."
+            : lang === "en"
+            ? "You have no accounts yet. Add one in the app."
+            : "Hozircha hisobingiz yo'q. Ilovada hisob qo'shing.";
+        await ctx.reply(noAcct);
+        return;
+      }
+
+      const m = matchAccountByName(
+        accts.map((a) => ({ id: a.id, name: a.name })),
+        acctNameStr
+      );
+
+      if (m.status === "none") {
+        const names = accts.map((a) => a.name).join(", ");
+        const notFound =
+          lang === "ru"
+            ? `Счёт «${acctNameStr}» не найден. Ваши счета: ${names}.`
+            : lang === "en"
+            ? `Account "${acctNameStr}" not found. Your accounts: ${names}.`
+            : `"${acctNameStr}" nomli hisob topilmadi. Sizning hisoblaringiz: ${names}.`;
+        await ctx.reply(notFound);
+        return;
+      }
+
+      if (m.status === "many") {
+        const lines = m.matches.map((ma) => {
+          const found = accts.find((a) => a.id === ma.id);
+          const bal = found ? formatAmount(found.balance, lang) : "?";
+          return `• ${ma.name}: ${bal}`;
+        });
+        const header =
+          lang === "ru"
+            ? `Найдено несколько счетов:\n`
+            : lang === "en"
+            ? `Found multiple accounts:\n`
+            : `Bir nechta hisob topildi:\n`;
+        const ask =
+          lang === "ru"
+            ? `\nУточните, какой именно счёт вас интересует.`
+            : lang === "en"
+            ? `\nPlease clarify which account you mean.`
+            : `\nQaysi hisobni nazarda tutgansiz?`;
+        await ctx.reply(header + lines.join("\n") + ask);
+        return;
+      }
+
+      // Exactly one match
+      const matched = m.matches[0];
+      const found = accts.find((a) => a.id === matched.id);
+      const bal = found ? found.balance : 0n;
+      const balFmt = formatAmount(bal, lang);
+      const fallbackOne =
+        lang === "ru"
+          ? `На счёте «${matched.name}»: ${balFmt}`
+          : lang === "en"
+          ? `Account "${matched.name}": ${balFmt}`
+          : `${matched.name}da ${balFmt} bor`;
+      await replyNatural(
+        (t) => ctx.reply(t),
+        text,
+        lang,
+        `account balance for ${matched.name}`,
+        [balFmt],
+        fallbackOne
+      );
+      return;
+    } catch (err) {
+      console.error("Account query error:", err);
+      const errMsg =
+        lang === "ru"
+          ? "Не удалось загрузить баланс. Попробуйте ещё раз."
+          : lang === "en"
+          ? "Could not load balance. Please try again."
+          : "Balansni yuklab bo'lmadi. Qaytadan urinib ko'ring.";
+      await ctx.reply(errMsg);
+    }
+    return;
+  }
+
   // ── finance_query ─────────────────────────────────────────────────────────
   if (intent.intent === "finance_query") {
     if (!intent.query) {
@@ -1249,11 +1444,91 @@ async function handleMessage(
       return;
     }
     try {
+      const query = intent.query as Omit<FinanceQuery, "metric"> & {
+        metric: "sum" | "count" | "avg" | "net" | "breakdown" | "report" | "top";
+        compareToPrevious?: boolean;
+        limit?: number | null;
+      };
+
+      // Branch 1: compareToPrevious — structured result, reply as template
+      if (query.compareToPrevious === true) {
+        const c = await compareSpend(user.id, {
+          type: query.type ?? undefined,
+          period: query.period,
+          language: lang,
+        });
+        await ctx.reply(c.text);
+        return;
+      }
+
+      // Branch 2: top transactions
+      if (query.metric === "top") {
+        const rows = await topTransactions(user.id, {
+          type: query.type ?? undefined,
+          period: query.period,
+          limit: query.limit ?? 5,
+        });
+
+        if (rows.length === 0) {
+          const empty =
+            lang === "ru"
+              ? "За этот период записей нет."
+              : lang === "en"
+              ? "No records for this period."
+              : "Bu davrda yozuv yo'q.";
+          await ctx.reply(empty);
+          return;
+        }
+
+        const header =
+          lang === "ru"
+            ? `Топ транзакций:\n`
+            : lang === "en"
+            ? `Top transactions:\n`
+            : `Eng katta tranzaksiyalar:\n`;
+
+        const lines = rows.map((r, i) => {
+          const amtFmt = formatAmount(r.amountUzs, lang);
+          const label = r.category ?? r.note ?? (lang === "ru" ? "без категории" : lang === "en" ? "no category" : "kategoriyasiz");
+          // Format date as YYYY-MM-DD in Tashkent
+          const tzDate = new Date(r.occurredAt.getTime() + 5 * 60 * 60 * 1000);
+          const yy = tzDate.getUTCFullYear();
+          const mm = String(tzDate.getUTCMonth() + 1).padStart(2, "0");
+          const dd = String(tzDate.getUTCDate()).padStart(2, "0");
+          const dateStr = `${yy}-${mm}-${dd}`;
+          return `  ${i + 1}. ${amtFmt} — ${label} (${dateStr})`;
+        });
+
+        await ctx.reply(header + lines.join("\n"));
+        return;
+      }
+
+      // Branch 3: default aggregation path
       const result = await runAggregation(
         user.id,
-        intent.query as FinanceQuery,
+        query as FinanceQuery,
         lang
       );
+
+      // Single-figure plain sum (no groupBy) → wrap through phraseAnswer
+      if (
+        query.metric === "sum" &&
+        !query.groupBy &&
+        typeof result.data?.sum === "string"
+      ) {
+        const sumFmt = formatAmount(BigInt(result.data.sum as string), lang);
+        await replyNatural(
+          (t) => ctx.reply(t),
+          text,
+          lang,
+          "period spend",
+          [sumFmt],
+          result.text
+        );
+        return;
+      }
+
+      // All other metrics: reply with deterministic template text
       await ctx.reply(result.text);
     } catch (err) {
       console.error("Analytics error:", err);

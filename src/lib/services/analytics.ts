@@ -15,6 +15,7 @@ const ALLOWED_METRICS = new Set([
   "net",
   "breakdown",
   "report",
+  "top",
 ]);
 const ALLOWED_PERIODS = new Set([
   "today",
@@ -180,6 +181,290 @@ function formatSignedSom(
   return sign + formatSom(amount);
 }
 
+// ── Bucket label helpers (pure — exported for tests) ─────────────────────────
+
+/**
+ * Given a UTC Date representing a transaction, return the Tashkent (UTC+5)
+ * calendar day as "YYYY-MM-DD".
+ */
+export function tashkentDayLabel(utcDate: Date): string {
+  const tzDate = new Date(utcDate.getTime() + 5 * 60 * 60 * 1000);
+  const y = tzDate.getUTCFullYear();
+  const m = String(tzDate.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(tzDate.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Given a UTC Date representing a transaction, return the Tashkent (UTC+5)
+ * calendar month as "YYYY-MM".
+ */
+export function tashkentMonthLabel(utcDate: Date): string {
+  const tzDate = new Date(utcDate.getTime() + 5 * 60 * 60 * 1000);
+  const y = tzDate.getUTCFullYear();
+  const m = String(tzDate.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+// ── Delta computation (pure) ──────────────────────────────────────────────────
+
+/**
+ * Computes the absolute and percentage difference between two BigInt amounts.
+ * pct is null when previous === 0 (divide-by-zero guard).
+ */
+export function computeDelta(
+  current: bigint,
+  previous: bigint
+): { abs: bigint; pct: number | null } {
+  const abs = current - previous;
+  const pct =
+    previous === 0n
+      ? null
+      : Number(((current - previous) * 100n) / previous);
+  return { abs, pct };
+}
+
+// ── Previous-period resolver ──────────────────────────────────────────────────
+
+/**
+ * Given a period key, returns the UTC [from, to) interval for the comparable
+ * PREVIOUS period (one step back).
+ *
+ *   today         → yesterday
+ *   this_week     → the 7-day window before this week's Monday
+ *   this_month    → last_month
+ *   last_month    → the month before last
+ *   this_year     → last year (Jan 1 – Dec 31)
+ *   yesterday     → the day before yesterday
+ *   custom        → same span length shifted back by the span duration
+ */
+function resolvePreviousPeriod(
+  period: string,
+  dateFrom?: string | null,
+  dateTo?: string | null
+): { from: Date; to: Date } {
+  const now = tashkentNow();
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth() + 1;
+  const d = now.getUTCDate();
+
+  switch (period) {
+    case "today": {
+      // yesterday
+      const yest = new Date(Date.now() + 5 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000);
+      const yy = yest.getUTCFullYear();
+      const ym = yest.getUTCMonth() + 1;
+      const yd = yest.getUTCDate();
+      const from = tashkentDateToUtcStart(yy, ym, yd);
+      return { from, to: new Date(from.getTime() + 24 * 60 * 60 * 1000) };
+    }
+    case "yesterday": {
+      // day before yesterday
+      const dby = new Date(Date.now() + 5 * 60 * 60 * 1000 - 2 * 24 * 60 * 60 * 1000);
+      const yy = dby.getUTCFullYear();
+      const ym = dby.getUTCMonth() + 1;
+      const yd = dby.getUTCDate();
+      const from = tashkentDateToUtcStart(yy, ym, yd);
+      return { from, to: new Date(from.getTime() + 24 * 60 * 60 * 1000) };
+    }
+    case "this_week": {
+      // 7-day window immediately before this week's Monday
+      const thisWeekStart = tashkentWeekStart(new Date());
+      const to = thisWeekStart;
+      const from = new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return { from, to };
+    }
+    case "this_month": {
+      const prevM = m === 1 ? 12 : m - 1;
+      const prevY = m === 1 ? y - 1 : y;
+      return {
+        from: tashkentMonthStart(prevY, prevM),
+        to: tashkentMonthEnd(prevY, prevM),
+      };
+    }
+    case "last_month": {
+      // two months ago
+      const twoBack = m <= 2 ? (m === 1 ? 11 : 12) : m - 2;
+      const twoBackY = m <= 2 ? y - 1 : y;
+      return {
+        from: tashkentMonthStart(twoBackY, twoBack),
+        to: tashkentMonthEnd(twoBackY, twoBack),
+      };
+    }
+    case "this_year": {
+      return {
+        from: tashkentMonthStart(y - 1, 1),
+        to: tashkentMonthStart(y, 1),
+      };
+    }
+    case "custom": {
+      // Shift the same span back by span length
+      const current = resolvePeriod(period, dateFrom, dateTo);
+      const span = current.to.getTime() - current.from.getTime();
+      return {
+        from: new Date(current.from.getTime() - span),
+        to: new Date(current.to.getTime() - span),
+      };
+    }
+    default:
+      // Fallback: previous month
+      {
+        const prevM = m === 1 ? 12 : m - 1;
+        const prevY = m === 1 ? y - 1 : y;
+        return {
+          from: tashkentMonthStart(prevY, prevM),
+          to: tashkentMonthEnd(prevY, prevM),
+        };
+      }
+  }
+}
+
+// ── compareSpend ──────────────────────────────────────────────────────────────
+
+export interface CompareSpendResult {
+  current: bigint;
+  previous: bigint;
+  delta: { abs: bigint; pct: number | null };
+  text: string;
+}
+
+/**
+ * Compares total spend (sum metric) for the given period vs its previous
+ * comparable period (today↔yesterday, this_week↔prev 7d, this_month↔last_month,
+ * this_year↔last_year). Returns pre-formatted localized text.
+ */
+export async function compareSpend(
+  userId: string,
+  {
+    type,
+    period,
+    language = "uz",
+  }: {
+    type?: "income" | "expense" | null;
+    period: string;
+    language?: "uz" | "ru" | "en";
+  }
+): Promise<CompareSpendResult> {
+  const prisma = db as import("@prisma/client").PrismaClient;
+
+  if (!ALLOWED_PERIODS.has(period)) {
+    throw new Error(`Invalid period: ${period}`);
+  }
+  if (type && !ALLOWED_TYPES.has(type)) {
+    throw new Error(`Invalid type: ${type}`);
+  }
+
+  const typeFilter = type ? { type: type as TxType } : {};
+  const baseFilter = { userId, deletedAt: null as null | Date, ...typeFilter };
+
+  const { from: curFrom, to: curTo } = resolvePeriod(period);
+  const { from: prevFrom, to: prevTo } = resolvePreviousPeriod(period);
+
+  const [curAgg, prevAgg] = await Promise.all([
+    prisma.transaction.aggregate({
+      where: { ...baseFilter, occurredAt: { gte: curFrom, lt: curTo } },
+      _sum: { amountUzs: true },
+    }),
+    prisma.transaction.aggregate({
+      where: { ...baseFilter, occurredAt: { gte: prevFrom, lt: prevTo } },
+      _sum: { amountUzs: true },
+    }),
+  ]);
+
+  const current = (curAgg._sum.amountUzs ?? 0n) as bigint;
+  const previous = (prevAgg._sum.amountUzs ?? 0n) as bigint;
+  const delta = computeDelta(current, previous);
+
+  const curFmt = type ? formatSignedSom(current, type) : formatSom(current);
+  const prevFmt = type ? formatSignedSom(previous, type) : formatSom(previous);
+  const pctStr =
+    delta.pct === null
+      ? (language === "ru" ? "н/д" : language === "en" ? "n/a" : "n/a")
+      : `${delta.pct >= 0 ? "+" : ""}${delta.pct}%`;
+
+  let text: string;
+  if (language === "ru") {
+    text =
+      `Текущий период: ${curFmt}\n` +
+      `Предыдущий период: ${prevFmt}\n` +
+      `Изменение: ${pctStr}`;
+  } else if (language === "en") {
+    text =
+      `Current period: ${curFmt}\n` +
+      `Previous period: ${prevFmt}\n` +
+      `Change: ${pctStr}`;
+  } else {
+    text =
+      `Hozirgi davr: ${curFmt}\n` +
+      `O'tgan davr: ${prevFmt}\n` +
+      `O'zgarish: ${pctStr}`;
+  }
+
+  return { current, previous, delta, text };
+}
+
+// ── topTransactions ───────────────────────────────────────────────────────────
+
+export interface TopTransaction {
+  amountUzs: bigint;
+  category: string | null;
+  note: string | null;
+  occurredAt: Date;
+}
+
+/**
+ * Returns the N largest transactions (by amountUzs desc) for the user + period.
+ * limit is capped at 10.
+ */
+export async function topTransactions(
+  userId: string,
+  {
+    type,
+    period,
+    limit = 5,
+  }: {
+    type?: "income" | "expense" | null;
+    period: string;
+    limit?: number;
+  }
+): Promise<TopTransaction[]> {
+  const prisma = db as import("@prisma/client").PrismaClient;
+
+  if (!ALLOWED_PERIODS.has(period)) {
+    throw new Error(`Invalid period: ${period}`);
+  }
+  if (type && !ALLOWED_TYPES.has(type)) {
+    throw new Error(`Invalid type: ${type}`);
+  }
+
+  const cap = Math.min(limit, 10);
+  const { from, to } = resolvePeriod(period);
+
+  const rows = await prisma.transaction.findMany({
+    where: {
+      userId,
+      deletedAt: null,
+      occurredAt: { gte: from, lt: to },
+      ...(type ? { type: type as TxType } : {}),
+    },
+    orderBy: { amountUzs: "desc" },
+    take: cap,
+    select: {
+      amountUzs: true,
+      note: true,
+      occurredAt: true,
+      category: { select: { name: true } },
+    },
+  });
+
+  return rows.map((r) => ({
+    amountUzs: r.amountUzs as bigint,
+    category: r.category?.name ?? null,
+    note: r.note,
+    occurredAt: r.occurredAt,
+  }));
+}
+
 // ── Main aggregation function ─────────────────────────────────────────────────
 
 export interface AggregationResult {
@@ -189,7 +474,7 @@ export interface AggregationResult {
 
 export async function runAggregation(
   userId: string,
-  query: FinanceQuery,
+  query: FinanceQuery & { limit?: number },
   language: "uz" | "ru" | "en" = "uz"
 ): Promise<AggregationResult> {
   const prisma = db as import("@prisma/client").PrismaClient;
@@ -330,6 +615,79 @@ export async function runAggregation(
 
   // ── SUM ───────────────────────────────────────────────────────────────────
   if (query.metric === "sum") {
+    // groupBy day/month: bucket transactions in JS after a single DB fetch
+    if (query.groupBy === "day" || query.groupBy === "month") {
+      const rows = await prisma.transaction.findMany({
+        where: whereWithCat,
+        select: { amountUzs: true, type: true, occurredAt: true },
+        orderBy: { occurredAt: "asc" },
+      });
+
+      const labelFn =
+        query.groupBy === "day" ? tashkentDayLabel : tashkentMonthLabel;
+      const bucketMap = new Map<
+        string,
+        { income: bigint; expense: bigint; net: bigint }
+      >();
+      for (const row of rows) {
+        const label = labelFn(row.occurredAt);
+        const existing = bucketMap.get(label) ?? {
+          income: 0n,
+          expense: 0n,
+          net: 0n,
+        };
+        const amt = (row.amountUzs ?? 0n) as bigint;
+        if (row.type === TxType.income) {
+          existing.income += amt;
+          existing.net += amt;
+        } else {
+          existing.expense += amt;
+          existing.net -= amt;
+        }
+        bucketMap.set(label, existing);
+      }
+
+      const buckets = Array.from(bucketMap.entries()).map(
+        ([label, { income, expense, net }]) => ({
+          label,
+          income,
+          expense,
+          net,
+        })
+      );
+
+      const lines = buckets.map(
+        (b) =>
+          `  ${b.label}: ${formatSignedSom(b.income, "income")} / ${formatSignedSom(b.expense, "expense")} / ${formatSignedSom(b.net, "net")}`
+      );
+      const header =
+        language === "ru"
+          ? "По периодам (доход / расход / итог):\n"
+          : language === "en"
+          ? "By period (income / expense / net):\n"
+          : "Davr bo'yicha (kirim / chiqim / sof):\n";
+      const text = lines.length
+        ? header + lines.join("\n")
+        : language === "ru"
+        ? "Нет данных за этот период."
+        : language === "en"
+        ? "No data for this period."
+        : "Bu davr uchun ma'lumot yo'q.";
+
+      return {
+        text,
+        data: {
+          buckets: buckets.map((b) => ({
+            label: b.label,
+            income: b.income.toString(),
+            expense: b.expense.toString(),
+            net: b.net.toString(),
+          })),
+        },
+      };
+    }
+
+    // flat total (no groupBy or groupBy: "category")
     const agg = await prisma.transaction.aggregate({
       where: whereWithCat,
       _sum: { amountUzs: true },
@@ -384,6 +742,79 @@ export async function runAggregation(
 
   // ── NET ───────────────────────────────────────────────────────────────────
   if (query.metric === "net") {
+    // groupBy day/month: same bucket logic, but metric is "net"
+    if (query.groupBy === "day" || query.groupBy === "month") {
+      const rows = await prisma.transaction.findMany({
+        where: whereWithCat,
+        select: { amountUzs: true, type: true, occurredAt: true },
+        orderBy: { occurredAt: "asc" },
+      });
+
+      const labelFn =
+        query.groupBy === "day" ? tashkentDayLabel : tashkentMonthLabel;
+      const bucketMap = new Map<
+        string,
+        { income: bigint; expense: bigint; net: bigint }
+      >();
+      for (const row of rows) {
+        const label = labelFn(row.occurredAt);
+        const existing = bucketMap.get(label) ?? {
+          income: 0n,
+          expense: 0n,
+          net: 0n,
+        };
+        const amt = (row.amountUzs ?? 0n) as bigint;
+        if (row.type === TxType.income) {
+          existing.income += amt;
+          existing.net += amt;
+        } else {
+          existing.expense += amt;
+          existing.net -= amt;
+        }
+        bucketMap.set(label, existing);
+      }
+
+      const buckets = Array.from(bucketMap.entries()).map(
+        ([label, { income, expense, net }]) => ({
+          label,
+          income,
+          expense,
+          net,
+        })
+      );
+
+      const lines = buckets.map(
+        (b) =>
+          `  ${b.label}: ${formatSignedSom(b.income, "income")} / ${formatSignedSom(b.expense, "expense")} / ${formatSignedSom(b.net, "net")}`
+      );
+      const header =
+        language === "ru"
+          ? "По периодам (доход / расход / итог):\n"
+          : language === "en"
+          ? "By period (income / expense / net):\n"
+          : "Davr bo'yicha (kirim / chiqim / sof):\n";
+      const text = lines.length
+        ? header + lines.join("\n")
+        : language === "ru"
+        ? "Нет данных за этот период."
+        : language === "en"
+        ? "No data for this period."
+        : "Bu davr uchun ma'lumot yo'q.";
+
+      return {
+        text,
+        data: {
+          buckets: buckets.map((b) => ({
+            label: b.label,
+            income: b.income.toString(),
+            expense: b.expense.toString(),
+            net: b.net.toString(),
+          })),
+        },
+      };
+    }
+
+    // flat total
     const [incAgg, expAgg] = await Promise.all([
       prisma.transaction.aggregate({
         where: { ...whereWithCat, type: TxType.income },
@@ -415,11 +846,16 @@ export async function runAggregation(
 
   // ── BREAKDOWN ─────────────────────────────────────────────────────────────
   if (query.metric === "breakdown") {
+    const breakdownLimit =
+      query.limit != null && query.limit > 0
+        ? Math.min(query.limit, 50)
+        : undefined;
     const grouped = await prisma.transaction.groupBy({
       by: ["categoryId"],
       where: whereWithCat,
       _sum: { amountUzs: true },
       orderBy: { _sum: { amountUzs: "desc" } },
+      ...(breakdownLimit != null ? { take: breakdownLimit } : {}),
     });
 
     const catIds = grouped

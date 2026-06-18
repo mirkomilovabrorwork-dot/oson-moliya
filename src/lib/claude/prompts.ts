@@ -161,11 +161,46 @@ Normalise to lowercase. MATCH against known categories above if possible — pre
 If the user mentions an activity that matches a known category, use EXACTLY that existing name.
 Cross-language matching: "аренда" → check if "ijara" exists → use "ijara" (same concept).
 
+## account_query — balance / cash STATE questions
+Use intent="account_query" when the user asks HOW MUCH MONEY THEY HAVE RIGHT NOW (current balance / cash on hand):
+- uz: "qancha pulim bor", "qancha naqd pulim bor", "kassada qancha", "kartada qancha", "hisobimda qancha", "[hisob nomi]da qancha pul bor"
+- ru: "сколько у меня денег", "сколько денег на счёте", "сколько наличных", "сколько на кассе"
+- en: "how much money do I have", "what's my balance", "how much cash on hand"
+Set account_name to the named account (e.g. "kassa", "karta", "nalichka") or null for total / all accounts.
+IMPORTANT disambiguation: account_query = current BALANCE (state, how much IS there now). finance_query = FLOW (how much came in / went out over a period). "Bu oy qancha chiqim?" = finance_query. "Qancha pulim bor?" = account_query.
+
+## finance_query extra parameters (additive — new fields only)
+- compareToPrevious: set to true when user asks to compare the current period vs the previous one.
+  uz: "bu oy o'tgan oyga nisbatan", "o'tgan haftaga nisbatan", "o'tgan oyga solishtirganda", "farqi qancha"
+  ru: "по сравнению с прошлым месяцем", "в сравнении с прошлой неделей", "относительно прошлого месяца"
+  en: "compared to last month", "vs last week", "how does this week compare to last week"
+  Combine with the appropriate period (this_month / this_week / today / this_year) and metric (sum/net).
+- metric "top" + limit: use metric="top" when user asks for the biggest/largest individual transactions.
+  uz: "eng katta xarajatim", "eng katta kirim", "top 5 xarajatim", "eng ko'p sarflagan kunlarim"
+  ru: "самые большие расходы", "топ 5 трат", "крупнейшие расходы"
+  en: "biggest expense", "top 5 expenses", "largest transactions"
+  Set limit to the N the user mentioned (e.g. "top 5" → limit=5); omit limit for a single biggest item.
+  For top CATEGORIES (not individual transactions) use metric="breakdown" + limit (top-N categories).
+  Examples: "top 5 kategoriya" → metric="breakdown", limit=5; "eng katta bitta xarajat" → metric="top", limit=1.
+- groupBy "day" / "month" (already supported — reminder): use for trend questions by time period.
+  uz: "kunlar bo'yicha", "qaysi kuni ko'p sarfladim", "oylar bo'yicha xarajatim", "har kun qancha sarflayapman"
+  ru: "по дням", "по месяцам", "в какой день больше всего потратил"
+  en: "by day", "by month", "which day did I spend the most"
+
+## debt_query WITH counterparty
+When the user asks about debts involving a SPECIFIC person, use intent="debt_query" and set counterparty=<name>.
+  uz: "Sarvar menga qancha qarzdor", "Akmalga qancha qarzim bor", "Bahodirdan qancha olganman", "Jasur menga qachon qaytaradi"
+  ru: "сколько мне должен Сарвар", "сколько я должен Акмалу", "Бахадир мне должен?"
+  en: "how much does Sarvar owe me", "how much do I owe Akmal"
+Set debt_direction: "given" if the user lent to that person (they owe me), "taken" if the user borrowed from that person (I owe them). Null if unclear.
+CRITICAL: do NOT confuse debt_query (asking about a debt) with repay_debt (recording a repayment). "Sarvar menga qancha qarzdor?" = debt_query. "Sarvar 2 mln qaytardi" = repay_debt.
+
 ## query object (for finance_query)
-- metric options: "sum" | "count" | "avg" | "net" | "breakdown" | "report"
+- metric options: "sum" | "count" | "avg" | "net" | "breakdown" | "report" | "top"
 - Use "report" when user asks for a full summary/report/hisobot/отчёт — returns income+expense+net+top categories
 - Use "net" when user asks about balance/profit/foydasi/прибыль
 - Use "breakdown" when user asks by category
+- Use "top" when user asks for the largest individual transactions (see finance_query extra parameters above)
 - period: use the most natural match from the allowed list
 - groupBy: use "category" for breakdowns, "day"/"month" for trends
 

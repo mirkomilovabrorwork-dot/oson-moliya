@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // ---- Zod schema for server-side validation of the tool output ----
 export const QuerySchema = z.object({
-  metric: z.enum(["sum", "count", "avg", "net", "breakdown", "report"]),
+  metric: z.enum(["sum", "count", "avg", "net", "breakdown", "report", "top"]),
   type: z.enum(["income", "expense"]).nullable().optional(),
   category: z.string().nullable().optional(),
   period: z.enum([
@@ -17,6 +17,8 @@ export const QuerySchema = z.object({
   dateFrom: z.string().nullable().optional(),
   dateTo: z.string().nullable().optional(),
   groupBy: z.enum(["category", "day", "month"]).nullable().optional(),
+  limit: z.number().int().positive().nullable().optional(),
+  compareToPrevious: z.boolean().default(false).optional(),
 });
 
 export const PatchSchema = z.object({
@@ -34,6 +36,7 @@ export const RecordIntentSchema = z.object({
     "repay_debt",
     "finance_query",
     "debt_query",
+    "account_query",
     "correct_transaction",
     "delete_transaction",
     "add_category",
@@ -60,6 +63,8 @@ export const RecordIntentSchema = z.object({
   repay_all: z.boolean().optional().default(false),
   missing_fields: z.array(z.string()).default([]),
   reply_text: z.string(),
+  /** Account name for account_query (e.g. 'kassa', 'karta'). Null = all / total cash. */
+  account_name: z.string().nullable().optional(),
 });
 
 export type RecordIntent = z.infer<typeof RecordIntentSchema>;
@@ -82,6 +87,7 @@ export const RECORD_INTENT_TOOL = {
           "repay_debt",
           "finance_query",
           "debt_query",
+          "account_query",
           "correct_transaction",
           "delete_transaction",
           "add_category",
@@ -133,7 +139,7 @@ export const RECORD_INTENT_TOOL = {
         properties: {
           metric: {
             type: "string",
-            enum: ["sum", "count", "avg", "net", "breakdown", "report"],
+            enum: ["sum", "count", "avg", "net", "breakdown", "report", "top"],
           },
           type: { type: ["string", "null"], enum: ["income", "expense", null] },
           category: { type: ["string", "null"] },
@@ -154,6 +160,14 @@ export const RECORD_INTENT_TOOL = {
           groupBy: {
             type: ["string", "null"],
             enum: ["category", "day", "month", null],
+          },
+          limit: {
+            type: ["integer", "null"],
+            description: "Optional cap on the number of results (top-N). Positive integer.",
+          },
+          compareToPrevious: {
+            type: "boolean",
+            description: "When true, compare the current period to the previous comparable period. Default false.",
           },
         },
         required: ["metric", "period"],
@@ -183,6 +197,10 @@ export const RECORD_INTENT_TOOL = {
           type: { type: ["string", "null"], enum: ["income", "expense", null] },
           note: { type: ["string", "null"] },
         },
+      },
+      account_name: {
+        type: ["string", "null"],
+        description: "Account name for account_query, e.g. 'kassa', 'karta'. Null = all / total cash.",
       },
       counterparty: {
         type: ["string", "null"],

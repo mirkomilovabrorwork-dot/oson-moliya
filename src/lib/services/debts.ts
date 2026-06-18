@@ -1,5 +1,6 @@
 import { DebtDirection, DebtStatus } from "@prisma/client";
 import { db } from "../db";
+import { matchOpenDebts } from "./debtMatch";
 
 export interface AddDebtPaymentInput {
   debtId: string;
@@ -234,6 +235,49 @@ export async function listOpenDebtsWithRemaining(userId: string): Promise<OpenDe
       return { id: d.id, counterparty: d.counterparty, direction: d.direction, remaining };
     })
     .filter((d) => d.remaining > 0n);
+}
+
+export interface CounterpartyDebtMatch {
+  id: string;
+  direction: DebtDirection;
+  remaining: bigint;
+  counterparty: string;
+}
+
+export interface CounterpartyDebtResult {
+  matches: CounterpartyDebtMatch[];
+  givenRemaining: bigint;
+  takenRemaining: bigint;
+}
+
+/**
+ * Pure helper: sum remaining amounts split by direction over a list of matches.
+ * Exported so unit tests can exercise it without a DB.
+ */
+export function sumByDirection(
+  matches: CounterpartyDebtMatch[]
+): { givenRemaining: bigint; takenRemaining: bigint } {
+  let givenRemaining = 0n;
+  let takenRemaining = 0n;
+  for (const m of matches) {
+    if (m.direction === DebtDirection.given) givenRemaining += m.remaining;
+    else takenRemaining += m.remaining;
+  }
+  return { givenRemaining, takenRemaining };
+}
+
+/**
+ * Return all open debts matching a counterparty name, with per-direction totals.
+ * direction=null → both directions (we want to see what I gave AND what I took with this person).
+ */
+export async function getCounterpartyDebt(
+  userId: string,
+  counterparty: string
+): Promise<CounterpartyDebtResult> {
+  const open = await listOpenDebtsWithRemaining(userId);
+  const m = matchOpenDebts(open, counterparty, null);
+  const { givenRemaining, takenRemaining } = sumByDirection(m.matches);
+  return { matches: m.matches, givenRemaining, takenRemaining };
 }
 
 export async function deleteDebtPayment(paymentId: string, userId: string) {
