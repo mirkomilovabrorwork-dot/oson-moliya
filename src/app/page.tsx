@@ -332,12 +332,7 @@ export default async function OverviewPage() {
   const cashInHandMain = formatMoneyFn(cashInHandAbs, currency, rates, lang);
   const cashInHandSecondary = makeSecondaryLine(cashInHandAbs);
 
-  const incomeSecondary = makeSecondaryLine(overview.income);
-  const expenseSecondary = makeSecondaryLine(overview.expense);
-  const netUzs = overview.income >= overview.expense
-    ? overview.income - overview.expense
-    : overview.expense - overview.income;
-  const netSecondary = makeSecondaryLine(netUzs);
+  // Fix B: KPI cells show so'm only — secondary USD lines removed.
 
   return (
     <div className="min-h-screen" style={{ background: "transparent" }}>
@@ -347,45 +342,51 @@ export default async function OverviewPage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-5 sm:py-7 pb-32 space-y-5">
 
-        {/* 1 — UMUMIY BALANS hero card (all-time) */}
+        {/* 1 — HERO CARD (all-time) — Fix A: one primary number */}
         <div
           className="p-5 sm:p-6 rounded-[var(--radius-lg)]"
           style={{ background: "var(--accent-gradient)", boxShadow: "var(--shadow-lg)" }}
         >
+          {/* Label: "Naqd qolgan" when debts exist, "Umumiy balans" otherwise */}
           <p
             className="text-xs font-semibold uppercase tracking-wide pl-0.5 mb-1"
             style={{ color: "rgba(255,255,255,.80)" }}
           >
-            {t("home.total_balance", lang)}
+            {hasOpenDebts ? t("home.cash_in_hand", lang) : t("home.total_balance", lang)}
           </p>
+          {/* Primary number — cash-in-hand when debts, total balance when none */}
           <p
             className="text-2xl sm:text-4xl font-bold tabular tracking-normal break-words"
             style={{ color: "#ffffff" }}
           >
-            {allTimeBalancePositive ? "+" : "−"}
-            {allTimeBalanceMain}
+            {hasOpenDebts
+              ? (cashInHandPositive ? "+" : "−")
+              : (allTimeBalancePositive ? "+" : "−")}
+            {hasOpenDebts ? cashInHandMain : allTimeBalanceMain}
           </p>
-          {balanceSecondary && (
-            <p className="text-xs mt-0.5 pl-0.5" style={{ color: "rgba(255,255,255,.65)" }}>
-              {balanceSecondary}
-            </p>
-          )}
-          {/* Cash-in-hand sub-block (task 032) — only when open debts exist */}
-          {hasOpenDebts && (
-            <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,.18)" }}>
-              <p className="text-xs font-semibold uppercase tracking-wide pl-0.5" style={{ color: "rgba(255,255,255,.80)" }}>
-                {t("home.cash_in_hand", lang)}
-              </p>
-              <p className="text-base sm:text-lg font-bold tabular tracking-normal break-words" style={{ color: "#ffffff" }}>
-                {cashInHandPositive ? "+" : "−"}
-                {cashInHandMain}
-              </p>
-              {cashInHandSecondary && (
+          {/* Fix B: USD secondary under the ONE primary number only */}
+          {hasOpenDebts
+            ? cashInHandSecondary && (
                 <p className="text-xs mt-0.5 pl-0.5" style={{ color: "rgba(255,255,255,.65)" }}>
                   {cashInHandSecondary}
                 </p>
+              )
+            : balanceSecondary && (
+                <p className="text-xs mt-0.5 pl-0.5" style={{ color: "rgba(255,255,255,.65)" }}>
+                  {balanceSecondary}
+                </p>
               )}
-            </div>
+          {/* Fix A: debt-aside link line — one small muted line pointing to /debts */}
+          {hasOpenDebts && (
+            <Link
+              href="/debts"
+              className="block text-xs mt-1.5 pl-0.5"
+              style={{ color: "rgba(255,255,255,.74)" }}
+            >
+              {givenOpen > takenOpen
+                ? t("home.debt_aside_given", lang).replace("{amount}", fmt(givenOpen - takenOpen))
+                : t("home.debt_aside_taken", lang).replace("{amount}", fmt(takenOpen - givenOpen))}
+            </Link>
           )}
           {/* This-month context: smaller, on the green card */}
           <p
@@ -546,18 +547,17 @@ export default async function OverviewPage() {
             </Link>
           </div>
 
-          {/* This-month KPI row */}
+          {/* This-month KPI row — Fix B: so'm only, no USD secondary */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
-              { label: t("home.month_income", lang), val: overview.income, color: "var(--income)", secondary: incomeSecondary },
-              { label: t("home.month_expense", lang), val: overview.expense, color: "var(--expense)", secondary: expenseSecondary },
+              { label: t("home.month_income", lang), val: overview.income, color: "var(--income)" },
+              { label: t("home.month_expense", lang), val: overview.expense, color: "var(--expense)" },
               {
                 label: overview.income >= overview.expense ? t("analytics.net_positive", lang) : t("analytics.net_negative", lang),
                 val: overview.income >= overview.expense ? overview.income - overview.expense : overview.expense - overview.income,
                 color: overview.income >= overview.expense ? "var(--income)" : "var(--expense)",
-                secondary: netSecondary,
               },
-            ].map(({ label, val, color, secondary }) => (
+            ].map(({ label, val, color }) => (
               <div
                 key={label}
                 className="rounded-xl p-3 flex flex-col gap-1 min-w-0"
@@ -569,11 +569,6 @@ export default async function OverviewPage() {
                 <p className="text-sm font-bold tabular break-words leading-tight" style={{ color }}>
                   {fmt(val)}
                 </p>
-                {secondary && (
-                  <p className="text-xs leading-tight tabular" style={{ color: "var(--fg-subtle)" }}>
-                    {secondary}
-                  </p>
-                )}
               </div>
             ))}
           </div>

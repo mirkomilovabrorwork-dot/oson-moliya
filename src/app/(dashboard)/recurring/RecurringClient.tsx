@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
+import { formatMoney } from "@/lib/currency";
+import type { Rates } from "@/lib/rates";
 
 type TxType = "income" | "expense";
 type Frequency = "monthly" | "yearly";
@@ -41,10 +43,14 @@ interface Props {
   lang: LangCode;
 }
 
+// Fix C: use shared formatter (space-grouped) instead of local Intl.NumberFormat (comma-grouped).
+// Recurring amounts are always UZS, so rates is unused in the UZS branch.
 function formatAmount(amountUzs: string, lang: LangCode): string {
-  const n = Number(amountUzs);
-  if (isNaN(n)) return amountUzs;
-  return new Intl.NumberFormat(lang === "ru" ? "ru-RU" : lang === "en" ? "en-US" : "uz-Latn-UZ").format(n) + " so'm";
+  try {
+    return formatMoney(BigInt(amountUzs.replace(/\s/g, "")), "UZS", {} as Rates, lang);
+  } catch {
+    return amountUzs;
+  }
 }
 
 function getScheduleLabel(rule: RuleRow, lang: LangCode): string {
@@ -101,7 +107,7 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
   const monthNames = lang === "ru" ? MONTH_NAMES_RU : lang === "en" ? MONTH_NAMES_EN : MONTH_NAMES_UZ;
 
   const handleAdd = useCallback(async () => {
-    if (!addAmount.trim()) return;
+    if (!addAmount.trim() || !addCategoryId) return;
     setAddLoading(true);
     setAddError(null);
     try {
@@ -301,14 +307,14 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
         </div>
       )}
 
-      {/* Floating add button (when list is non-empty) */}
+      {/* Floating add button (when list is non-empty) — Fix E: short label for 375px */}
       {rules.length > 0 && !showAdd && (
         <button
           onClick={() => setShowAdd(true)}
           className="fixed bottom-24 right-4 px-5 py-3 text-sm font-semibold rounded-[14px] shadow-lg text-white z-30"
           style={{ background: "var(--accent-gradient)" }}
         >
-          {t("recurring.add", lang)}
+          {t("recurring.add_short", lang)}
         </button>
       )}
 
@@ -505,7 +511,7 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
               </button>
               <button
                 onClick={handleAdd}
-                disabled={addLoading || !addAmount.trim()}
+                disabled={addLoading || !addAmount.trim() || !addCategoryId}
                 className="flex-1 py-3 text-sm font-semibold rounded-[12px] text-white disabled:opacity-60"
                 style={{ background: "var(--accent-gradient)" }}
               >

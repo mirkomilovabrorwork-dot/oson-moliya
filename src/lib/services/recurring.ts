@@ -54,6 +54,14 @@ export async function listActiveRules(userId: string) {
 }
 
 export async function createRule(input: CreateRuleInput) {
+  // Fix D: category is required at creation time
+  if (!input.categoryId) throw new Error("CATEGORY_REQUIRED");
+  // Validate the category is owned by this user and matches the rule type
+  const category = await prisma.category.findFirst({
+    where: { id: input.categoryId, userId: input.userId },
+  });
+  if (!category) throw new Error("CATEGORY_NOT_FOUND");
+  if (category.type !== input.type) throw new Error("CATEGORY_TYPE_MISMATCH");
   validateRuleInput(input);
   return prisma.recurringRule.create({
     data: {
