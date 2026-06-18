@@ -40,6 +40,7 @@ export default async function TransactionsPage() {
     amountUzs: tx.amountUzs.toString(),
     originalCurrency: tx.originalCurrency ?? null,
     originalAmount: tx.originalAmount != null ? tx.originalAmount.toString() : null,
+    rateToUzs: tx.rateToUzs ?? null,
     categoryId: tx.categoryId,
     categoryName: tx.category?.name ?? null,
     categoryEmoji: tx.category?.emoji ?? null,
