@@ -4,9 +4,37 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→035 SHIPPED, 8 deploys, UX simplification verified on real screens)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→037 SHIPPED, 10 deploys; NEXT = task 038 undo+Savatcha)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `37182a1`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `5cd79ce`).** Shipped this session:
+  - **TASK 037 — graduated delete confirmation + bulk multi-select (`5cd79ce`).** User: typing
+    "o'chirish" for every single delete is too heavy; no way to select+delete many. Fixed with 3
+    tiers: ConfirmDialog (NEW, light 2-button for one item, NO typing) used by all 5 list clients;
+    BulkDeleteDialog (NEW, shows "N ta o'chiriladi" + preview + a "Roziman" checkbox that GATES the
+    danger button); TypedDeleteDialog reserved for a future "delete ALL data" only. Bulk multi-select
+    ("Tanlash" toggle → row checkboxes → "N tanlandi" sticky bar → bulk dialog → Promise.all over
+    single DELETE routes) added to Transactions + Debts. Verified on a 375px preview: single→light
+    dialog (no typed input), multi-select→checkboxes + count bar, bulk dialog Roziman gating
+    disabled→enabled. 12 new i18n keys. Spec `docs/tasks/037`. NOTE: deploy needed a retry ("Not
+    authorized" once, succeeded on 2nd try).
+  - **NEXT — TASK 038 (the RESTORE half of the delete overhaul, NOT yet started):** immediate Undo
+    toast (Toast needs an action-button variant) + a "Savatcha" (deleted-items) view in More with
+    restore, for the soft-deleted entities (Transaction/Debt/RecurringRule already have deletedAt).
+    Also: add `deletedAt` to Category/Account so THEY become restorable too (today they hard-delete).
+    Optional: a cron to purge soft-deleted rows older than 30 days.
+  - **TASK 036 — debt terminology + quick-pay + add-on-all-tabs + KPI USD back (`ed51314`).** User
+    feedback batch. (1) KPI USD restored (035 removed it; user: "uzbda ikki valyuta birdek ishlaydi").
+    (2) Debt payment wording direction-aware: given → "↩️ Qaytarildi", taken → "↩️ To'ladim" (was
+    generic "To'lov"). (3) "Hammasi" quick button fills full remaining in the payment modal. (4)
+    "+ Qarz qo'shish" FAB has a visible label, reachable on Barchasi tab. Verified on a 375px preview
+    with seeded data. Spec `docs/tasks/036`.
+  - **NEXT — TASK 037 (delete UX overhaul, user-requested, IN PROGRESS):** graduated delete
+    confirmation (1 item = light prompt; many = strong "N ta o'chadi" + double-confirm; ALL data =
+    typed "o'chirish"), bulk multi-select, soft-delete + immediate undo toast + a "Savatcha"
+    (deleted-items) restore view. User: current TypedDeleteDialog makes you type the word even for
+    ONE item — too heavy. Chose soft-delete + undo. Soft-delete (deletedAt) already on Transaction/
+    Debt/DebtPayment/RecurringRule; Category/Budget/Account need it added if bulk-deletable.
+  - **LIVE on prod (earlier this session), main `37182a1`:** Shipped:
   - **TASK 035 — UX simplification pass, VERIFIED ON REAL MOBILE SCREENS (`37182a1`).** User asked
     "murakkab bo'lib ketmadimi? bir qarashda tushunarli bo'ldimi?" — and was right. Opus had shipped
     028→034 with green gates but WITHOUT opening the screens. Ran the dev server + seeded data on a
