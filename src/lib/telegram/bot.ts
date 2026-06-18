@@ -19,7 +19,8 @@ import {
 } from "../services/pending";
 import { dashboardReplyOptions, formatConfirmation, formatBudgetAlert, formatAmount, getBotLabels, buildPersistentKeyboard, getPersistentKeyboardLabels, editPickerHeader, type InlineKeyboardButton } from "./reply";
 import { checkExpenseBudgetBreach } from "../services/budgets";
-import { createDebt, updateDebt, deleteDebt, listDebts, getDebtTotals } from "../services/debts";
+import { createDebt, updateDebt, deleteDebt, listDebts, getDebtTotals, addDebtPayment, getDebtWithPayments, listOpenDebtsWithRemaining } from "../services/debts";
+import { matchOpenDebts } from "../services/debtMatch";
 import { getSttProvider } from "../stt";
 import { downloadTelegramFile } from "./download";
 import { runAggregation } from "../services/analytics";
@@ -407,6 +408,98 @@ function helpText(l: "uz" | "ru" | "en"): string {
     return `📖 Oson Moliya — Help\n\nSend me text or a 🎤 voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the dashboard\n/hisobot — Excel monthly report (also: /report or type "report")\n/help — Command list\n\n💡 For example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
   }
   return `📖 Oson Moliya — Yordam\n\nMenga matn yoki 🎤 ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Panelni ochish\n/hisobot — Excel oylik hisobot (shuningdek: /report yoki «hisobot» deb yozing)\n/help — Buyruqlar ro'yxati\n\n💡 Masalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
+}
+
+// ── applyRepayment — shared helper for repay_debt dispatch + rp: callback ───
+
+async function applyRepayment(
+  ctx: { reply: (text: string, opts?: Parameters<Bot["api"]["sendMessage"]>[2]) => Promise<unknown> },
+  user: { id: string },
+  lang: "uz" | "ru" | "en",
+  debtId: string,
+  remainingBefore: bigint,
+  amount: number | null,
+  repayAll: boolean,
+  dateStr: string
+): Promise<void> {
+  const pay = repayAll
+    ? remainingBefore
+    : amount != null && BigInt(amount) > remainingBefore
+    ? remainingBefore
+    : BigInt(amount ?? 0);
+
+  if (pay <= 0n) {
+    await ctx.reply(
+      lang === "ru"
+        ? "Нечего погашать — сумма не может быть нулевой."
+        : lang === "en"
+        ? "Nothing to pay — amount cannot be zero."
+        : "To'lanadigan narsa yo'q — summa nol bo'lishi mumkin emas."
+    );
+    return;
+  }
+
+  try {
+    await addDebtPayment({
+      debtId,
+      userId: user.id,
+      amountUzs: pay,
+      occurredAt: dateStringToUtc(dateStr),
+      note: null,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg === "EXCEEDS_REMAINING" || msg === "AMOUNT_INVALID") {
+      await ctx.reply(
+        lang === "ru"
+          ? "Ошибка: сумма превышает остаток долга или некорректна."
+          : lang === "en"
+          ? "Error: amount exceeds the remaining balance or is invalid."
+          : "Xato: summa qoldiqdan ko'p yoki noto'g'ri."
+      );
+      return;
+    }
+    throw err;
+  }
+
+  const remainingAfter = remainingBefore - pay;
+  const capped = !repayAll && amount != null && BigInt(amount) > remainingBefore;
+
+  // Fetch debt for counterparty name
+  const debtRow = await getDebtWithPayments(debtId, user.id);
+  const cpName = debtRow?.counterparty ?? "";
+
+  let text: string;
+  if (remainingAfter <= 0n) {
+    text =
+      lang === "ru"
+        ? `✅ Долг полностью погашён: ${cpName} · ${formatAmount(pay, lang)}`
+        : lang === "en"
+        ? `✅ Debt fully settled: ${cpName} · ${formatAmount(pay, lang)}`
+        : `✅ Qarz to'liq yopildi: ${cpName} · ${formatAmount(pay, lang)}`;
+  } else {
+    text =
+      lang === "ru"
+        ? `✅ Платёж записан: ${formatAmount(pay, lang)}. ${cpName} — остаток: ${formatAmount(remainingAfter, lang)}`
+        : lang === "en"
+        ? `✅ Payment recorded: ${formatAmount(pay, lang)}. ${cpName} — remaining: ${formatAmount(remainingAfter, lang)}`
+        : `✅ To'lov yozildi: ${formatAmount(pay, lang)}. ${cpName} — qoldiq: ${formatAmount(remainingAfter, lang)}`;
+  }
+
+  if (capped) {
+    const note =
+      lang === "ru"
+        ? " (запрошенная сумма превышала остаток — закрыт полностью)"
+        : lang === "en"
+        ? " (requested amount exceeded the remaining — closed in full)"
+        : " (so'ralgan summa qoldiqdan ko'p edi — qoldiq to'liq yopildi)";
+    text += note;
+  }
+
+  const dash = await dashboardReplyOptions(user.id);
+  await ctx.reply(text + dash.extraText, {
+    reply_markup: { inline_keyboard: [...dash.dashRows] },
+  });
 }
 
 // ── Shared message-handling logic (text + voice share this path) ─────────────
@@ -841,6 +934,115 @@ async function handleMessage(
         ]],
       },
     });
+    return;
+  }
+
+  // ── repay_debt ────────────────────────────────────────────────────────────
+  if (intent.intent === "repay_debt") {
+    const intentAny = intent as Record<string, unknown>;
+    const counterparty: string | null = (intentAny.counterparty as string | null | undefined)?.trim() || null;
+    const direction: "given" | "taken" | null = (intentAny.debt_direction as "given" | "taken" | null | undefined) ?? null;
+    const repayAll: boolean = (intentAny.repay_all as boolean | undefined) === true;
+    const amount: number | null = intent.amount ?? null;
+    const dateStr: string = intent.date ?? "today";
+
+    if (!counterparty) {
+      const ask =
+        lang === "ru"
+          ? "Кто вернул долг? Напишите полностью, например: \"Сарвар вернул 2 млн\"."
+          : lang === "en"
+          ? "Who repaid the debt? Please write in full, e.g. \"Sarvar repaid 2 mln\"."
+          : "Kim qaytardi? To'liq yozing, masalan: \"Sarvar 2 mln qaytardi\".";
+      await ctx.reply(ask, {
+        reply_markup: {
+          force_reply: true,
+          input_field_placeholder:
+            lang === "ru"
+              ? "Например: Сарвар вернул 2 млн"
+              : lang === "en"
+              ? "e.g. Sarvar repaid 2 mln"
+              : "Masalan: Sarvar 2 mln qaytardi",
+        },
+      });
+      return;
+    }
+
+    if (!repayAll && (!amount || amount <= 0)) {
+      const ask =
+        lang === "ru"
+          ? "Сколько было возвращено? Напишите, например: \"Сарвар вернул 2 млн\" или \"Сарвар вернул всё\"."
+          : lang === "en"
+          ? "How much was repaid? E.g. \"Sarvar repaid 2 mln\" or \"Sarvar repaid everything\"."
+          : "Qancha qaytarildi? Masalan: \"Sarvar 2 mln qaytardi\" yoki \"Sarvar hammasini qaytardi\".";
+      await ctx.reply(ask, {
+        reply_markup: {
+          force_reply: true,
+          input_field_placeholder:
+            lang === "ru"
+              ? "Например: Сарвар вернул 2 млн"
+              : lang === "en"
+              ? "e.g. Sarvar repaid 2 mln"
+              : "Masalan: Sarvar 2 mln qaytardi",
+        },
+      });
+      return;
+    }
+
+    const open = await listOpenDebtsWithRemaining(user.id);
+    const dbDirection = direction === "given" ? "given" as const : direction === "taken" ? "taken" as const : null;
+    const m = matchOpenDebts(open, counterparty, dbDirection);
+
+    if (m.status === "none") {
+      const openNames = open.length > 0
+        ? open.map((d) => d.counterparty).join(", ")
+        : null;
+      const hint = openNames
+        ? (lang === "ru"
+          ? ` Открытые долги: ${openNames}.`
+          : lang === "en"
+          ? ` Open debts: ${openNames}.`
+          : ` Ochiq qarzlar: ${openNames}.`)
+        : "";
+      await ctx.reply(
+        (lang === "ru"
+          ? `Открытый долг с "${counterparty}" не найден.`
+          : lang === "en"
+          ? `No open debt found for "${counterparty}".`
+          : `"${counterparty}" bilan ochiq qarz topilmadi.`) + hint
+      );
+      return;
+    }
+
+    if (m.status === "many") {
+      await upsertPendingAction(user.id, {
+        intent: "repay_pick",
+        draft: { amount: amount ?? null, repayAll, dateStr },
+        question: "",
+      });
+      const dirLabel = (d: { direction: string }) =>
+        d.direction === "given"
+          ? (lang === "ru" ? "мне должен" : lang === "en" ? "owes me" : "menga qarzdor")
+          : (lang === "ru" ? "я должен" : lang === "en" ? "I owe" : "men qarzdorman");
+
+      const buttons = m.matches.map((d) => ([{
+        text: `${d.counterparty} · ${formatAmount(d.remaining, lang)} (${dirLabel(d)})`,
+        callback_data: `rp:${d.id}`,
+      }]));
+
+      await ctx.reply(
+        lang === "ru"
+          ? "Какой долг погасить?"
+          : lang === "en"
+          ? "Which debt to repay?"
+          : "Qaysi qarzni yopish?",
+        { reply_markup: { inline_keyboard: buttons } }
+      );
+      return;
+    }
+
+    // Exactly one match
+    const d = m.matches[0];
+    await applyRepayment(ctx, user, lang, d.id, d.remaining, amount, repayAll, dateStr);
     return;
   }
 
@@ -2171,6 +2373,49 @@ export function createBot(): Bot {
         await ctx.answerCallbackQuery();
         await ctx.reply(
           lang === "ru" ? "🗑 Долг удалён." : lang === "en" ? "🗑 Debt deleted." : "🗑 Qarz o'chirildi."
+        );
+        return;
+      }
+
+      // ── rp:<id> — repay picker: user chose which debt to repay ──────────────
+      if (data.startsWith("rp:")) {
+        const debtId = data.slice(3);
+        const pendingRp = await getPendingAction(user.id);
+        if (!pendingRp || pendingRp.intent !== "repay_pick") {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+        const rpDraft = pendingRp.draft as Record<string, unknown>;
+        const rpAmount = (rpDraft.amount as number | null) ?? null;
+        const rpRepayAll = (rpDraft.repayAll as boolean | undefined) === true;
+        const rpDateStr = (rpDraft.dateStr as string | undefined) ?? "today";
+
+        // Fetch fresh remaining to guard concurrent edits + ownership
+        const debtFresh = await getDebtWithPayments(debtId, user.id);
+        if (!debtFresh) {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(
+            lang === "ru"
+              ? "Долг не найден или уже погашен."
+              : lang === "en"
+              ? "Debt not found or already settled."
+              : "Qarz topilmadi yoki allaqachon yopilgan."
+          );
+          return;
+        }
+
+        await clearPendingAction(user.id);
+        await ctx.answerCallbackQuery();
+        await applyRepayment(
+          { reply: (text, opts) => ctx.reply(text, opts) },
+          user,
+          lang,
+          debtId,
+          debtFresh.remaining,
+          rpAmount,
+          rpRepayAll,
+          rpDateStr
         );
         return;
       }

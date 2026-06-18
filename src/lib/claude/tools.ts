@@ -31,6 +31,7 @@ export const RecordIntentSchema = z.object({
     "log_income",
     "log_expense",
     "log_debt",
+    "repay_debt",
     "finance_query",
     "debt_query",
     "correct_transaction",
@@ -56,6 +57,7 @@ export const RecordIntentSchema = z.object({
   patch: PatchSchema.nullable().optional(),
   counterparty: z.string().nullable().optional(),
   debt_direction: z.enum(["given", "taken"]).nullable().optional(),
+  repay_all: z.boolean().optional().default(false),
   missing_fields: z.array(z.string()).default([]),
   reply_text: z.string(),
 });
@@ -77,6 +79,7 @@ export const RECORD_INTENT_TOOL = {
           "log_income",
           "log_expense",
           "log_debt",
+          "repay_debt",
           "finance_query",
           "debt_query",
           "correct_transaction",
@@ -183,12 +186,16 @@ export const RECORD_INTENT_TOOL = {
       },
       counterparty: {
         type: ["string", "null"],
-        description: "The OTHER person's name involved in a debt (for log_debt). Null if unknown.",
+        description: "The OTHER person's name involved in a debt (for log_debt or repay_debt). Null if unknown.",
       },
       debt_direction: {
         type: ["string", "null"],
         enum: ["given", "taken", null],
         description: "'given' if the user lent money (berdim/дал/lent), 'taken' if borrowed (oldim/взял/borrowed). Null if unclear.",
+      },
+      repay_all: {
+        type: "boolean",
+        description: "true only when the user says the debt was repaid IN FULL (hammasini/to'liq/полностью/in full). Then amount may be null.",
       },
       missing_fields: {
         type: "array",

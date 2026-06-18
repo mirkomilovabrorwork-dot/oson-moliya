@@ -392,6 +392,75 @@ describe("RecordIntentSchema — debt_query", () => {
   });
 });
 
+// ── repay_debt ────────────────────────────────────────────────────────────────
+
+describe("RecordIntentSchema — repay_debt", () => {
+  it("accepts repay_debt with counterparty, amount, direction=given, repay_all defaults false", () => {
+    const data = parseOk({
+      intent: "repay_debt",
+      language: "uz",
+      confidence: 0.95,
+      reply_text: "To'lov yozildi.",
+      missing_fields: [],
+      counterparty: "Sarvar",
+      amount: 2000000,
+      debt_direction: "given",
+    });
+    expect(data?.intent).toBe("repay_debt");
+    expect(data?.counterparty).toBe("Sarvar");
+    expect(data?.amount).toBe(2000000);
+    expect(data?.debt_direction).toBe("given");
+    expect(data?.repay_all).toBe(false);
+  });
+
+  it("accepts repay_debt with repay_all=true and amount null", () => {
+    const data = parseOk({
+      intent: "repay_debt",
+      language: "ru",
+      confidence: 0.92,
+      reply_text: "Долг погашен полностью.",
+      missing_fields: [],
+      counterparty: "Bobur",
+      amount: null,
+      debt_direction: "taken",
+      repay_all: true,
+    });
+    expect(data?.intent).toBe("repay_debt");
+    expect(data?.repay_all).toBe(true);
+    expect(data?.amount).toBeNull();
+  });
+
+  it("accepts repay_debt with debt_direction omitted (null/undefined ok)", () => {
+    const data = parseOk({
+      intent: "repay_debt",
+      language: "en",
+      confidence: 0.88,
+      reply_text: "Payment recorded.",
+      missing_fields: [],
+      counterparty: "Alisher",
+      amount: 500000,
+    });
+    expect(data?.intent).toBe("repay_debt");
+    expect(data?.debt_direction).toBeUndefined();
+    expect(data?.repay_all).toBe(false);
+  });
+
+  it("accepts repay_debt with debt_direction=null explicitly", () => {
+    const data = parseOk({
+      intent: "repay_debt",
+      language: "uz",
+      confidence: 0.8,
+      reply_text: "Yozildi.",
+      missing_fields: [],
+      counterparty: "Kamol",
+      amount: 1000000,
+      debt_direction: null,
+      repay_all: false,
+    });
+    expect(data?.debt_direction).toBeNull();
+  });
+});
+
 // ── log_income / log_expense ──────────────────────────────────────────────────
 
 describe("RecordIntentSchema — log_income / log_expense", () => {

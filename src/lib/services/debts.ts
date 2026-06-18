@@ -209,6 +209,33 @@ export async function addDebtPayment(input: AddDebtPaymentInput) {
   return { payment, debt: updatedDebt };
 }
 
+export interface OpenDebtLite {
+  id: string;
+  counterparty: string;
+  direction: DebtDirection;
+  remaining: bigint;
+}
+
+/** All OPEN debts for a user, each with its remaining (amountUzs − active payments), remaining>0. */
+export async function listOpenDebtsWithRemaining(userId: string): Promise<OpenDebtLite[]> {
+  const prisma = db as import("@prisma/client").PrismaClient;
+  const debts = await prisma.debt.findMany({
+    where: { userId, status: DebtStatus.open, deletedAt: null },
+    select: {
+      id: true, counterparty: true, direction: true, amountUzs: true,
+      payments: { where: { deletedAt: null }, select: { amountUzs: true } },
+    },
+    orderBy: { occurredAt: "desc" },
+  });
+  return debts
+    .map((d) => {
+      const paid = d.payments.reduce((s, p) => s + (p.amountUzs as bigint), 0n);
+      const remaining = (d.amountUzs as bigint) - paid;
+      return { id: d.id, counterparty: d.counterparty, direction: d.direction, remaining };
+    })
+    .filter((d) => d.remaining > 0n);
+}
+
 export async function deleteDebtPayment(paymentId: string, userId: string) {
   const prisma = db as import("@prisma/client").PrismaClient;
 

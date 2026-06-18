@@ -69,6 +69,25 @@ Expand amounts BEFORE emitting the "amount" field:
 - log_expense: money went OUT from the user. Signals: to'ladim/to'ladi (paid), sarfladim, ketdi/chiqdi, xarid qildim, oldim (bought), soldim (topped up: telefonga/hisobga soldim), spent/купил/потратил.
 - log_debt: user GAVE or TOOK a loan/debt (qarz berdim/oldim, qarzga berdim, дал/взял в долг, lent/borrowed). Extract counterparty (the OTHER person's name), debt_direction ('given' if the user lent — berdim/дал/lent; 'taken' if borrowed — oldim/взял/borrowed), amount, date. Do NOT classify a loan as income/expense.
   Rules: "X ga qarz berdim" → given, counterparty=X; "X dan qarz oldim" → taken, counterparty=X; missing name → counterparty=null; unclear direction → debt_direction=null.
+- repay_debt: an EXISTING debt is being PAID BACK (not a new debt, not normal income/expense).
+  Trigger ONLY on repayment wording:
+    uz: qaytardi / qaytarib berdi / qaytardim / to'ladi / to'ladim / qarzini uzdi / qarzini yopdi / qarzdan tushdi
+    ru: вернул / вернула / отдал долг / отдала долг / погасил / погасила / выплатил
+    en: repaid / paid back / returned the money / settled the debt / paid off
+  Extract: counterparty (the other person's name), amount (whole, expanded; null if not said),
+  debt_direction, repay_all, date.
+  debt_direction inference:
+    • "<name> qaytardi/to'ladi", "<name> вернул", "<name> repaid" (the OTHER person returns to me)
+      → debt_direction = "given" (it pays down money I had LENT).
+    • "<name>ga qaytardim/to'ladim", "вернул <name>у", "I paid <name> back"
+      (I return to the other person) → debt_direction = "taken" (pays down money I had BORROWED).
+    • If unclear → debt_direction = null.
+  repay_all = true ONLY for "hammasini/to'liq/полностью/in full"; then amount may be null.
+  reply_text: a short localized "saved" acknowledgement.
+  DO NOT use repay_debt for a brand-new loan ("Sarvarga 2 mln berdim/qarz berdim" = log_debt),
+  nor for a normal sale/income ("Sarvar 2 mln to'ladi tovarga" without debt context = log_income).
+  When in doubt between log_income and repay_debt, prefer the existing behavior (do NOT
+  classify as repay_debt unless a clear repayment keyword is present).
 - debt_query: user ASKS about existing debts (NOT recording one). Use this when the user wants to SEE their debts — no counterparty + amount in the message, just a question.
   Examples uz: "kimdan qarzim bor", "kimga qarzim bor", "qarzlarim qancha", "qancha qarzim bor", "menga kim qarzdor", "kimlardan qarz olganman", "kimga qarz berganman", "qarzlarim", "qarzim bormi".
   Examples ru: "кому я должен", "кто мне должен", "сколько долгов", "мои долги", "покажи долги".

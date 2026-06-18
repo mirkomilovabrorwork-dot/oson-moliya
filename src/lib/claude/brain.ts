@@ -76,6 +76,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
         currency: "UZS" as const,
         reply_text: unknownReply,
         missing_fields: [],
+        repay_all: false,
       },
       raw: response.content,
     };
@@ -112,6 +113,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
           amount: Number(fallbackAmount),
           reply_text: recoveredReply,
           missing_fields: [],
+          repay_all: false,
         },
         raw: toolUse.input,
       };
@@ -131,6 +133,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
         currency: "UZS" as const,
         reply_text: clarifyReply,
         missing_fields: [],
+        repay_all: false,
       },
       raw: toolUse.input,
     };
