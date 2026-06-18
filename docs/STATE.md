@@ -4,22 +4,22 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — TASK 044/045/046 COMMITTED on worktree, NOT yet deployed; awaiting user's DEPLOY decision)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — TASK 044+045 DEPLOYED to prod; 046 staged+pushed, awaiting user's LIVE bot test)
 
-- **🟡 STAGED on worktree branch `claude/eloquent-agnesi-2a94d2` (commits `59992cb`→`2b72c99`), gates green (typecheck 0 · test 146/146 · build), NOT deployed to prod yet.** Done autonomously this session ("hammasini birma bir qilaver, tanqidiy"):
-  - **TASK 044 — spam protection v2 (`59992cb`).** Self-critical finding: the bot ALREADY had an
+- **✅ LIVE on prod: TASK 044 + 045 (deployment `dpl_63QCxw16UymUW6H3ZKL36rpiziGe`, target=production, `oson-moliya.vercel.app`).** User chose "deploy only the safe two; hold the bot change." Verified live: /login 200 · /api/telegram 405 · /api/backup 401 (new route serving the prod domain). Prod Neon got the additive columns via `prisma db push` (in sync, no data loss) BEFORE the deploy. Deploy method (for the record): the 3 commits are stacked on worktree branch `claude/eloquent-agnesi-2a94d2`; to ship 044+045 WITHOUT 046, deployed the tree at commit `32476d8` (detached checkout → copied main repo's `.vercel/project.json` to link → `vercel --prod` → switched back). Branch pushed to `origin/claude/eloquent-agnesi-2a94d2` (backup).
+  - **TASK 044 — spam protection v2 (`59992cb`) — DEPLOYED.** Self-critical finding: the bot ALREADY had an
     in-memory limiter (20 msg/10 min) + size caps — STATE wrongly listed spam protection as undone.
     Real gaps fixed: (a) in-memory resets on serverless cold start; (b) no separate tighter cap for
     the PAID paths. Added a persistent **daily cap for costly ops (voice/audio/photo), `COSTLY_DAILY_CAP=80`**,
-    stored on `User.costlyOpsYmd`+`costlyOpsCount` (ADDITIVE — needs `prisma db push` to prod BEFORE
-    deploy), reset at Tashkent midnight, rejects BEFORE any STT/vision spend. Text unaffected. Pure
-    `evalCostlyCap` + 5 unit tests. ⚠️ DEPLOY ORDER: prod `prisma db push` FIRST, then `vercel --prod`.
-  - **TASK 045 — JSON data backup (`32476d8`).** New session-guarded `GET /api/backup` → downloadable
-    JSON of all the user's data (tx/categories/accounts/budgets/debts+payments/recurring + profile;
-    userId-scoped; BigInt→string). New "Download my data" card in /more next to Savatcha. Export-only
-    (no restore promised). uz/ru/en. Web-only, no bot risk. (Not yet eyeballed on a live preview —
-    low risk, mirrors the working Trash row; verify with the deploy.)
-  - **TASK 046 — bot debt-repayment intent `repay_debt` (`2b72c99`) — RISKY, NOT DEPLOYED.**
+    stored on `User.costlyOpsYmd`+`costlyOpsCount` (ADDITIVE, pushed to prod), reset at Tashkent
+    midnight, rejects BEFORE any STT/vision spend. Text unaffected. Pure `evalCostlyCap` + 5 unit tests.
+  - **TASK 045 — JSON data backup (`32476d8`) — DEPLOYED.** New session-guarded `GET /api/backup` →
+    downloadable JSON of all the user's data (tx/categories/accounts/budgets/debts+payments/recurring +
+    profile; userId-scoped; BigInt→string). New "Download my data" card in /more next to Savatcha.
+    Export-only (no restore promised). uz/ru/en. Route verified live (401 unauth). ⚠️ The /more CARD
+    itself was not eyeballed on a live authenticated screen — low risk (mirrors the working Trash row);
+    worth a human glance on the phone.
+  - **🟡 TASK 046 — bot debt-repayment intent `repay_debt` (`2b72c99`) — STAGED + PUSHED, NOT DEPLOYED.**
     "Sarvar 2 mln qaytardi" / "Sarvarga to'ladim" → records a DebtPayment. LLM extracts
     (counterparty/amount/direction/repay_all); deterministic `matchOpenDebts` (pure: exact→fuzzy,
     direction filter, remaining>0) handles 0/1/many (picker buttons `rp:<id>` + `repay_pick` pending);
@@ -27,10 +27,13 @@
     PURELY ADDITIVE, no existing intent's rules/dispatch touched** (verified in diff). 13 matcher +
     4 schema tests. NO DB change. ⚠️ Live Telegram classification is UNVERIFIED — needs the user to
     send real voice/text on @oson_moliya_bot AFTER deploy. Rollback = redeploy previous.
-  - **DEPLOY COUPLING:** all 3 are stacked on one branch; 044 & 046 both edit `bot.ts`. Deploying ships
-    the whole tree (046 included) UNLESS deployed from commit `32476d8` (= 044+045, no 046). Awaiting
-    user's choice: (1) deploy all 3 + user live-tests repay_debt; (2) deploy only safe 044+045 now,
-    hold 046 for a test session; (3) hold all.
+  - **▶ HOW TO DEPLOY 046 WHEN USER IS READY (resolved: user chose to hold it):** the full branch HEAD
+    (`2b72c99`+) already contains 046; just deploy the worktree as-is. From the worktree:
+    `cp <main-repo>/.vercel/project.json .vercel/` (link) → `npx vercel --prod --yes` → `rm -rf .vercel`.
+    NO prod DB change needed (046 added no columns). THEN the user sends real voice/text on
+    @oson_moliya_bot: "Sarvar 2 mln qaytardi" (→ given-debt payment), "Sarvarga 500 ming to'ladim"
+    (→ taken-debt payment), "Sarvar hammasini qaytardi" (→ repay_all), and a name with 2 open debts
+    (→ picker buttons). If classification regresses → rollback = `vercel --prod` from commit `32476d8`.
   - **CRITICAL ANALYSIS — budget trend (deferred "smaller" item): RECOMMEND AGAINST building blind.**
     The `Budget` model stores only the CURRENT limit (no historical limits), so a budget-vs-limit trend
     would compare past actuals to today's limit = MISLEADING. An honest "spending trend over months"
