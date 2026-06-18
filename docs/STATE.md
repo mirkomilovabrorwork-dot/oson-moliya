@@ -4,9 +4,25 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus AUTOPILOT — TASK 028→034 SHIPPED, 7 deploys, audit findings #1/#2/#3 DONE)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→035 SHIPPED, 8 deploys, UX simplification verified on real screens)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `41752d0`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `37182a1`).** Shipped this session:
+  - **TASK 035 — UX simplification pass, VERIFIED ON REAL MOBILE SCREENS (`37182a1`).** User asked
+    "murakkab bo'lib ketmadimi? bir qarashda tushunarli bo'ldimi?" — and was right. Opus had shipped
+    028→034 with green gates but WITHOUT opening the screens. Ran the dev server + seeded data on a
+    375px viewport and found real at-a-glance violations, then fixed them:
+    (1) Home: was TWO equal big numbers (Umumiy balans + Naqd qolgan) → now ONE primary "Naqd
+    qolgan" + a small debt-aside link ("Bundan tashqari 3M qarzga berilgan — qaytishi kutiladi");
+    no-debt users still see a single "Umumiy balans". (2) USD: 5 noisy lines → 1, only under the
+    main balance (KPIs are so'm-only). (3) Recurring used comma format "2,000,000" → shared
+    formatMoney space format "2 000 000". (4) Recurring category now REQUIRED at creation (Save
+    disabled + server 400). (5) Recurring FAB "+ Yangi" fits 375px. (6) Debt partial-payment row:
+    two readable lines, "Qoldi" emphasized. (7) Given-debt amount neutral, not green. (8) Removed a
+    REAL duplicate "so'm" on the debt row + action sheet — this was Lovable critique #5, WRONGLY
+    dismissed in task 030 by reading code instead of viewing the screen. Each fix walked on a real
+    preview before commit. Lesson captured in `feedback_verify_delegated_quality`. Spec `docs/tasks/035`.
+    NOTE: dev test-seed (telegramId 999999999) was cleaned from prod DB after verification.
+  - **LIVE on prod (earlier this session), main `41752d0`:** Shipped:
   - **TASK 034 — recurring transactions via Vercel Cron (`41752d0`).** Audit finding #2 done. New
     `RecurringRule` model + `Transaction.recurringRuleId` (additive, `prisma db push` applied).
     Service `generateDueTransactions` uses Tashkent timezone math; idempotent with `lastGeneratedAt`;
@@ -82,17 +98,15 @@
   - Bot side for tasks 033 + 034 — adding partial-payment + recurring-rule via bot. Each is its
     own task.
   - Smaller: budget trend, JSON backup, audit trail, onboarding-mentions-debt.
-- **USER ACTION NEEDED on wake — 7 verdicts:**
-  1. **STT (028)** — `@oson_moliya_bot` ovoz testi, Gemini OK?
-  2. **Bot UX (029)** — Tahrirlash → category pills only (no twin pills); card 🔄 works
-  3. **Dashboard (030)** — phone: USD `≈ $...` lines, "Berilgan" neutral, "—" for missing dates
-  4. **Bot UX (031)** — bot edit menu has NO flip; /debts page has 1-line explainer
-  5. **Cash (032)** — Home shows "Naqd qolgan" sub-block when debts open; math right?
-  6. **Partial payments (033)** — /debts: "+ To'lov" button, Asl/To'landi/Qoldi rows, modal saves
-  7. **Recurring (034)** — /recurring page lists rules; /more has new entry; add a test rule and
-     wait until midnight Tashkent — should auto-create a Transaction stamped `source: "recurring"`
-     with `recurringRuleId` set. Or trigger immediately:
-     `curl -H "Authorization: Bearer $CRON_SECRET" https://oson-moliya.vercel.app/api/cron/recurring`
+- **USER ACTION NEEDED on wake — verdicts (bot ones still need a human; web ones Opus already
+  eyeballed on a real mobile preview during task 035):**
+  1. **STT (028)** — `@oson_moliya_bot` ovoz testi, Gemini OK? (BOT — needs human)
+  2. **Bot UX (029)** — Tahrirlash → category pills only (no twin pills); card 🔄 works (BOT)
+  3. **Bot UX (031)** — bot edit menu has NO flip; /debts has explainer (BOT half)
+  4. **Web 030/032/033/034/035** — Opus walked these on a 375px preview in task 035 and simplified
+     what was too busy. Still worth a human glance: Home one-number balance + debt-aside line;
+     /recurring add a rule (category required) then trigger the cron; /debts "+ To'lov" flow.
+     Trigger cron now: `curl -H "Authorization: Bearer <CRON_SECRET>" https://oson-moliya.vercel.app/api/cron/recurring`
 - **NEXT — agreed plan (after both verdicts):**
   1. **Spam protection** (added by user 2026-06-17): rate-limit `@oson_moliya_bot` per Telegram user_id (voice
      costs money — separate, tighter cap). Storage: in-memory or DB? Limits TBD — needs a short spec.
