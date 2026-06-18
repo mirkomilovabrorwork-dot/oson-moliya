@@ -20,6 +20,7 @@ export default async function OnboardingPage() {
     t("onboarding.example1", lang),
     t("onboarding.example2", lang),
     t("onboarding.example3", lang),
+    t("onboarding.example_debt", lang),
   ];
 
   return (
@@ -77,6 +78,9 @@ export default async function OnboardingPage() {
                 <code style={{ fontFamily: "inherit" }}>{ex}</code>
               </div>
             ))}
+            <p className="text-xs" style={{ color: "var(--fg-muted)" }}>
+              {t("onboarding.debt_hint", lang)}
+            </p>
           </div>
 
           <div

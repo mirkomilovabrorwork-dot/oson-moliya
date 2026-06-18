@@ -248,6 +248,11 @@ export function AccountsClient({ accounts: initial, totalBalance: initialTotal, 
         </p>
       </div>
 
+      {/* Account explainer — one-liner so users understand per-account vs Home total */}
+      <p className="text-xs mb-4" style={{ color: "var(--fg-subtle)" }}>
+        {t("accounts.explainer", lang)}
+      </p>
+
       {/* ── Account list ── */}
       {accounts.length === 0 ? (
         <div
