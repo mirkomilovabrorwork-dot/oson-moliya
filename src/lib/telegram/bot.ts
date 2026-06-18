@@ -28,6 +28,7 @@ import { extractReceipt } from "../claude/receipt";
 import { buildMonthlyReportXlsx } from "../report/excel";
 import { InputFile } from "grammy";
 import { getTashkentNow } from "../dates";
+import { evalCostlyCap } from "./costlyCap";
 
 // ── Per-user rate limiter (in-memory, sliding window) ────────────────────────
 // Guards STT + brain calls: 20 AI messages per 10 minutes per Telegram user.
@@ -1579,6 +1580,21 @@ export function createBot(): Bot {
       });
       const voiceLang = (voiceUser.language ?? "uz") as "uz" | "ru" | "en";
 
+      // Persistent daily cap for costly ops (voice/audio/photo)
+      const voiceToday = getTashkentNow().toISOString().slice(0, 10);
+      const voiceVerdict = evalCostlyCap(
+        { ymd: voiceUser.costlyOpsYmd, count: voiceUser.costlyOpsCount },
+        voiceToday
+      );
+      if (!voiceVerdict.allowed) {
+        await ctx.reply(getBotLabels(voiceLang).costlyLimitMsg);
+        return;
+      }
+      await prisma.user.update({
+        where: { id: voiceUser.id },
+        data: { costlyOpsYmd: voiceVerdict.next.ymd, costlyOpsCount: voiceVerdict.next.count },
+      });
+
       const fileInfo = await ctx.api.getFile(voice.file_id);
       if (!fileInfo.file_path) {
         await ctx.reply(getBotLabels(voiceLang).voiceDownloadErrMsg);
@@ -2225,6 +2241,21 @@ export function createBot(): Bot {
       const lang = (photoUser.language ?? "uz") as "uz" | "ru" | "en";
       const photoLabels = getBotLabels(lang);
 
+      // Persistent daily cap for costly ops (voice/audio/photo)
+      const photoToday = getTashkentNow().toISOString().slice(0, 10);
+      const photoVerdict = evalCostlyCap(
+        { ymd: photoUser.costlyOpsYmd, count: photoUser.costlyOpsCount },
+        photoToday
+      );
+      if (!photoVerdict.allowed) {
+        await ctx.reply(photoLabels.costlyLimitMsg);
+        return;
+      }
+      await prisma.user.update({
+        where: { id: photoUser.id },
+        data: { costlyOpsYmd: photoVerdict.next.ymd, costlyOpsCount: photoVerdict.next.count },
+      });
+
       await ensureDefaultCategories(photoUser.id);
 
       // Load user's categories for vision context
@@ -2321,6 +2352,21 @@ export function createBot(): Bot {
         },
       });
       const audioLang = (audioUser.language ?? "uz") as "uz" | "ru" | "en";
+
+      // Persistent daily cap for costly ops (voice/audio/photo)
+      const audioToday = getTashkentNow().toISOString().slice(0, 10);
+      const audioVerdict = evalCostlyCap(
+        { ymd: audioUser.costlyOpsYmd, count: audioUser.costlyOpsCount },
+        audioToday
+      );
+      if (!audioVerdict.allowed) {
+        await ctx.reply(getBotLabels(audioLang).costlyLimitMsg);
+        return;
+      }
+      await prisma.user.update({
+        where: { id: audioUser.id },
+        data: { costlyOpsYmd: audioVerdict.next.ymd, costlyOpsCount: audioVerdict.next.count },
+      });
 
       const fileInfo = await ctx.api.getFile(audio.file_id);
       if (!fileInfo.file_path) {

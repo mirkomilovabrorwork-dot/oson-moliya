@@ -56,6 +56,8 @@ export function getBotLabels(lang: string): {
   // Type-flip buttons (edit picker + confirmation card)
   flipToIncomeBtn: string;
   flipToExpenseBtn: string;
+  // Persistent costly-ops daily cap
+  costlyLimitMsg: string;
 } {
   if (lang === "ru") {
     return {
@@ -89,6 +91,7 @@ export function getBotLabels(lang: string): {
       editAmountPrompt: "Напишите новую сумму (напр. 50 000):",
       flipToIncomeBtn: "🔄 Сделать доходом",
       flipToExpenseBtn: "🔄 Сделать расходом",
+      costlyLimitMsg: "🎤 Дневной лимит голосовых/фото исчерпан. Завтра снова — или напишите текстом (текст без лимита).",
     };
   } else if (lang === "en") {
     return {
@@ -122,6 +125,7 @@ export function getBotLabels(lang: string): {
       editAmountPrompt: "Write the new amount (e.g. 50 000):",
       flipToIncomeBtn: "🔄 Switch to income",
       flipToExpenseBtn: "🔄 Switch to expense",
+      costlyLimitMsg: "🎤 Daily voice/photo limit reached. Try again tomorrow — or type your message (text is unlimited).",
     };
   } else {
     return {
@@ -155,6 +159,7 @@ export function getBotLabels(lang: string): {
       editAmountPrompt: "Yangi summani yozing (masalan 50 000):",
       flipToIncomeBtn: "🔄 Kirimga aylantirish",
       flipToExpenseBtn: "🔄 Chiqimga aylantirish",
+      costlyLimitMsg: "🎤 Bugungi ovoz/rasm limiti tugadi. Ertaga yana mumkin — yoki hozir yozma xabar yuboring (matn cheksiz).",
     };
   }
 }

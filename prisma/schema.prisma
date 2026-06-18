@@ -45,6 +45,8 @@ model User {
   language        String   @default("uz")
   displayCurrency String   @default("UZS")
   createdAt       DateTime @default(now())
+  costlyOpsYmd    String?  // Tashkent "YYYY-MM-DD" of the current costly-ops day (null until first costly op)
+  costlyOpsCount  Int      @default(0)  // costly ops used so far on costlyOpsYmd
 
   transactions    Transaction[]
   categories      Category[]
