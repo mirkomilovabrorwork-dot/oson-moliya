@@ -4,9 +4,20 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→040 SHIPPED, 12 deploys; bot-side debt/recurring DEFERRED pending real-Telegram test)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→043 + extras SHIPPED, 14 deploys; ONLY bot-side + minor polish left)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `c40bf8e`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `446073b`).** Shipped this session:
+  - **HAMMASI button prominent (`446073b`).** User: in the debt-repayment modal the "Hammasi"
+    (pay-all) button was hard to see, and most debts are repaid IN FULL. Was a tiny chip → now a
+    full-width accent button above the input showing the amount ("↩️ Hammasi · 5 000 000 so'm");
+    tap fills the input + flips to "✓ Hammasi" accent-gradient. Manual input stays under "Yoki
+    qisman summa". Verified on a real preview (full-width 294px, fills on tap, ✓ state).
+  - **TASK 043 — account explainer + onboarding mentions debts (`446073b` batch).** /accounts has a
+    one-line explainer (audit #5: account balance vs Home total). Onboarding gained a debt example
+    + hint so new users discover debts. uz/ru/en. Verified on a real preview.
+  - **TASK 042 — currency rate versioning forward-only (`61bfb3a`).** Additive `rateToUzs Float?`
+    (db push applied); foreign-tx POST stamps the live CBU rate; a foreign tx row now shows
+    "100 USD · kurs 12 052 · 1 205 205 so'm". Home live-reconvert untouched (user's design). Verified.
   - **TASK 038 — Undo toast + Savatcha (`c40bf8e`).** The restore half of the delete overhaul.
     Toast gained an action button; after any delete (single/bulk) on Transactions/Debts/Recurring an
     "O'chirildi · Bekor qilish" toast restores it (bulk = restore all). New POST .../[id]/restore
