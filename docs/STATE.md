@@ -4,9 +4,40 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→043 + extras SHIPPED, 14 deploys; ONLY bot-side + minor polish left)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — TASK 044/045/046 COMMITTED on worktree, NOT yet deployed; awaiting user's DEPLOY decision)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `446073b`).** Shipped this session:
+- **🟡 STAGED on worktree branch `claude/eloquent-agnesi-2a94d2` (commits `59992cb`→`2b72c99`), gates green (typecheck 0 · test 146/146 · build), NOT deployed to prod yet.** Done autonomously this session ("hammasini birma bir qilaver, tanqidiy"):
+  - **TASK 044 — spam protection v2 (`59992cb`).** Self-critical finding: the bot ALREADY had an
+    in-memory limiter (20 msg/10 min) + size caps — STATE wrongly listed spam protection as undone.
+    Real gaps fixed: (a) in-memory resets on serverless cold start; (b) no separate tighter cap for
+    the PAID paths. Added a persistent **daily cap for costly ops (voice/audio/photo), `COSTLY_DAILY_CAP=80`**,
+    stored on `User.costlyOpsYmd`+`costlyOpsCount` (ADDITIVE — needs `prisma db push` to prod BEFORE
+    deploy), reset at Tashkent midnight, rejects BEFORE any STT/vision spend. Text unaffected. Pure
+    `evalCostlyCap` + 5 unit tests. ⚠️ DEPLOY ORDER: prod `prisma db push` FIRST, then `vercel --prod`.
+  - **TASK 045 — JSON data backup (`32476d8`).** New session-guarded `GET /api/backup` → downloadable
+    JSON of all the user's data (tx/categories/accounts/budgets/debts+payments/recurring + profile;
+    userId-scoped; BigInt→string). New "Download my data" card in /more next to Savatcha. Export-only
+    (no restore promised). uz/ru/en. Web-only, no bot risk. (Not yet eyeballed on a live preview —
+    low risk, mirrors the working Trash row; verify with the deploy.)
+  - **TASK 046 — bot debt-repayment intent `repay_debt` (`2b72c99`) — RISKY, NOT DEPLOYED.**
+    "Sarvar 2 mln qaytardi" / "Sarvarga to'ladim" → records a DebtPayment. LLM extracts
+    (counterparty/amount/direction/repay_all); deterministic `matchOpenDebts` (pure: exact→fuzzy,
+    direction filter, remaining>0) handles 0/1/many (picker buttons `rp:<id>` + `repay_pick` pending);
+    payment capped to remaining; auto-settle reused. **Conservative keyword-only trigger → prompt is
+    PURELY ADDITIVE, no existing intent's rules/dispatch touched** (verified in diff). 13 matcher +
+    4 schema tests. NO DB change. ⚠️ Live Telegram classification is UNVERIFIED — needs the user to
+    send real voice/text on @oson_moliya_bot AFTER deploy. Rollback = redeploy previous.
+  - **DEPLOY COUPLING:** all 3 are stacked on one branch; 044 & 046 both edit `bot.ts`. Deploying ships
+    the whole tree (046 included) UNLESS deployed from commit `32476d8` (= 044+045, no 046). Awaiting
+    user's choice: (1) deploy all 3 + user live-tests repay_debt; (2) deploy only safe 044+045 now,
+    hold 046 for a test session; (3) hold all.
+  - **CRITICAL ANALYSIS — budget trend (deferred "smaller" item): RECOMMEND AGAINST building blind.**
+    The `Budget` model stores only the CURRENT limit (no historical limits), so a budget-vs-limit trend
+    would compare past actuals to today's limit = MISLEADING. An honest "spending trend over months"
+    already partly exists in Analytics (TrendLine). Decision is the user's — don't build a misleading chart.
+  - **#5 per-account label:** task 043 already added the /accounts explainer; likely fine. Worth a human glance.
+
+- **LIVE on prod (oson-moliya.vercel.app, main `446073b`).** Shipped previous session:
   - **HAMMASI button prominent (`446073b`).** User: in the debt-repayment modal the "Hammasi"
     (pay-all) button was hard to see, and most debts are repaid IN FULL. Was a tiny chip → now a
     full-width accent button above the input showing the amount ("↩️ Hammasi · 5 000 000 so'm");
