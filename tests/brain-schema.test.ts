@@ -591,6 +591,89 @@ describe("RecordIntentSchema — 047 secretary", () => {
   });
 });
 
+// ── RecordIntentSchema — log_multiple ────────────────────────────────────────
+
+describe("RecordIntentSchema — log_multiple", () => {
+  it("accepts log_multiple with a 2-item array (one expense, one income)", () => {
+    const data = parseOk({
+      intent: "log_multiple",
+      language: "uz",
+      confidence: 0.95,
+      reply_text: "2 ta yozuv qo'shildi.",
+      missing_fields: [],
+      items: [
+        { type: "expense", amount: 10000, currency: "UZS", category: "oziq-ovqat", date: "today" },
+        { type: "income", amount: 5000000, currency: "UZS", category: "oylik", date: "today" },
+      ],
+    });
+    expect(data?.intent).toBe("log_multiple");
+    expect(data?.items).toHaveLength(2);
+    expect(data?.items?.[0].type).toBe("expense");
+    expect(data?.items?.[0].amount).toBe(10000);
+    expect(data?.items?.[1].type).toBe("income");
+    expect(data?.items?.[1].amount).toBe(5000000);
+  });
+
+  it("accepts log_multiple items with minimal fields (only type + amount required)", () => {
+    const data = parseOk({
+      intent: "log_multiple",
+      language: "ru",
+      confidence: 0.9,
+      reply_text: "Записано 3 операции.",
+      missing_fields: [],
+      items: [
+        { type: "expense", amount: 20000 },
+        { type: "expense", amount: 15000 },
+        { type: "income", amount: 3000000 },
+      ],
+    });
+    expect(data?.items).toHaveLength(3);
+    // currency defaults to UZS
+    expect(data?.items?.[0].currency).toBe("UZS");
+  });
+
+  it("other intents still work without items field", () => {
+    const data = parseOk({
+      intent: "log_expense",
+      language: "uz",
+      confidence: 0.98,
+      reply_text: "Yozildi: 50 000 so'm chiqim.",
+      missing_fields: [],
+      amount: 50000,
+      type: "expense",
+      category: "transport",
+    });
+    expect(data?.intent).toBe("log_expense");
+    expect(data?.items).toBeUndefined();
+  });
+
+  it("rejects log_multiple item with non-positive amount", () => {
+    parseFail({
+      intent: "log_multiple",
+      language: "uz",
+      confidence: 0.9,
+      reply_text: "...",
+      missing_fields: [],
+      items: [
+        { type: "expense", amount: 0 }, // must be positive
+      ],
+    });
+  });
+
+  it("rejects log_multiple item with invalid type", () => {
+    parseFail({
+      intent: "log_multiple",
+      language: "uz",
+      confidence: 0.9,
+      reply_text: "...",
+      missing_fields: [],
+      items: [
+        { type: "debt", amount: 10000 }, // not in enum
+      ],
+    });
+  });
+});
+
 // ── log_income / log_expense ──────────────────────────────────────────────────
 
 describe("RecordIntentSchema — log_income / log_expense", () => {

@@ -6,6 +6,7 @@ import { parseAmountUzs } from "./amount";
 import { getEnv } from "../env";
 import { getRates } from "../rates";
 import { convertToUzs } from "../currency";
+import type { DisplayCurrency } from "../rates";
 
 // Asia/Tashkent = UTC+5, no DST
 function getTashkentDateString(): string {
@@ -160,6 +161,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
   // Foreign-currency conversion: if intent has a foreign currency amount, convert to UZS.
   // This means "100 dollar" becomes amountUzs = 100 * rate, stored as UZS in DB.
   const detectedCurrency = intent.currency ?? "UZS";
+  let rates: Awaited<ReturnType<typeof getRates>> | null = null;
   if (
     (intent.intent === "log_income" || intent.intent === "log_expense" || intent.intent === "log_debt") &&
     detectedCurrency !== "UZS" &&
@@ -167,7 +169,7 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
     intent.amount > 0
   ) {
     try {
-      const rates = await getRates();
+      rates = await getRates();
       const uzs = convertToUzs(intent.amount, detectedCurrency, rates);
       // Keep original amount for the bot confirmation; store converted in a special field
       (intent as Record<string, unknown>)._originalAmount = intent.amount;
@@ -175,6 +177,28 @@ export async function runBrain(input: BrainInput): Promise<BrainResult> {
       intent.amount = Number(uzs);
     } catch {
       // If conversion fails, leave amount as-is (will be treated as raw UZS)
+    }
+  }
+
+  // log_multiple: convert each item's foreign currency to UZS (mirrors single-item logic above).
+  // Fetch rates ONCE and reuse for all items — do not fetch per item.
+  if (intent.intent === "log_multiple" && Array.isArray(intent.items)) {
+    for (const item of intent.items as Array<Record<string, unknown>>) {
+      const itemCurrency = ((item.currency as string | undefined) ?? "UZS") as DisplayCurrency;
+      const itemAmount = item.amount as number | undefined;
+      if (itemCurrency !== "UZS" && itemAmount != null && itemAmount > 0) {
+        try {
+          if (rates === null) {
+            rates = await getRates();
+          }
+          const uzs = convertToUzs(itemAmount, itemCurrency, rates);
+          item._originalAmount = itemAmount;
+          item._originalCurrency = itemCurrency;
+          item.amount = Number(uzs);
+        } catch {
+          // If conversion fails, leave item amount as-is (treated as raw UZS)
+        }
+      }
     }
   }
 

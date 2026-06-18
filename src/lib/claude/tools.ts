@@ -32,6 +32,7 @@ export const RecordIntentSchema = z.object({
   intent: z.enum([
     "log_income",
     "log_expense",
+    "log_multiple",
     "log_debt",
     "repay_debt",
     "finance_query",
@@ -51,6 +52,14 @@ export const RecordIntentSchema = z.object({
   category: z.string().nullable().optional(),
   date: z.string().nullable().optional(),
   note: z.string().nullable().optional(),
+  items: z.array(z.object({
+    type: z.enum(["income", "expense"]),
+    amount: z.number().int().positive(),
+    currency: z.enum(["UZS", "USD", "EUR", "RUB"]).default("UZS"),
+    category: z.string().nullable().optional(),
+    date: z.string().nullable().optional(),
+    note: z.string().nullable().optional(),
+  })).optional(),
   query: QuerySchema.nullable().optional(),
   target: z.enum(["last", "by_amount"]).nullable().optional(),
   /** Whole-number UZS amount to match when target="by_amount". */
@@ -83,6 +92,7 @@ export const RECORD_INTENT_TOOL = {
         enum: [
           "log_income",
           "log_expense",
+          "log_multiple",
           "log_debt",
           "repay_debt",
           "finance_query",
@@ -132,6 +142,42 @@ export const RECORD_INTENT_TOOL = {
       note: {
         type: ["string", "null"],
         description: "Optional note or description.",
+      },
+      items: {
+        type: ["array", "null"],
+        description: "List of finance items for log_multiple intent. Use ONLY when the message contains 2+ distinct finance actions each with its own amount. Each item is classified independently.",
+        items: {
+          type: "object",
+          properties: {
+            type: {
+              type: "string",
+              enum: ["income", "expense"],
+              description: "Whether this item is income or expense.",
+            },
+            amount: {
+              type: "integer",
+              description: "Whole amount (expanded from shorthands) in the detected currency. Must be positive.",
+            },
+            currency: {
+              type: "string",
+              enum: ["UZS", "USD", "EUR", "RUB"],
+              description: "Currency for this item. Default UZS. Set to USD/EUR/RUB when the user mentions a foreign currency for this specific item.",
+            },
+            category: {
+              type: ["string", "null"],
+              description: "Category name (lowercased). Null if unknown.",
+            },
+            date: {
+              type: ["string", "null"],
+              description: "today | yesterday | YYYY-MM-DD. Null if not mentioned (defaults to today).",
+            },
+            note: {
+              type: ["string", "null"],
+              description: "Optional note or description for this item.",
+            },
+          },
+          required: ["type", "amount"],
+        },
       },
       query: {
         type: ["object", "null"],

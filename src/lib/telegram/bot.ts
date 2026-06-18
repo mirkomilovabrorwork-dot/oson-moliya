@@ -800,6 +800,91 @@ async function handleMessage(
   // Do NOT auto-switch based on the detected input language.
   const lang = (user.language as "uz" | "ru" | "en") ?? "uz";
 
+  // ── log_multiple ─────────────────────────────────────────────────────────
+  if (intent.intent === "log_multiple") {
+    try {
+      const itemsRaw = (intent as Record<string, unknown>).items as Array<Record<string, unknown>> | undefined;
+      const items = Array.isArray(itemsRaw) ? itemsRaw : [];
+
+      const valid = items.filter(
+        (it) =>
+          (it.type === "income" || it.type === "expense") &&
+          typeof it.amount === "number" &&
+          (it.amount as number) > 0
+      );
+
+      if (valid.length === 0) {
+        const fallback =
+          lang === "ru"
+            ? "Не понял — напишите каждую операцию отдельно."
+            : lang === "en"
+            ? "I didn't understand — please write each item separately."
+            : "Tushunmadim — har birini alohida yozing.";
+        await ctx.reply(fallback);
+        return;
+      }
+
+      const captured: string[] = [];
+      for (const it of valid) {
+        const capCtx = {
+          reply: (t: string) => {
+            captured.push(t);
+            return Promise.resolve(undefined as unknown);
+          },
+        };
+        await finalizeLog(
+          capCtx,
+          user,
+          prisma,
+          {
+            amount: it.amount as number,
+            txType: it.type === "income" ? TxType.income : TxType.expense,
+            category: (it.category as string | null | undefined) ?? null,
+            dateStr: (it.date as string | undefined) ?? "today",
+            note: (it.note as string | null | undefined) ?? null,
+            originalAmount: (it._originalAmount as number | undefined) ?? null,
+            originalCurrency: (it._originalCurrency as string | undefined) ?? null,
+          },
+          lang
+        );
+      }
+
+      const header =
+        lang === "ru"
+          ? `✅ Записал ${valid.length} операц.:`
+          : lang === "en"
+          ? `✅ Logged ${valid.length} entries:`
+          : `✅ ${valid.length} ta yozuv qo'shildi:`;
+
+      const skipped = items.length - valid.length;
+      const skipNote =
+        skipped > 0
+          ? lang === "ru"
+            ? `\n\n(${skipped} не понял — напишите отдельно)`
+            : lang === "en"
+            ? `\n\n(${skipped} unclear — write separately)`
+            : `\n\n(${skipped} tasini tushunmadim — alohida yozing)`
+          : "";
+
+      const dash = await dashboardReplyOptions(user.id);
+      await ctx.reply(
+        header + "\n\n" + captured.join("\n\n") + skipNote + dash.extraText,
+        { reply_markup: { inline_keyboard: [...dash.dashRows] } }
+      );
+      return;
+    } catch (err) {
+      console.error("log_multiple error:", err);
+      const errMsg =
+        lang === "ru"
+          ? "Не удалось записать — попробуйте ещё раз."
+          : lang === "en"
+          ? "Couldn't log — please try again."
+          : "Yozib bo'lmadi — qayta urinib ko'ring.";
+      await ctx.reply(errMsg);
+      return;
+    }
+  }
+
   // ── log_income / log_expense ──────────────────────────────────────────────
   if (intent.intent === "log_income" || intent.intent === "log_expense") {
     // FIX (Phase-1 bug): preserve draft intent/type from pending on resume so
