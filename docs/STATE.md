@@ -6,7 +6,11 @@
 
 ## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044→048 ALL DEPLOYED to prod; STT (028) confirmed GOOD; user live-testing bot Q&A + debt-repay + multi-tx)
 
-- **✅ ALL LIVE on prod (full branch HEAD `0289dce`, deployment `dpl_9HH9UbjnWU5LHmxZwweZQMjhgtG2`, `oson-moliya.vercel.app`).** Deployed in stages: 044+045 (safe) → 046+047 (after "qil") → 048 (after "bajarib deploy qil uni ham"). Verified each: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change beyond 044's columns (already pushed). **STT (Gemini, 028) confirmed GOOD by user.** Rollback if the brain regresses = redeploy commit `32476d8` (= 044+045 only, no brain changes 046/047/048).
+- **✅ ALL LIVE on prod (full branch HEAD `5a8143a`, deployment `dpl_5awRDdBD7wyFHoj4oZU8zgAMAXa3`, `oson-moliya.vercel.app`).** Deployed in stages: 044+045 (safe) → 046+047 ("qil") → 048 ("bajarib deploy qil uni ham") → 048-debt-fix (`5a8143a`, after user tested debts: "jamshitga 50k berdim, sardordan 100k oldim, kamron menga qarz berdi" → "ishlamadi"). Verified each: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change beyond 044's columns. **STT (Gemini, 028) confirmed GOOD by user.** Rollback if the brain regresses = redeploy commit `32476d8` (= 044+045 only, no brain changes).
+  - **FIX (`5a8143a`): multi-entry (048) now supports DEBTS + mixed.** Was income/expense only → failed the
+    user's all-debts test. Each `items[]` entry now has `kind:"tx"|"debt"`; debt items (direction+counterparty)
+    → `createDebt`, tx items → `finalizeLog`. Prompt got debt + mixed examples + the user's exact case. Done
+    INLINE by Opus (surgical 3-file change) per the just-sealed cost-benefit rule. AWAITING user re-test.
   - **✅ TASK 048 — multi-transaction in one message (`0289dce`) — DEPLOYED.** "non oldim 10 ming, taksi
     20 ming, oylik 5 mln" → logs all 3 + ONE combined confirmation. New `log_multiple` intent + `items[]`;
     brain converts each item's currency per-item; dispatch loops `finalizeLog` via a capturing reply (reuses
