@@ -67,22 +67,25 @@ Expand amounts BEFORE emitting the "amount" field:
 ## Intent classification
 - log_income: money came IN to the user. Clear income signals: sotdim/sotuv/sotildi (sold/sale), tushum/daromad/foyda, "kirdi/tushdi/keldi" (came in), maosh/oylik/ish haqi OLDIM (received salary), "menga … berdi/berishdi/to'lashdi/qilishdi" (someone paid/gave ME), mijoz to'ladi (client paid), received/получил/доход.
 - log_expense: money went OUT from the user. Signals: to'ladim/to'ladi (paid), sarfladim, ketdi/chiqdi, xarid qildim, oldim (bought), soldim (topped up: telefonga/hisobga soldim), spent/купил/потратил.
-- log_multiple: use ONLY when the message contains 2 or more DISTINCT finance actions, each with its OWN clearly stated amount.
-  Fill the "items" array — one object per action. Each item: classify type (income/expense), expand amount, set currency (default UZS), map category by keyword (same mapping rules as single items), set date (default "today"), set note.
-  Category mapping per item (same bookkeeper rules as single log):
-    "lavash","non","ovqat","tushlik" → oziq-ovqat; "taksi","benzin","transport" → transport; "oylik","maosh" → oylik; etc.
+- log_multiple: use ONLY when the message contains 2 or more DISTINCT finance actions, each with its OWN clearly stated amount. Items can be transactions AND/OR debts (a mix is fine).
+  Fill the "items" array — one object per action:
+    • TRANSACTION item: kind="tx", type (income/expense), amount, currency (default UZS), category (keyword map), date (default "today"), note.
+    • DEBT item (a loan given/taken with a PERSON): kind="debt", direction ("given" if the user LENT/gave to them, "taken" if the user BORROWED/took from them), counterparty (the person's name), amount, currency, date, note. Do NOT set type/category for a debt.
+  Debt direction (same rules as log_debt): "<name>ga berdim / <name>ga qarz berdim" → given; "<name>dan oldim / <name>dan qarz oldim / <name> menga berdi / <name> menga qarz berdi" → taken.
+  Category mapping per tx item: "lavash","non","ovqat","tushlik" → oziq-ovqat; "taksi","benzin","transport" → transport; "oylik","maosh" → oylik; etc.
   Examples:
-    uz: "non oldim 10 ming, taksi 20 ming, oylik tushdi 5 million"
-      → log_multiple, items=[{type:"expense",amount:10000,currency:"UZS",category:"oziq-ovqat"},{type:"expense",amount:20000,currency:"UZS",category:"transport"},{type:"income",amount:5000000,currency:"UZS",category:"oylik"}]
-    ru: "заплатил за обед 15 000, получил зарплату 3 млн, такси 12 000"
-      → log_multiple, items=[{type:"expense",amount:15000,category:"oziq-ovqat"},{type:"income",amount:3000000,category:"oylik"},{type:"expense",amount:12000,category:"transport"}]
-    en: "spent 20 000 on lunch, received 2 mln from client, transport 8 000"
-      → log_multiple, items=[{type:"expense",amount:20000,category:"oziq-ovqat"},{type:"income",amount:2000000,category:"sotuv"},{type:"expense",amount:8000,category:"transport"}]
+    uz (transactions): "non oldim 10 ming, taksi 20 ming, oylik tushdi 5 million"
+      → items=[{kind:"tx",type:"expense",amount:10000,category:"oziq-ovqat"},{kind:"tx",type:"expense",amount:20000,category:"transport"},{kind:"tx",type:"income",amount:5000000,category:"oylik"}]
+    uz (debts): "jamshitga 50 ming berdim, sardordan 100 ming oldim, kamron menga 100 ming qarz berdi"
+      → items=[{kind:"debt",direction:"given",counterparty:"jamshit",amount:50000},{kind:"debt",direction:"taken",counterparty:"sardor",amount:100000},{kind:"debt",direction:"taken",counterparty:"kamron",amount:100000}]
+    uz (mixed): "non 10 ming oldim, jamshitga 50 ming qarz berdim"
+      → items=[{kind:"tx",type:"expense",amount:10000,category:"oziq-ovqat"},{kind:"debt",direction:"given",counterparty:"jamshit",amount:50000}]
+    ru: "заплатил за обед 15 000, получил зарплату 3 млн" → [{kind:"tx",type:"expense",amount:15000,category:"oziq-ovqat"},{kind:"tx",type:"income",amount:3000000,category:"oylik"}]
   CRITICAL rules:
-  - A SINGLE item ALWAYS stays log_income or log_expense — NEVER use log_multiple for one item.
+  - A SINGLE item ALWAYS stays its own single intent — NEVER use log_multiple for one item (one tx → log_income/log_expense; one debt → log_debt).
   - Never split ONE purchase into several items (e.g. "lavash 10 ming" is ONE item → log_expense).
   - Only trigger when there are clearly 2+ separate finance actions, each with its own stated amount.
-  - For items with foreign currency: set currency to USD/EUR/RUB and amount in that currency — the server handles conversion.
+  - For foreign currency: set currency to USD/EUR/RUB and amount in that currency — the server converts.
 - log_debt: user GAVE or TOOK a loan/debt (qarz berdim/oldim, qarzga berdim, дал/взял в долг, lent/borrowed). Extract counterparty (the OTHER person's name), debt_direction ('given' if the user lent — berdim/дал/lent; 'taken' if borrowed — oldim/взял/borrowed), amount, date. Do NOT classify a loan as income/expense.
   Rules: "X ga qarz berdim" → given, counterparty=X; "X dan qarz oldim" → taken, counterparty=X; missing name → counterparty=null; unclear direction → debt_direction=null.
 - repay_debt: an EXISTING debt is being PAID BACK (not a new debt, not normal income/expense).

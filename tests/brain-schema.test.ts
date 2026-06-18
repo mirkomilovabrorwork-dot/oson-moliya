@@ -632,6 +632,43 @@ describe("RecordIntentSchema — log_multiple", () => {
     expect(data?.items?.[0].currency).toBe("UZS");
   });
 
+  it("accepts log_multiple with DEBT items (kind=debt + direction + counterparty)", () => {
+    const data = parseOk({
+      intent: "log_multiple",
+      language: "uz",
+      confidence: 0.95,
+      reply_text: "3 ta qarz yozildi.",
+      missing_fields: [],
+      items: [
+        { kind: "debt", direction: "given", counterparty: "jamshit", amount: 50000 },
+        { kind: "debt", direction: "taken", counterparty: "sardor", amount: 100000 },
+        { kind: "debt", direction: "taken", counterparty: "kamron", amount: 100000 },
+      ],
+    });
+    expect(data?.items).toHaveLength(3);
+    expect(data?.items?.[0].kind).toBe("debt");
+    expect(data?.items?.[0].direction).toBe("given");
+    expect(data?.items?.[0].counterparty).toBe("jamshit");
+    expect(data?.items?.[1].direction).toBe("taken");
+  });
+
+  it("accepts a MIXED log_multiple (tx + debt) and defaults kind to 'tx'", () => {
+    const data = parseOk({
+      intent: "log_multiple",
+      language: "uz",
+      confidence: 0.93,
+      reply_text: "2 ta yozuv.",
+      missing_fields: [],
+      items: [
+        { type: "expense", amount: 10000, category: "oziq-ovqat" },
+        { kind: "debt", direction: "given", counterparty: "jamshit", amount: 50000 },
+      ],
+    });
+    expect(data?.items).toHaveLength(2);
+    expect(data?.items?.[0].kind).toBe("tx"); // default
+    expect(data?.items?.[1].kind).toBe("debt");
+  });
+
   it("other intents still work without items field", () => {
     const data = parseOk({
       intent: "log_expense",

@@ -53,7 +53,11 @@ export const RecordIntentSchema = z.object({
   date: z.string().nullable().optional(),
   note: z.string().nullable().optional(),
   items: z.array(z.object({
-    type: z.enum(["income", "expense"]),
+    // kind="tx" → income/expense transaction (uses type). kind="debt" → a loan (uses direction + counterparty).
+    kind: z.enum(["tx", "debt"]).default("tx"),
+    type: z.enum(["income", "expense"]).nullable().optional(),
+    direction: z.enum(["given", "taken"]).nullable().optional(),
+    counterparty: z.string().nullable().optional(),
     amount: z.number().int().positive(),
     currency: z.enum(["UZS", "USD", "EUR", "RUB"]).default("UZS"),
     category: z.string().nullable().optional(),
@@ -145,14 +149,28 @@ export const RECORD_INTENT_TOOL = {
       },
       items: {
         type: ["array", "null"],
-        description: "List of finance items for log_multiple intent. Use ONLY when the message contains 2+ distinct finance actions each with its own amount. Each item is classified independently.",
+        description: "List of finance items for log_multiple intent. Use ONLY when the message contains 2+ distinct finance actions each with its own amount. Each item is classified independently and can be a transaction OR a debt.",
         items: {
           type: "object",
           properties: {
-            type: {
+            kind: {
               type: "string",
-              enum: ["income", "expense"],
-              description: "Whether this item is income or expense.",
+              enum: ["tx", "debt"],
+              description: "'tx' = an income/expense transaction (set 'type'). 'debt' = a loan given/taken (set 'direction' + 'counterparty'). Default 'tx'.",
+            },
+            type: {
+              type: ["string", "null"],
+              enum: ["income", "expense", null],
+              description: "For kind='tx': income or expense.",
+            },
+            direction: {
+              type: ["string", "null"],
+              enum: ["given", "taken", null],
+              description: "For kind='debt': 'given' if the user lent money to the counterparty, 'taken' if the user borrowed from them.",
+            },
+            counterparty: {
+              type: ["string", "null"],
+              description: "For kind='debt': the OTHER person's name.",
             },
             amount: {
               type: "integer",
@@ -165,7 +183,7 @@ export const RECORD_INTENT_TOOL = {
             },
             category: {
               type: ["string", "null"],
-              description: "Category name (lowercased). Null if unknown.",
+              description: "Category name (lowercased) for kind='tx'. Null if unknown.",
             },
             date: {
               type: ["string", "null"],
@@ -176,7 +194,7 @@ export const RECORD_INTENT_TOOL = {
               description: "Optional note or description for this item.",
             },
           },
-          required: ["type", "amount"],
+          required: ["amount"],
         },
       },
       query: {

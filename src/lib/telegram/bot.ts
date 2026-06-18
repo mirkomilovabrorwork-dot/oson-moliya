@@ -806,12 +806,21 @@ async function handleMessage(
       const itemsRaw = (intent as Record<string, unknown>).items as Array<Record<string, unknown>> | undefined;
       const items = Array.isArray(itemsRaw) ? itemsRaw : [];
 
-      const valid = items.filter(
-        (it) =>
-          (it.type === "income" || it.type === "expense") &&
-          typeof it.amount === "number" &&
-          (it.amount as number) > 0
-      );
+      // Each item is either a DEBT (kind="debt" + direction + counterparty) or a TX (income/expense).
+      const isDebtItem = (it: Record<string, unknown>) =>
+        it.kind === "debt" &&
+        (it.direction === "given" || it.direction === "taken") &&
+        typeof it.counterparty === "string" &&
+        (it.counterparty as string).trim().length > 0 &&
+        typeof it.amount === "number" &&
+        (it.amount as number) > 0;
+      const isTxItem = (it: Record<string, unknown>) =>
+        it.kind !== "debt" &&
+        (it.type === "income" || it.type === "expense") &&
+        typeof it.amount === "number" &&
+        (it.amount as number) > 0;
+
+      const valid = items.filter((it) => isDebtItem(it) || isTxItem(it));
 
       if (valid.length === 0) {
         const fallback =
@@ -826,27 +835,57 @@ async function handleMessage(
 
       const captured: string[] = [];
       for (const it of valid) {
-        const capCtx = {
-          reply: (t: string) => {
-            captured.push(t);
-            return Promise.resolve(undefined as unknown);
-          },
-        };
-        await finalizeLog(
-          capCtx,
-          user,
-          prisma,
-          {
-            amount: it.amount as number,
-            txType: it.type === "income" ? TxType.income : TxType.expense,
-            category: (it.category as string | null | undefined) ?? null,
-            dateStr: (it.date as string | undefined) ?? "today",
+        if (isDebtItem(it)) {
+          // Debt item → createDebt (no per-item reply; build a short line)
+          const cp = (it.counterparty as string).trim();
+          const amt = it.amount as number;
+          const dir = it.direction === "given" ? DebtDirection.given : DebtDirection.taken;
+          await createDebt({
+            userId: user.id,
+            counterparty: cp,
+            amountUzs: BigInt(amt),
+            direction: dir,
             note: (it.note as string | null | undefined) ?? null,
-            originalAmount: (it._originalAmount as number | undefined) ?? null,
-            originalCurrency: (it._originalCurrency as string | undefined) ?? null,
-          },
-          lang
-        );
+            occurredAt: dateStringToUtc((it.date as string | undefined) ?? "today"),
+          });
+          const amtFmt = formatAmount(BigInt(amt), lang);
+          const line =
+            dir === DebtDirection.given
+              ? lang === "ru"
+                ? `↗️ Дал в долг ${cp}: ${amtFmt}`
+                : lang === "en"
+                ? `↗️ Lent to ${cp}: ${amtFmt}`
+                : `↗️ ${cp}ga qarz berildi: ${amtFmt}`
+              : lang === "ru"
+              ? `↙️ Взял в долг у ${cp}: ${amtFmt}`
+              : lang === "en"
+              ? `↙️ Borrowed from ${cp}: ${amtFmt}`
+              : `↙️ ${cp}dan qarz olindi: ${amtFmt}`;
+          captured.push(line);
+        } else {
+          // Transaction item → reuse finalizeLog, capturing its confirmation text
+          const capCtx = {
+            reply: (t: string) => {
+              captured.push(t);
+              return Promise.resolve(undefined as unknown);
+            },
+          };
+          await finalizeLog(
+            capCtx,
+            user,
+            prisma,
+            {
+              amount: it.amount as number,
+              txType: it.type === "income" ? TxType.income : TxType.expense,
+              category: (it.category as string | null | undefined) ?? null,
+              dateStr: (it.date as string | undefined) ?? "today",
+              note: (it.note as string | null | undefined) ?? null,
+              originalAmount: (it._originalAmount as number | undefined) ?? null,
+              originalCurrency: (it._originalCurrency as string | undefined) ?? null,
+            },
+            lang
+          );
+        }
       }
 
       const header =
