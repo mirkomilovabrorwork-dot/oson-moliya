@@ -4,9 +4,15 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044+045+046+047 ALL DEPLOYED to prod; STT (028) confirmed GOOD by user; user now live-testing bot Q&A + debt-repay)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044→048 ALL DEPLOYED to prod; STT (028) confirmed GOOD; user live-testing bot Q&A + debt-repay + multi-tx)
 
-- **✅ ALL LIVE on prod (full branch HEAD `ba6c5ac`, deployment `dpl_DdFw292b1dKuqoV14EZtJsWgRE97`, `oson-moliya.vercel.app`).** User said "qil" → deployed 046+047 (full HEAD = 044+045+046+047). Verified: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change needed (046/047 added no columns; 044's columns already pushed). **User confirmed STT (Gemini, task 028) voice quality is GOOD** — pending verdict #1 RESOLVED. Rollback if the brain regresses = `vercel --prod` from commit `32476d8` (= 044+045 only, no 046/047). User is now live-testing on @oson_moliya_bot.
+- **✅ ALL LIVE on prod (full branch HEAD `0289dce`, deployment `dpl_9HH9UbjnWU5LHmxZwweZQMjhgtG2`, `oson-moliya.vercel.app`).** Deployed in stages: 044+045 (safe) → 046+047 (after "qil") → 048 (after "bajarib deploy qil uni ham"). Verified each: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change beyond 044's columns (already pushed). **STT (Gemini, 028) confirmed GOOD by user.** Rollback if the brain regresses = redeploy commit `32476d8` (= 044+045 only, no brain changes 046/047/048).
+  - **✅ TASK 048 — multi-transaction in one message (`0289dce`) — DEPLOYED.** "non oldim 10 ming, taksi
+    20 ming, oylik 5 mln" → logs all 3 + ONE combined confirmation. New `log_multiple` intent + `items[]`;
+    brain converts each item's currency per-item; dispatch loops `finalizeLog` via a capturing reply (reuses
+    conversion/category/account/budget/pending). Conservative (2+ items only → single stays log_income/expense).
+    Built 2 agents (brain trio → dispatch, sequential by type-dependency). 5 new schema tests; gates 209 green.
+    Was previously user-paused ("hozircha to'xtab tursin"); user later said "bajarib deploy qil uni ham".
 
 - **✅ LIVE on prod: TASK 044 + 045 (deployment `dpl_63QCxw16UymUW6H3ZKL36rpiziGe`, target=production, `oson-moliya.vercel.app`).** User chose "deploy only the safe two; hold the bot change." Verified live: /login 200 · /api/telegram 405 · /api/backup 401 (new route serving the prod domain). Prod Neon got the additive columns via `prisma db push` (in sync, no data loss) BEFORE the deploy. Deploy method (for the record): the 3 commits are stacked on worktree branch `claude/eloquent-agnesi-2a94d2`; to ship 044+045 WITHOUT 046, deployed the tree at commit `32476d8` (detached checkout → copied main repo's `.vercel/project.json` to link → `vercel --prod` → switched back). Branch pushed to `origin/claude/eloquent-agnesi-2a94d2` (backup).
   - **TASK 044 — spam protection v2 (`59992cb`) — DEPLOYED.** Self-critical finding: the bot ALREADY had an
