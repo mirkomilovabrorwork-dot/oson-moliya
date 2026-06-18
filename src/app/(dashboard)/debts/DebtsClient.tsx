@@ -598,7 +598,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
           >
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-base" style={{ color: "var(--fg)" }}>
-                {t("debt.payment.modal_title", lang)}
+                {paymentTarget.direction === "given" ? t("debt.return.title", lang) : t("debt.repay.title", lang)}
               </h3>
               <button
                 onClick={() => setPaymentTarget(null)}
@@ -631,9 +631,25 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
             )}
 
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--fg-muted)" }}>
-                {t("debt.payment.amount_label", lang)}
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium" style={{ color: "var(--fg-muted)" }}>
+                  {paymentTarget.direction === "given" ? t("debt.return.amount_label", lang) : t("debt.repay.amount_label", lang)}
+                </label>
+                {/* Fix C: "Hammasi" — one-tap fill of full remaining amount */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const orig = BigInt(paymentTarget.amountUzs);
+                    const paid = BigInt(paymentTarget.paidUzs);
+                    const rem = orig - paid;
+                    setPaymentAmount(String(rem > 0n ? rem : 0n));
+                  }}
+                  className="text-xs font-semibold px-2 py-0.5 rounded-[8px] transition-colors"
+                  style={{ background: "var(--surface-sunken)", color: "var(--accent)", border: "1px solid var(--border)" }}
+                >
+                  {t("debt.payment.all", lang)}
+                </button>
+              </div>
               <input
                 autoFocus
                 type="text"
@@ -896,7 +912,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                           minHeight: "28px",
                         }}
                       >
-                        {t("debt.add_payment", lang)}
+                        {isGiven ? t("debt.mark_returned", lang) : t("debt.mark_repaid", lang)}
                       </button>
                     )}
                   </div>
@@ -1064,7 +1080,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         </div>
       )}
 
-      {/* ── Context-aware FAB (single "+" on /debts) ── */}
+      {/* ── Context-aware FAB (pill with text label on /debts) ── */}
       <style>{`
         .debts-fab {
           bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
@@ -1080,16 +1096,17 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
       <button
         aria-label={t("debt.add", lang)}
         onClick={() => setShowAdd(true)}
-        className="debts-fab fixed z-50 flex items-center justify-center w-14 h-14 rounded-full transition-transform active:scale-95"
+        className="debts-fab fixed z-50 flex items-center gap-2 px-5 h-14 rounded-full transition-transform active:scale-95"
         style={{
           background: "var(--accent-gradient)",
           color: "#ffffff",
           boxShadow: "var(--shadow-lg)",
         }}
       >
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 5v14M5 12h14"/>
         </svg>
+        <span className="text-sm font-semibold">{t("debt.add", lang)}</span>
       </button>
     </>
   );

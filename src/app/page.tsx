@@ -332,7 +332,11 @@ export default async function OverviewPage() {
   const cashInHandMain = formatMoneyFn(cashInHandAbs, currency, rates, lang);
   const cashInHandSecondary = makeSecondaryLine(cashInHandAbs);
 
-  // Fix B: KPI cells show so'm only — secondary USD lines removed.
+  // Task 036 Fix A: KPI secondary lines (USD) restored per user request.
+  const incomeSecondary = makeSecondaryLine(overview.income);
+  const expenseSecondary = makeSecondaryLine(overview.expense);
+  const netAbs = overview.income >= overview.expense ? overview.income - overview.expense : overview.expense - overview.income;
+  const netSecondary = makeSecondaryLine(netAbs);
 
   return (
     <div className="min-h-screen" style={{ background: "transparent" }}>
@@ -550,14 +554,15 @@ export default async function OverviewPage() {
           {/* This-month KPI row — Fix B: so'm only, no USD secondary */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
-              { label: t("home.month_income", lang), val: overview.income, color: "var(--income)" },
-              { label: t("home.month_expense", lang), val: overview.expense, color: "var(--expense)" },
+              { label: t("home.month_income", lang), val: overview.income, color: "var(--income)", secondary: incomeSecondary },
+              { label: t("home.month_expense", lang), val: overview.expense, color: "var(--expense)", secondary: expenseSecondary },
               {
                 label: overview.income >= overview.expense ? t("analytics.net_positive", lang) : t("analytics.net_negative", lang),
                 val: overview.income >= overview.expense ? overview.income - overview.expense : overview.expense - overview.income,
                 color: overview.income >= overview.expense ? "var(--income)" : "var(--expense)",
+                secondary: netSecondary,
               },
-            ].map(({ label, val, color }) => (
+            ].map(({ label, val, color, secondary }) => (
               <div
                 key={label}
                 className="rounded-xl p-3 flex flex-col gap-1 min-w-0"
@@ -569,6 +574,11 @@ export default async function OverviewPage() {
                 <p className="text-sm font-bold tabular break-words leading-tight" style={{ color }}>
                   {fmt(val)}
                 </p>
+                {secondary && (
+                  <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
+                    {secondary}
+                  </p>
+                )}
               </div>
             ))}
           </div>
