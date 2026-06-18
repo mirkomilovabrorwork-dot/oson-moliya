@@ -392,13 +392,6 @@ export default async function OverviewPage() {
                 : t("home.debt_aside_taken", lang).replace("{amount}", fmt(takenOpen - givenOpen))}
             </Link>
           )}
-          {/* This-month context: smaller, on the green card */}
-          <p
-            className="text-xs font-medium mt-2 pl-0.5"
-            style={{ color: "rgba(255,255,255,.74)" }}
-          >
-            {thisMonthContext}
-          </p>
         </div>
 
         {/* 1b — Diqqat card: amber attention — ONLY when a category is over budget */}
