@@ -137,13 +137,23 @@
   qilaver aqlli qaror qabul qilib, hammasini hal qilib keyin deploy qil") so Opus continued past
   the safe-fixes phase and locked task 034's 5 design decisions itself. 3 of 5 audit findings now
   fully shipped (#1 cash-in-hand, #2 recurring, #3 partial payments).
-- **REMAINING audit work (not autopilot — user-call territory):**
-  - #4 currency rate versioning (~6h) — touches every entry historically; needs DB rate-stamps +
-    decision on whether to backfill historicals or only stamp going forward. Big call.
-  - #5 two-balance confusion (Umumiy balans vs per-account balance) — needs user verdict on
-    whether to keep both with clearer labels or collapse to one. Polish task.
-  - Bot side for tasks 033 + 034 — adding partial-payment + recurring-rule via bot. Each is its
-    own task.
+- **REMAINING — explicitly DEFERRED with reasons (resume here):**
+  - **BOT SIDE (debt repay + recurring via bot) — DEFER to a REAL-TELEGRAM-TEST session.** User asked
+    to "finish everything" incl. bot-side, and Opus mapped it (new brain intents `repay_debt` +
+    `create_rule`, see the Explore map in this session). Opus DID NOT ship it: a prod-bot brain change
+    (new intent in the forced-tool schema + prompt edits) can't be meaningfully verified here — it
+    needs the live Telegram channel + spends API tokens, and a new intent can regress existing
+    classification. Truth-over-compliance: don't blind-deploy an untestable prod-bot change. NEXT
+    SESSION: Opus writes the bot code (repay_debt as a brain intent: "Sarvar 2 mln qaytardi" →
+    addDebtPayment by counterparty; recurring as a brain intent OR — recommended — keep recurring on
+    the web form since it has 5+ fields that are error-prone in a chat), then the USER sends real
+    voice/text on @oson_moliya_bot to confirm BEFORE it goes live. Recommendation captured: recurring
+    via bot is weak UX; debt-repay via bot is worth it.
+  - **#42 currency rate versioning — user chose FORWARD-ONLY (no backfill).** Stamp the CBU rate used
+    at entry time on each NEW foreign-currency transaction; leave historical rows untouched. Additive
+    DB field (e.g. `rateToUzs` on Transaction). NOT YET DONE — next dashboard-safe task, can ship here.
+  - #5 two-balance confusion (Umumiy balans vs per-account balance) — 035 fixed Home; the per-account
+    balance on /accounts may still read ambiguously. Needs a real-screen look + maybe a label.
   - Smaller: budget trend, JSON backup, audit trail, onboarding-mentions-debt.
 - **USER ACTION NEEDED on wake — verdicts (bot ones still need a human; web ones Opus already
   eyeballed on a real mobile preview during task 035):**
