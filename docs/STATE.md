@@ -6,7 +6,14 @@
 
 ## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044→048 ALL DEPLOYED to prod; STT (028) confirmed GOOD; user live-testing bot Q&A + debt-repay + multi-tx)
 
-- **✅ ALL LIVE on prod (full branch HEAD `5a8143a`, deployment `dpl_5awRDdBD7wyFHoj4oZU8zgAMAXa3`, `oson-moliya.vercel.app`).** Deployed in stages: 044+045 (safe) → 046+047 ("qil") → 048 ("bajarib deploy qil uni ham") → 048-debt-fix (`5a8143a`, after user tested debts: "jamshitga 50k berdim, sardordan 100k oldim, kamron menga qarz berdi" → "ishlamadi"). Verified each: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change beyond 044's columns. **STT (Gemini, 028) confirmed GOOD by user.** Rollback if the brain regresses = redeploy commit `32476d8` (= 044+045 only, no brain changes).
+- **✅ ALL LIVE on prod (full branch HEAD `12dd308`, deployment `dpl_Gkde11gqfXqx3qZjjBGDSjhvc9DU`, `oson-moliya.vercel.app`).** Deployed in stages: 044+045 → 046+047 → 048 → 048-debt-fix → **049 de-emoji**. Verified each: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change beyond 044's columns. **STT (Gemini, 028) confirmed GOOD by user.** Rollback if a brain change regresses = redeploy commit `32476d8` (= 044+045 only).
+  - **✅ TASK 049 — de-emoji (`12dd308`) — DEPLOYED.** User: emojis read as AI-made; +/− sign + "kirim/chiqim"
+    word is redundant. WEB: extended `CategoryMark` to a cohesive custom line-icon set for all 26 categories +
+    account types + a `tag` fallback; transaction/home/accounts render icons not emoji. BOT (Telegram can't show
+    SVG): stripped ALL emoji from reply.ts + bot.ts → clean text; confirmation now `−50 000 so'm · cat · date`
+    (signed, no type word, no emoji). Right-sized (not 100s). Built 2 parallel agents (web/bot) + Opus review
+    (heart→coffee fix) + a rendered icon-grid shown to the user. Gates 211 green. AWAITING user's eye on the
+    live web icons (low risk; reversible). Spec `docs/tasks/049`.
   - **FIX (`5a8143a`): multi-entry (048) now supports DEBTS + mixed.** Was income/expense only → failed the
     user's all-debts test. Each `items[]` entry now has `kind:"tx"|"debt"`; debt items (direction+counterparty)
     → `createDebt`, tx items → `finalizeLog`. Prompt got debt + mixed examples + the user's exact case. Done
