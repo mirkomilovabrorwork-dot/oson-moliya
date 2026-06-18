@@ -853,14 +853,18 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                       {formatDate(debt.occurredAt, lang)}
                       {debt.note ? ` · ${debt.note}` : ""}
                     </p>
+                    {/* Fix F: two short lines — remaining emphasized, orig·paid muted below */}
                     {hasPartialPayment && (
-                      <p className="text-xs mt-0.5" style={{ color: "var(--fg-muted)" }}>
-                        {t("debt.original", lang)}: {formatMoney(debt.amountUzs)}
-                        {" · "}
-                        {t("debt.paid", lang)}: {formatMoney(String(paidUzs))}
-                        {" · "}
-                        {t("debt.remaining", lang)}: {formatMoney(String(remainingUzs > 0n ? remainingUzs : 0n))}
-                      </p>
+                      <div className="mt-0.5">
+                        <p className="text-xs font-semibold" style={{ color: "var(--fg)" }}>
+                          {t("debt.remaining", lang)}: {formatMoney(String(remainingUzs > 0n ? remainingUzs : 0n))}
+                        </p>
+                        <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
+                          {t("debt.original", lang)} {formatMoney(debt.amountUzs)}
+                          {" · "}
+                          {t("debt.paid", lang)} {formatMoney(String(paidUzs))}
+                        </p>
+                      </div>
                     )}
                   </button>
 
@@ -870,14 +874,12 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                       onClick={() => openActionSheet(debt)}
                       className="text-right"
                     >
+                      {/* Fix G: given-debt amount neutral (var(--fg)), not green */}
                       <p
                         className="font-bold text-sm tabular-nums"
-                        style={{ color: isGiven ? "var(--income)" : "var(--expense)" }}
+                        style={{ color: isGiven ? "var(--fg)" : "var(--expense)" }}
                       >
                         {isGiven ? "+" : "−"}{hasPartialPayment ? formatMoney(String(remainingUzs > 0n ? remainingUzs : 0n)) : formatMoney(debt.amountUzs)}
-                      </p>
-                      <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
-                        {t("common.currency", lang)}
                       </p>
                     </button>
                     {!isSettled && (
@@ -950,8 +952,6 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                   </p>
                   <p className="text-xs" style={{ color: "var(--fg-subtle)" }}>
                     {actionSheetDebt.direction === "given" ? "+" : "−"}{formatMoney(actionSheetDebt.amountUzs)}
-                    {" · "}
-                    {t("common.currency", lang)}
                   </p>
                 </div>
               </div>

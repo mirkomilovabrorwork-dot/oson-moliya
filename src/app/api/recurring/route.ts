@@ -53,6 +53,11 @@ export async function POST(request: NextRequest): Promise<Response> {
     return Response.json({ error: "Validation failed", details: parsed.error.format() }, { status: 422 });
   }
 
+  // Fix D: category is required for new rules
+  if (!parsed.data.categoryId) {
+    return Response.json({ error: "categoryId is required" }, { status: 400 });
+  }
+
   const { startDate, endDate, ...rest } = parsed.data;
   try {
     const rule = await createRule({
@@ -66,6 +71,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     const msg = err instanceof Error ? err.message : "";
     if (msg === "DAY_OUT_OF_RANGE") return Response.json({ error: "Day must be 1-28" }, { status: 422 });
     if (msg === "MONTH_REQUIRED_FOR_YEARLY") return Response.json({ error: "monthOfYear required for yearly" }, { status: 422 });
+    if (msg === "CATEGORY_REQUIRED") return Response.json({ error: "categoryId is required" }, { status: 400 });
+    if (msg === "CATEGORY_NOT_FOUND") return Response.json({ error: "Category not found or not owned by user" }, { status: 400 });
+    if (msg === "CATEGORY_TYPE_MISMATCH") return Response.json({ error: "Category type does not match rule type" }, { status: 400 });
     return Response.json({ error: "Server error" }, { status: 500 });
   }
 }
