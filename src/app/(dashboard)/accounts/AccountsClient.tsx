@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
-import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn } from "@/lib/currency";
 
@@ -207,17 +207,17 @@ export function AccountsClient({ accounts: initial, totalBalance: initialTotal, 
         <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />
       )}
 
-      <TypedDeleteDialog
+      <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title={t("delete.typed.title", lang)}
-        warning={t("delete.typed.warning", lang)}
-        description={t("account.delete.confirm", lang)}
-        targetLabel={deleteTarget?.name}
-        requiredWord={t("delete.typed.word", lang)}
-        inputLabel={t("delete.typed.input_label", lang)}
-        instruction={t("delete.typed.instruction", lang)}
-        confirmLabel={t("common.delete", lang)}
-        cancelLabel={t("common.cancel", lang)}
+        title={t("confirm.delete_title", lang)}
+        message={
+          deleteTarget
+            ? t("confirm.delete_one", lang).replace("{item}", deleteTarget.name)
+            : t("account.delete.confirm", lang)
+        }
+        confirmLabel={t("confirm.delete", lang)}
+        cancelLabel={t("confirm.cancel", lang)}
+        danger
         loading={Boolean(deletingId)}
         onCancel={() => {
           if (!deletingId) setDeleteTarget(null);

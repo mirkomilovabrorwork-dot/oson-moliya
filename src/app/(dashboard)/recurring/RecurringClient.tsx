@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatMoney } from "@/lib/currency";
 import type { Rates } from "@/lib/rates";
 
@@ -85,6 +86,10 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
   const showToast = (message: string, type: "success" | "error" = "success") => setToast({ message, type });
 
   // Add form state
+  // Delete state
+  const [deleteTargetRule, setDeleteTargetRule] = useState<RuleRow | null>(null);
+  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
+
   const [showAdd, setShowAdd] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -144,18 +149,23 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
     }
   }, [addType, addCategoryId, addAmount, addFrequency, addDay, addMonth, addStartDate, addEndDate, addNote, lang, router]);
 
-  const handleDelete = useCallback(async (id: string) => {
-    if (!confirm(t("common.delete", lang) + "?")) return;
+  const handleDelete = useCallback(async () => {
+    if (!deleteTargetRule) return;
+    const id = deleteTargetRule.id;
+    setDeletingRuleId(id);
     try {
       const res = await fetch(`/api/recurring/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setRules((prev) => prev.filter((r) => r.id !== id));
-      showToast(t("common.delete", lang));
+      setDeleteTargetRule(null);
+      showToast(t("recurring.deleted", lang));
       router.refresh();
     } catch {
       showToast(t("error.generic", lang), "error");
+    } finally {
+      setDeletingRuleId(null);
     }
-  }, [lang, router]);
+  }, [deleteTargetRule, lang, router]);
 
   const handlePause = useCallback(async (id: string) => {
     try {
@@ -193,6 +203,26 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
   return (
     <>
       {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
+
+      <ConfirmDialog
+        open={Boolean(deleteTargetRule)}
+        title={t("confirm.delete_title", lang)}
+        message={
+          deleteTargetRule
+            ? t("confirm.delete_one", lang).replace(
+                "{item}",
+                deleteTargetRule.note ??
+                  (deleteTargetRule.category ? deleteTargetRule.category.name : t("common.delete", lang))
+              )
+            : ""
+        }
+        confirmLabel={t("confirm.delete", lang)}
+        cancelLabel={t("confirm.cancel", lang)}
+        danger
+        loading={Boolean(deletingRuleId)}
+        onCancel={() => { if (!deletingRuleId) setDeleteTargetRule(null); }}
+        onConfirm={handleDelete}
+      />
 
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
@@ -293,8 +323,9 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
                       </button>
                     )}
                     <button
-                      onClick={() => handleDelete(rule.id)}
-                      className="text-xs px-2 py-1 rounded-lg"
+                      onClick={() => setDeleteTargetRule(rule)}
+                      disabled={deletingRuleId === rule.id}
+                      className="text-xs px-2 py-1 rounded-lg disabled:opacity-40"
                       style={{ background: "var(--expense-wash)", color: "var(--expense)" }}
                     >
                       {t("common.delete", lang)}

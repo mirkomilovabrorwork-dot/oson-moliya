@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { Toast } from "@/components/Toast";
-import { TypedDeleteDialog } from "@/components/TypedDeleteDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn } from "@/lib/currency";
 import { translateCategoryName } from "@/lib/categories-i18n";
@@ -210,24 +210,23 @@ export function CategoriesClient({ categories: initial, lang, currency, rates }:
     <>
       {toast && <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
 
-      <TypedDeleteDialog
+      <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title={t("delete.typed.title", lang)}
-        warning={t("delete.typed.warning", lang)}
-        description={t("categories.delete.confirm", lang)}
-        extraWarning={
-          deleteTarget?.budgetLimit ? t("categories.delete.budget_confirm", lang) : undefined
-        }
-        targetLabel={
+        title={t("confirm.delete_title", lang)}
+        message={
           deleteTarget
-            ? `${deleteTarget.emoji ? `${deleteTarget.emoji} ` : ""}${translateCategoryName(deleteTarget.name, lang)}`
-            : undefined
+            ? t("confirm.delete_one", lang).replace(
+                "{item}",
+                `${deleteTarget.emoji ? `${deleteTarget.emoji} ` : ""}${translateCategoryName(deleteTarget.name, lang)}`
+              ) +
+              (deleteTarget.budgetLimit
+                ? `\n\n${t("categories.delete.budget_confirm", lang)}`
+                : "")
+            : t("categories.delete.confirm", lang)
         }
-        requiredWord={t("delete.typed.word", lang)}
-        inputLabel={t("delete.typed.input_label", lang)}
-        instruction={t("delete.typed.instruction", lang)}
-        confirmLabel={t("common.delete", lang)}
-        cancelLabel={t("common.cancel", lang)}
+        confirmLabel={t("confirm.delete", lang)}
+        cancelLabel={t("confirm.cancel", lang)}
+        danger
         loading={Boolean(deletingId)}
         onCancel={() => {
           if (!deletingId) setDeleteTarget(null);

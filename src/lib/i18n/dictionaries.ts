@@ -386,6 +386,21 @@ const uz: Dictionary = {
   "recurring.every_month": "Har oy {day}-kun",
   "recurring.every_year": "Har yil {day} {month}",
   "recurring.saved": "Saqlandi",
+  "recurring.deleted": "O'chirildi",
+  // ── ConfirmDialog (single-item delete)
+  "confirm.delete_title": "O'chirilsinmi?",
+  "confirm.delete_one": "{item} o'chirilsinmi?",
+  "confirm.delete": "O'chirish",
+  "confirm.cancel": "Bekor qilish",
+  // ── BulkDeleteDialog (multi-select delete)
+  "bulk.select": "Tanlash",
+  "bulk.selected_count": "{n} tanlandi",
+  "bulk.delete": "O'chirish",
+  "bulk.cancel": "Bekor",
+  "bulk.confirm_title": "{n} ta yozuv o'chiriladi",
+  "bulk.confirm_checkbox": "Roziman — tanlangan hamma narsa o'chadi",
+  "bulk.deleted_toast": "{n} ta o'chirildi",
+  "bulk.preview_more": "...va yana {n} ta",
 };
 
 const ru: Dictionary = {
@@ -771,6 +786,21 @@ const ru: Dictionary = {
   "recurring.every_month": "Каждый месяц {day}-го",
   "recurring.every_year": "Каждый год {day} {month}",
   "recurring.saved": "Сохранено",
+  "recurring.deleted": "Удалено",
+  // ── ConfirmDialog (single-item delete)
+  "confirm.delete_title": "Удалить?",
+  "confirm.delete_one": "Удалить {item}?",
+  "confirm.delete": "Удалить",
+  "confirm.cancel": "Отмена",
+  // ── BulkDeleteDialog (multi-select delete)
+  "bulk.select": "Выбрать",
+  "bulk.selected_count": "{n} выбрано",
+  "bulk.delete": "Удалить",
+  "bulk.cancel": "Отмена",
+  "bulk.confirm_title": "Будет удалено {n} записей",
+  "bulk.confirm_checkbox": "Согласен — все выбранные записи будут удалены",
+  "bulk.deleted_toast": "Удалено {n}",
+  "bulk.preview_more": "...и ещё {n}",
 };
 
 const en: Dictionary = {
@@ -1156,6 +1186,21 @@ const en: Dictionary = {
   "recurring.every_month": "Every month on the {day}th",
   "recurring.every_year": "Every year on {day} {month}",
   "recurring.saved": "Saved",
+  "recurring.deleted": "Deleted",
+  // ── ConfirmDialog (single-item delete)
+  "confirm.delete_title": "Delete?",
+  "confirm.delete_one": "Delete {item}?",
+  "confirm.delete": "Delete",
+  "confirm.cancel": "Cancel",
+  // ── BulkDeleteDialog (multi-select delete)
+  "bulk.select": "Select",
+  "bulk.selected_count": "{n} selected",
+  "bulk.delete": "Delete",
+  "bulk.cancel": "Cancel",
+  "bulk.confirm_title": "{n} items will be deleted",
+  "bulk.confirm_checkbox": "I agree — all selected items will be deleted",
+  "bulk.deleted_toast": "{n} deleted",
+  "bulk.preview_more": "...and {n} more",
 };
 
 export const dictionaries: Record<LangCode, Dictionary> = { uz, ru, en };
