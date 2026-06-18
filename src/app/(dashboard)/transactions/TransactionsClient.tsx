@@ -178,10 +178,20 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
   const [actionSheetTx, setActionSheetTx] = useState<TxRow | null>(null);
 
   // Toast
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    msg: string;
+    type: "success" | "error";
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null>(null);
 
-  const showToast = (msg: string, type: "success" | "error" = "success") => {
-    setToast({ msg, type });
+  const showToast = (
+    msg: string,
+    type: "success" | "error" = "success",
+    actionLabel?: string,
+    onAction?: () => void
+  ) => {
+    setToast({ msg, type, actionLabel, onAction });
   };
 
   // ── Action sheet: pushState for device/Telegram back support ──────────────
@@ -258,13 +268,28 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
     async () => {
       if (!deleteTarget) return;
       const id = deleteTarget.id;
+      const deleted = deleteTarget;
       setDeletingId(id);
       try {
         const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error();
         setRows((r) => r.filter((tx) => tx.id !== id));
         setDeleteTarget(null);
-        showToast(t("transactions.deleted", lang));
+        showToast(
+          t("transactions.deleted", lang),
+          "success",
+          t("undo.action", lang),
+          async () => {
+            try {
+              await fetch(`/api/transactions/${id}/restore`, { method: "POST" });
+              setRows((r) => [deleted, ...r]);
+              showToast(t("undo.restored", lang));
+              router.refresh();
+            } catch {
+              showToast(t("error.generic", lang), "error");
+            }
+          }
+        );
         router.refresh();
       } catch {
         showToast(t("error.generic", lang), "error");
@@ -279,25 +304,45 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
   const handleBulkDelete = useCallback(async () => {
     if (selectedIds.size === 0) return;
     setBulkDeleting(true);
+    const deletedIds = Array.from(selectedIds);
+    const deletedRows = rows.filter((tx) => selectedIds.has(tx.id));
     try {
       await Promise.all(
-        Array.from(selectedIds).map((id) =>
+        deletedIds.map((id) =>
           fetch(`/api/transactions/${id}`, { method: "DELETE" })
         )
       );
-      const n = selectedIds.size;
+      const n = deletedIds.length;
       setRows((r) => r.filter((tx) => !selectedIds.has(tx.id)));
       setBulkDialogOpen(false);
       setSelectedIds(new Set());
       setSelectMode(false);
-      showToast(t("bulk.deleted_toast", lang).replace("{n}", String(n)));
+      showToast(
+        t("bulk.deleted_toast", lang).replace("{n}", String(n)),
+        "success",
+        t("undo.action", lang),
+        async () => {
+          try {
+            await Promise.all(
+              deletedIds.map((id) =>
+                fetch(`/api/transactions/${id}/restore`, { method: "POST" })
+              )
+            );
+            setRows((r) => [...deletedRows, ...r]);
+            showToast(t("undo.restored", lang));
+            router.refresh();
+          } catch {
+            showToast(t("error.generic", lang), "error");
+          }
+        }
+      );
       router.refresh();
     } catch {
       showToast(t("error.generic", lang), "error");
     } finally {
       setBulkDeleting(false);
     }
-  }, [selectedIds, lang, router]);
+  }, [selectedIds, rows, lang, router]);
 
   // Open edit modal
   const openEdit = (tx: TxRow) => {
@@ -375,7 +420,13 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
   return (
     <>
       {toast && (
-        <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />
+        <Toast
+          message={toast.msg}
+          type={toast.type}
+          onDone={() => setToast(null)}
+          actionLabel={toast.actionLabel}
+          onAction={toast.onAction}
+        />
       )}
 
       <ConfirmDialog

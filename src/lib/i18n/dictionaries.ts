@@ -401,6 +401,20 @@ const uz: Dictionary = {
   "bulk.confirm_checkbox": "Roziman — tanlangan hamma narsa o'chadi",
   "bulk.deleted_toast": "{n} ta o'chirildi",
   "bulk.preview_more": "...va yana {n} ta",
+  // ── Undo / restore
+  "undo.action": "Bekor qilish",
+  "undo.restored": "Qaytarildi",
+  // ── More > Trash link
+  "more.trash": "O'chirilganlar",
+  // ── Trash page
+  "trash.title": "O'chirilganlar",
+  "trash.empty": "Savatcha bo'sh",
+  "trash.restore": "Qaytarish",
+  "trash.retention_note": "O'chirilgan yozuvlar 30 kun saqlanadi",
+  "trash.section.transactions": "Yozuvlar",
+  "trash.section.debts": "Qarzlar",
+  "trash.section.recurring": "Takroriy",
+  "trash.deleted_at": "o'chirilgan: {date}",
 };
 
 const ru: Dictionary = {
@@ -801,6 +815,20 @@ const ru: Dictionary = {
   "bulk.confirm_checkbox": "Согласен — все выбранные записи будут удалены",
   "bulk.deleted_toast": "Удалено {n}",
   "bulk.preview_more": "...и ещё {n}",
+  // ── Undo / restore
+  "undo.action": "Отменить",
+  "undo.restored": "Восстановлено",
+  // ── More > Trash link
+  "more.trash": "Удалённые",
+  // ── Trash page
+  "trash.title": "Удалённые",
+  "trash.empty": "Корзина пуста",
+  "trash.restore": "Восстановить",
+  "trash.retention_note": "Удалённые записи хранятся 30 дней",
+  "trash.section.transactions": "Записи",
+  "trash.section.debts": "Долги",
+  "trash.section.recurring": "Регулярные",
+  "trash.deleted_at": "удалено: {date}",
 };
 
 const en: Dictionary = {
@@ -1201,6 +1229,20 @@ const en: Dictionary = {
   "bulk.confirm_checkbox": "I agree — all selected items will be deleted",
   "bulk.deleted_toast": "{n} deleted",
   "bulk.preview_more": "...and {n} more",
+  // ── Undo / restore
+  "undo.action": "Undo",
+  "undo.restored": "Restored",
+  // ── More > Trash link
+  "more.trash": "Deleted",
+  // ── Trash page
+  "trash.title": "Deleted items",
+  "trash.empty": "Trash is empty",
+  "trash.restore": "Restore",
+  "trash.retention_note": "Deleted items are kept for 30 days",
+  "trash.section.transactions": "Records",
+  "trash.section.debts": "Debts",
+  "trash.section.recurring": "Recurring",
+  "trash.deleted_at": "deleted: {date}",
 };
 
 export const dictionaries: Record<LangCode, Dictionary> = { uz, ru, en };

@@ -104,6 +104,18 @@ export async function deleteDebt(id: string, userId: string) {
   return true;
 }
 
+export async function restoreDebt(id: string, userId: string) {
+  const prisma = db as import("@prisma/client").PrismaClient;
+  const existing = await prisma.debt.findFirst({
+    where: { id, userId, deletedAt: { not: null } },
+  });
+  if (!existing) return null;
+  return prisma.debt.update({
+    where: { id },
+    data: { deletedAt: null },
+  });
+}
+
 export async function getDebtTotals(userId: string): Promise<DebtTotals> {
   const prisma = db as import("@prisma/client").PrismaClient;
 

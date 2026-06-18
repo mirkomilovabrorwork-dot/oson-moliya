@@ -67,7 +67,12 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
   const [debts, setDebts] = useState<DebtRow[]>(initial);
   const [totals, setTotals] = useState<DebtTotals>(initialTotals);
   const [tab, setTab] = useState<Tab>("all");
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    msg: string;
+    type: "success" | "error";
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null>(null);
 
   // Add form
   const [showAdd, setShowAdd] = useState(false);
@@ -142,8 +147,12 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
     return () => window.removeEventListener("popstate", handler);
   }, [actionSheetDebt]);
 
-  const showToast = (msg: string, type: "success" | "error" = "success") =>
-    setToast({ msg, type });
+  const showToast = (
+    msg: string,
+    type: "success" | "error" = "success",
+    actionLabel?: string,
+    onAction?: () => void
+  ) => setToast({ msg, type, actionLabel, onAction });
 
   // Refetch totals from API
   const refreshTotals = useCallback(async () => {
@@ -258,13 +267,29 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
     async () => {
       if (!deleteDialogDebt) return;
       const id = deleteDialogDebt.id;
+      const deleted = deleteDialogDebt;
       setDeletingId(id);
       try {
         const res = await fetch(`/api/debts/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error();
         setDebts((prev) => prev.filter((d) => d.id !== id));
         setDeleteDialogDebt(null);
-        showToast(t("debt.deleted", lang));
+        showToast(
+          t("debt.deleted", lang),
+          "success",
+          t("undo.action", lang),
+          async () => {
+            try {
+              await fetch(`/api/debts/${id}/restore`, { method: "POST" });
+              setDebts((prev) => [deleted, ...prev]);
+              showToast(t("undo.restored", lang));
+              await refreshTotals();
+              router.refresh();
+            } catch {
+              showToast(t("error.generic", lang), "error");
+            }
+          }
+        );
         await refreshTotals();
         router.refresh();
       } catch {
@@ -279,18 +304,39 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
   const handleBulkDelete = useCallback(async () => {
     if (selectedIds.size === 0) return;
     setBulkDeleting(true);
+    const deletedIds = Array.from(selectedIds);
+    const deletedRows = debts.filter((d) => selectedIds.has(d.id));
     try {
       await Promise.all(
-        Array.from(selectedIds).map((id) =>
+        deletedIds.map((id) =>
           fetch(`/api/debts/${id}`, { method: "DELETE" })
         )
       );
       setDebts((prev) => prev.filter((d) => !selectedIds.has(d.id)));
-      const n = selectedIds.size;
+      const n = deletedIds.length;
       setBulkDialogOpen(false);
       setSelectedIds(new Set());
       setSelectMode(false);
-      showToast(t("bulk.deleted_toast", lang).replace("{n}", String(n)));
+      showToast(
+        t("bulk.deleted_toast", lang).replace("{n}", String(n)),
+        "success",
+        t("undo.action", lang),
+        async () => {
+          try {
+            await Promise.all(
+              deletedIds.map((id) =>
+                fetch(`/api/debts/${id}/restore`, { method: "POST" })
+              )
+            );
+            setDebts((prev) => [...deletedRows, ...prev]);
+            showToast(t("undo.restored", lang));
+            await refreshTotals();
+            router.refresh();
+          } catch {
+            showToast(t("error.generic", lang), "error");
+          }
+        }
+      );
       await refreshTotals();
       router.refresh();
     } catch {
@@ -298,7 +344,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
     } finally {
       setBulkDeleting(false);
     }
-  }, [selectedIds, lang, router, refreshTotals]);
+  }, [selectedIds, debts, lang, router, refreshTotals]);
 
   const openPaymentModal = useCallback((debt: DebtRow) => {
     setPaymentTarget(debt);
@@ -366,7 +412,15 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
 
   return (
     <>
-      {toast && <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.msg}
+          type={toast.type}
+          onDone={() => setToast(null)}
+          actionLabel={toast.actionLabel}
+          onAction={toast.onAction}
+        />
+      )}
 
       {/* Single-item delete dialog */}
       <ConfirmDialog
