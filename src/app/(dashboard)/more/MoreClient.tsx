@@ -72,6 +72,14 @@ function IconTheme() {
   );
 }
 
+function IconRecurring() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12a10 10 0 0 1 17.66-6.37M22 4v6h-6M22 12a10 10 0 0 1-17.66 6.37M2 20v-6h6" />
+    </svg>
+  );
+}
+
 /** Right-side chevron that rotates down when its row is open. */
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -324,6 +332,27 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
               <ThemeToggle lang={lang} />
             </div>
           )}
+        </div>
+
+        {/* Takroriy to'lovlar (Recurring) */}
+        <div style={{ borderTop: "1px solid var(--border)" }}>
+          <Link
+            href="/recurring"
+            className={rowClass}
+            style={{ minHeight: 56, display: "flex", textDecoration: "none" }}
+          >
+            <IconTile bg="var(--surface-sunken)" color="var(--fg-muted)">
+              <IconRecurring />
+            </IconTile>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium" style={{ color: "var(--fg)" }}>
+                {t("more.recurring", lang)}
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)", flexShrink: 0 }}>
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </Link>
         </div>
 
       </div>

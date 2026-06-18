@@ -32,6 +32,11 @@ enum AccountType {
   other
 }
 
+enum RecurringFrequency {
+  monthly
+  yearly
+}
+
 model User {
   id              String   @id @default(cuid())
   telegramId      BigInt   @unique
@@ -41,14 +46,15 @@ model User {
   displayCurrency String   @default("UZS")
   createdAt       DateTime @default(now())
 
-  transactions  Transaction[]
-  categories    Category[]
-  budgets       Budget[]
-  pendingAction PendingAction?
-  magicTokens   MagicToken[]
-  sessions      Session[]
-  debts         Debt[]
-  accounts      Account[]
+  transactions    Transaction[]
+  categories      Category[]
+  budgets         Budget[]
+  pendingAction   PendingAction?
+  magicTokens     MagicToken[]
+  sessions        Session[]
+  debts           Debt[]
+  accounts        Account[]
+  recurringRules  RecurringRule[]
 }
 
 model Category {
@@ -60,8 +66,9 @@ model Category {
   emoji     String?
   isDefault Boolean @default(false)
 
-  transactions Transaction[]
-  budgets      Budget[]
+  transactions   Transaction[]
+  budgets        Budget[]
+  recurringRules RecurringRule[]
 
   @@unique([userId, name, type])
   @@index([userId, type])
@@ -84,11 +91,14 @@ model Transaction {
   source           String    @default("bot")
   deletedAt        DateTime?
   createdAt        DateTime  @default(now())
+  recurringRuleId  String?
+  recurringRule    RecurringRule? @relation("RecurringRuleTransactions", fields: [recurringRuleId], references: [id], onDelete: SetNull)
 
   @@index([userId, occurredAt])
   @@index([userId, type, occurredAt])
   @@index([userId, categoryId, occurredAt])
   @@index([userId, accountId])
+  @@index([recurringRuleId])
 }
 
 model Budget {
@@ -179,4 +189,30 @@ model Account {
   transactions Transaction[]
 
   @@index([userId])
+}
+
+model RecurringRule {
+  id               String             @id @default(cuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type             TxType
+  categoryId       String?
+  category         Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  amountUzs        BigInt
+  originalCurrency String?
+  originalAmount   BigInt?
+  note             String?
+  frequency        RecurringFrequency
+  dayOfMonth       Int
+  monthOfYear      Int?
+  startDate        DateTime
+  endDate          DateTime?
+  pausedAt         DateTime?
+  lastGeneratedAt  DateTime?
+  deletedAt        DateTime?
+  createdAt        DateTime           @default(now())
+
+  generatedTransactions Transaction[] @relation("RecurringRuleTransactions")
+
+  @@index([userId, deletedAt])
 }
