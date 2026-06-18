@@ -4,9 +4,24 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus AUTOPILOT — TASK 028→033 SHIPPED, 6 deploys, finance audit half-done)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus AUTOPILOT — TASK 028→034 SHIPPED, 7 deploys, audit findings #1/#2/#3 DONE)
 
-- **LIVE on prod (oson-moliya.vercel.app, main `5c6293d`).** Shipped this session:
+- **LIVE on prod (oson-moliya.vercel.app, main `41752d0`).** Shipped this session:
+  - **TASK 034 — recurring transactions via Vercel Cron (`41752d0`).** Audit finding #2 done. New
+    `RecurringRule` model + `Transaction.recurringRuleId` (additive, `prisma db push` applied).
+    Service `generateDueTransactions` uses Tashkent timezone math; idempotent with `lastGeneratedAt`;
+    catch-up loop hard-capped at 366 iterations; per-rule try/catch so one bad rule doesn't poison
+    the batch. Three new API routes: GET/POST `/api/recurring`, GET/PATCH/DELETE
+    `/api/recurring/[id]` (PATCH `?action=pause|resume`), and GET `/api/cron/recurring` gated by
+    `Authorization: Bearer ${CRON_SECRET}`. Verified live: cron without auth → 401, with auth →
+    200 `{ok, rulesProcessed:0, transactionsCreated:0, errors:[]}`. `vercel.json` registers the
+    cron at `0 19 * * *` UTC = 00:00 Tashkent next day (Hobby plan = daily, fine). CRON_SECRET
+    generated via `openssl rand -hex 32` and added to prod Vercel env. New `/recurring` page +
+    RecurringClient (list, status badges, add modal with type/category/amount/frequency/day-of-
+    month picker, pause/resume/delete). Link added to /more. 28 new i18n keys (uz/ru/en).
+    Locked decisions (Opus autopilot): Vercel Cron (D1), monthly+yearly only (D2), past-frozen
+    semantics (D3), category-delete pauses rule (D4), one currency per rule (D5). Bot integration
+    deferred. Spec `docs/tasks/034`.
   - **TASK 033 — debt partial-payment tracking (`5c6293d`).** Audit finding #3 acted on. New
     `DebtPayment` table (additive migration applied to prod Neon via `prisma db push` — no data
     loss). Each debt row now shows "Asl / To'landi / Qoldi" 3-line layout when partial-paid; new
@@ -55,23 +70,29 @@
     Verified: /login 200, /api/telegram 405 (POST-only, expected). Pushed to origin/main.
     **NOTE on the Gemini API key format:** Google now issues keys as `AQ.Ab8RN6...` (not the classic `AIza...`)
     — captured in `playbook_tech_gotchas` so we don't second-guess that format next time.
-- **USER WENT TO SLEEP — autopilot batch COMPLETE.** Both safe + high-impact audit fixes shipped:
-  - ✅ Task 032 (cash-in-hand line) — code only
-  - ✅ Task 033 (debt partial payments) — additive DB migration applied to prod successfully
-  - ✋ Task 034 (recurring transactions) — DRAFT SPEC ONLY (`docs/tasks/034`). 5 design decisions
-    (D1–D5) need user input before implementation. Estimated ~5-6h after decisions. Recommended
-    direction: Vercel Cron + monthly/yearly only + frozen past entries.
-- **Autopilot stop point:** continuing into task 034 would require unilateral design decisions on
-  cron infra vs on-load generation, schedule format granularity, edit-propagation behavior — those
-  are the user's call. Wake-and-decide path is faster + safer than autopilot guessing wrong.
-- **USER ACTION NEEDED on wake — five verdicts plus audit-batch review:**
-  1. **STT verdict (task 028)** — bot voice tests on `@oson_moliya_bot`, 3-5 messages. Gemini OK?
-  2. **Task 029 verdict** — bot tx → Tahrirlash → category pills only (no twin pills); card has 🔄
-  3. **Task 030 verdict** — phone dashboard: USD `≈ $...` lines, "Berilgan" card neutral, "—" dates
-  4. **Task 031 verdict** — bot edit menu no longer has flip button; Debts page has 1-line explainer
-  5. **Task 032 verdict** — home shows new "Naqd qolgan" sub-block when debts open (math: balance
-     − givenOpen + takenOpen). On a no-debts user: identical to before. Math correct on edge cases?
-  6. **Task 033 verdict** (if Opus completes it overnight): partial-payment tracking on each debt
+- **USER WENT TO SLEEP — autopilot batch v2 COMPLETE.** User extended autonomy ("hammasini mensiz
+  qilaver aqlli qaror qabul qilib, hammasini hal qilib keyin deploy qil") so Opus continued past
+  the safe-fixes phase and locked task 034's 5 design decisions itself. 3 of 5 audit findings now
+  fully shipped (#1 cash-in-hand, #2 recurring, #3 partial payments).
+- **REMAINING audit work (not autopilot — user-call territory):**
+  - #4 currency rate versioning (~6h) — touches every entry historically; needs DB rate-stamps +
+    decision on whether to backfill historicals or only stamp going forward. Big call.
+  - #5 two-balance confusion (Umumiy balans vs per-account balance) — needs user verdict on
+    whether to keep both with clearer labels or collapse to one. Polish task.
+  - Bot side for tasks 033 + 034 — adding partial-payment + recurring-rule via bot. Each is its
+    own task.
+  - Smaller: budget trend, JSON backup, audit trail, onboarding-mentions-debt.
+- **USER ACTION NEEDED on wake — 7 verdicts:**
+  1. **STT (028)** — `@oson_moliya_bot` ovoz testi, Gemini OK?
+  2. **Bot UX (029)** — Tahrirlash → category pills only (no twin pills); card 🔄 works
+  3. **Dashboard (030)** — phone: USD `≈ $...` lines, "Berilgan" neutral, "—" for missing dates
+  4. **Bot UX (031)** — bot edit menu has NO flip; /debts page has 1-line explainer
+  5. **Cash (032)** — Home shows "Naqd qolgan" sub-block when debts open; math right?
+  6. **Partial payments (033)** — /debts: "+ To'lov" button, Asl/To'landi/Qoldi rows, modal saves
+  7. **Recurring (034)** — /recurring page lists rules; /more has new entry; add a test rule and
+     wait until midnight Tashkent — should auto-create a Transaction stamped `source: "recurring"`
+     with `recurringRuleId` set. Or trigger immediately:
+     `curl -H "Authorization: Bearer $CRON_SECRET" https://oson-moliya.vercel.app/api/cron/recurring`
 - **NEXT — agreed plan (after both verdicts):**
   1. **Spam protection** (added by user 2026-06-17): rate-limit `@oson_moliya_bot` per Telegram user_id (voice
      costs money — separate, tighter cap). Storage: in-memory or DB? Limits TBD — needs a short spec.
