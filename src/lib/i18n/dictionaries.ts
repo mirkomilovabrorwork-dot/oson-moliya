@@ -412,6 +412,9 @@ const uz: Dictionary = {
   "undo.restored": "Qaytarildi",
   // ── More > Trash link
   "more.trash": "O'chirilganlar",
+  // ── More > Backup download
+  "more.backup": "Ma'lumotlarni yuklab olish",
+  "more.backup_sub": "Barcha yozuvlaringiz bitta JSON faylda (zaxira nusxa).",
   // ── Trash page
   "trash.title": "O'chirilganlar",
   "trash.empty": "Savatcha bo'sh",
@@ -832,6 +835,9 @@ const ru: Dictionary = {
   "undo.restored": "Восстановлено",
   // ── More > Trash link
   "more.trash": "Удалённые",
+  // ── More > Backup download
+  "more.backup": "Скачать мои данные",
+  "more.backup_sub": "Все ваши записи в одном JSON-файле (резервная копия).",
   // ── Trash page
   "trash.title": "Удалённые",
   "trash.empty": "Корзина пуста",
@@ -1252,6 +1258,9 @@ const en: Dictionary = {
   "undo.restored": "Restored",
   // ── More > Trash link
   "more.trash": "Deleted",
+  // ── More > Backup download
+  "more.backup": "Download my data",
+  "more.backup_sub": "All your records in one JSON file (a backup copy).",
   // ── Trash page
   "trash.title": "Deleted items",
   "trash.empty": "Trash is empty",
