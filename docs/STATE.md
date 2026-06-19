@@ -6,7 +6,18 @@
 
 ## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044→048 ALL DEPLOYED to prod; STT (028) confirmed GOOD; user live-testing bot Q&A + debt-repay + multi-tx)
 
-- **✅ ALL LIVE on prod (full branch HEAD `714a842`, deployment `dpl_AS5QMESC4UB5tHdGjGjXCGpdYgJt`, `oson-moliya.vercel.app`).** (049 follow-up `714a842`: RESTORED purposeful bot emoji — full-strip was an over-correction; user missed the ✅/🟢/🔴 signals. Kept the redundant-word drop. Web custom icons unchanged. Custom emoji/stickers NOT used: custom emoji need Telegram Premium to render; stickers are separate bubbles → standard emoji is the universal/clear choice.) Deployed in stages: 044+045 → 046+047 → 048 → 048-debt-fix → **049 de-emoji**. Verified each: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change beyond 044's columns. **STT (Gemini, 028) confirmed GOOD by user.** Rollback if a brain change regresses = redeploy commit `32476d8` (= 044+045 only).
+- **✅ ALL LIVE on prod (full branch HEAD `eae85d8`, deployment `dpl_EuVAijC1qcBaoGmCQFfi7NGmQ565`, `oson-moliya.vercel.app`).** (049 follow-up `714a842`: RESTORED purposeful bot emoji — full-strip was an over-correction; kept the redundant-word drop. Custom emoji/stickers NOT used: custom emoji need TG Premium; stickers are separate bubbles → standard emoji is the universal choice.)
+  - **✅ TASK 050 — recovery anchor: login + password (`eae85d8`) — DEPLOYED + VERIFIED ON PREVIEW.** Identity
+    was Telegram-only → add optional `loginName`+`passwordHash` (scrypt+salt, zero-dep) so a user can log into
+    the WEB without Telegram → reach + export data. `/more` "Hisobni himoyalash" card with a plain-language WHY
+    (user requirement "nega kerakligini tushunsin" — verified rendering on a real preview); `/login` gains a
+    login+password option. Routes: set-credentials (session-guarded, same-origin, uniqueness) + password-login
+    (rate-limited, NO user enumeration). **ADDITIVE DB push applied to prod** (loginName unique + passwordHash;
+    used `--accept-data-loss` — only the unique-constraint-on-new-all-NULL-column was flagged, genuinely safe).
+    Backend Opus-inline (security); frontend delegated. Verified end-to-end on a preview: card+WHY render,
+    set-credentials 200, password-login correct→session / wrong→401 / no-user→401; prod smoke: bad login 401,
+    unauth set 401. **NOTE:** the preview FIRST errored "column does not exist" — caught the db-push-before-deploy
+    ordering BEFORE prod would have broken. v1 = web recovery; binding a NEW telegramId to the old account = future. Deployed in stages: 044+045 → 046+047 → 048 → 048-debt-fix → **049 de-emoji**. Verified each: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change beyond 044's columns. **STT (Gemini, 028) confirmed GOOD by user.** Rollback if a brain change regresses = redeploy commit `32476d8` (= 044+045 only).
   - **✅ TASK 049 — de-emoji (`12dd308`) — DEPLOYED.** User: emojis read as AI-made; +/− sign + "kirim/chiqim"
     word is redundant. WEB: extended `CategoryMark` to a cohesive custom line-icon set for all 26 categories +
     account types + a `tag` fallback; transaction/home/accounts render icons not emoji. BOT (Telegram can't show
