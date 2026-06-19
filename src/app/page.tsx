@@ -8,7 +8,7 @@ import { BudgetNudge } from "@/components/BudgetNudge";
 import { TopNav } from "@/components/TopNav";
 import { BottomNav } from "@/components/BottomNav";
 import { AddSheet } from "@/components/AddSheet";
-import { HomeExpenseDonut } from "@/components/charts/HomeExpenseDonut";
+import dynamicImport from "next/dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { BudgetDTO } from "@/lib/types";
@@ -19,6 +19,13 @@ import { translateCategoryName } from "@/lib/categories-i18n";
 import { CategoryMark } from "@/components/CategoryMark";
 import type { Rates } from "@/lib/rates";
 import { tashkentMonthRange } from "@/lib/dates";
+
+// Code-split Recharts into its own lazy chunk (keeps it out of the initial bundle).
+// NOTE (Next 16): `ssr: false` is NOT allowed in a Server Component — so the donut still
+// SSRs, but Recharts loads as a separate chunk, lightening the first-paint JS.
+const HomeExpenseDonut = dynamicImport(() =>
+  import("@/components/charts/HomeExpenseDonut").then((m) => ({ default: m.HomeExpenseDonut }))
+);
 
 export const dynamic = "force-dynamic";
 
@@ -51,14 +58,7 @@ export default async function OverviewPage() {
 
   const prisma = db as import("@prisma/client").PrismaClient;
 
-  const recent = await prisma.transaction.findMany({
-    where: { userId: user.id, deletedAt: null },
-    orderBy: { occurredAt: "desc" },
-    take: 5,
-    include: { category: true },
-  });
-
-  // Budget progress
+  // Budget progress date math (pure computation, no DB)
   const nowUtc = new Date();
   const now = new Date(nowUtc.getTime() + 5 * 60 * 60 * 1000);
   const year = now.getUTCFullYear();
@@ -66,43 +66,87 @@ export default async function OverviewPage() {
   const monthStart = new Date(Date.UTC(year, month - 1, 1) - 5 * 60 * 60 * 1000);
   const monthEnd = new Date(Date.UTC(year, month, 1) - 5 * 60 * 60 * 1000);
 
-  const budgets = await prisma.budget.findMany({
-    where: { userId: user.id },
-    include: { category: true },
-  });
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const { start: prevMonthStart, end: prevMonthEnd } = tashkentMonthRange(prevYear, prevMonth);
 
-  // Expense-by-category groupBy for both budgets and the donut
-  const spentRows = await prisma.transaction.groupBy({
-    by: ["categoryId"],
-    where: {
-      userId: user.id,
-      type: "expense",
-      deletedAt: null,
-      occurredAt: { gte: monthStart, lt: monthEnd },
-    },
-    _sum: { amountUzs: true },
-  });
+  // ── Batch 1: all independent DB queries run in parallel ──────────────────────
+  // • recent: needs only user.id
+  // • budgets: needs only user.id
+  // • spentRows (this-month groupBy): needs user.id + monthStart/monthEnd (computed above)
+  // • prevSpentRows (prev-month groupBy): needs user.id + prevMonthStart/prevMonthEnd (computed above)
+  // • allTimeIncomeAgg + allTimeExpenseAgg: need only user.id (already paired together)
+  // • getDebtTotals: needs only user.id
+  // • allTimeCurrencyGroupsRaw: needs only user.id
+  // None of these use each other's results.
+  const [
+    recent,
+    budgets,
+    spentRows,
+    prevSpentRows,
+    [allTimeIncomeAgg, allTimeExpenseAgg],
+    { givenOpen, takenOpen },
+    allTimeCurrencyGroupsRaw,
+  ] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { userId: user.id, deletedAt: null },
+      orderBy: { occurredAt: "desc" },
+      take: 5,
+      include: { category: true },
+    }),
+    prisma.budget.findMany({
+      where: { userId: user.id },
+      include: { category: true },
+    }),
+    // Expense-by-category groupBy for both budgets and the donut
+    prisma.transaction.groupBy({
+      by: ["categoryId"],
+      where: {
+        userId: user.id,
+        type: "expense",
+        deletedAt: null,
+        occurredAt: { gte: monthStart, lt: monthEnd },
+      },
+      _sum: { amountUzs: true },
+    }),
+    // ── Biggest-mover: last-month expense groupBy ──
+    prisma.transaction.groupBy({
+      by: ["categoryId"],
+      where: {
+        userId: user.id,
+        type: "expense",
+        deletedAt: null,
+        occurredAt: { gte: prevMonthStart, lt: prevMonthEnd },
+      },
+      _sum: { amountUzs: true },
+    }),
+    // ── ALL-TIME totals ──
+    Promise.all([
+      prisma.transaction.aggregate({
+        where: { userId: user.id, type: "income", deletedAt: null },
+        _sum: { amountUzs: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { userId: user.id, type: "expense", deletedAt: null },
+        _sum: { amountUzs: true },
+      }),
+    ]),
+    // ── Cash-in-hand (task 032) ──
+    getDebtTotals(user.id),
+    // ── ALL-TIME per-currency breakdown ──
+    prisma.transaction.groupBy({
+      by: ["originalCurrency", "type"],
+      where: { userId: user.id, deletedAt: null },
+      _sum: { amountUzs: true, originalAmount: true },
+    }),
+  ]);
+
   const spentMap = new Map<string, bigint>(
     spentRows
       .filter((r) => r.categoryId !== null)
       .map((r) => [r.categoryId as string, r._sum.amountUzs ?? 0n])
   );
 
-  // ── Biggest-mover: last-month expense groupBy (additive read, no schema change) ──
-  const prevMonth = month === 1 ? 12 : month - 1;
-  const prevYear = month === 1 ? year - 1 : year;
-  const { start: prevMonthStart, end: prevMonthEnd } = tashkentMonthRange(prevYear, prevMonth);
-
-  const prevSpentRows = await prisma.transaction.groupBy({
-    by: ["categoryId"],
-    where: {
-      userId: user.id,
-      type: "expense",
-      deletedAt: null,
-      occurredAt: { gte: prevMonthStart, lt: prevMonthEnd },
-    },
-    _sum: { amountUzs: true },
-  });
   const prevSpentMap = new Map<string, bigint>(
     prevSpentRows
       .filter((r) => r.categoryId !== null)
@@ -175,23 +219,12 @@ export default async function OverviewPage() {
     .filter((d) => d.amount > 0)
     .sort((a, b) => b.amount - a.amount);
 
-  // ── ALL-TIME totals (aggregation, no row fetch) ───────────────────────────
-  const [allTimeIncomeAgg, allTimeExpenseAgg] = await Promise.all([
-    prisma.transaction.aggregate({
-      where: { userId: user.id, type: "income", deletedAt: null },
-      _sum: { amountUzs: true },
-    }),
-    prisma.transaction.aggregate({
-      where: { userId: user.id, type: "expense", deletedAt: null },
-      _sum: { amountUzs: true },
-    }),
-  ]);
+  // ── ALL-TIME totals (from Batch 1 results) ───────────────────────────────
   const allTimeIncomeUzs = allTimeIncomeAgg._sum.amountUzs ?? 0n;
   const allTimeExpenseUzs = allTimeExpenseAgg._sum.amountUzs ?? 0n;
   const allTimeBalanceUzs = allTimeIncomeUzs - allTimeExpenseUzs;
 
-  // ── Cash-in-hand (task 032) ───────────────────────────────────────────────
-  const { givenOpen, takenOpen } = await getDebtTotals(user.id);
+  // ── Cash-in-hand (task 032, from Batch 1 results) ────────────────────────
   const hasOpenDebts = givenOpen > 0n || takenOpen > 0n;
   const cashInHandUzs = allTimeBalanceUzs - givenOpen + takenOpen;
 
@@ -204,14 +237,9 @@ export default async function OverviewPage() {
   );
   const allTimeBalancePositive = allTimeBalanceUzs >= 0n;
 
-  // ── ALL-TIME per-currency breakdown (groupBy, no row fetch) ──────────────
+  // ── ALL-TIME per-currency breakdown (from Batch 1 results) ───────────────
   // Group by (originalCurrency, type) — sum both amountUzs and originalAmount.
   // For rows where originalCurrency IS NULL (plain UZS), Prisma groupBy returns null.
-  const allTimeCurrencyGroupsRaw = await prisma.transaction.groupBy({
-    by: ["originalCurrency", "type"],
-    where: { userId: user.id, deletedAt: null },
-    _sum: { amountUzs: true, originalAmount: true },
-  });
   // Cast to a simpler shape; TxType enum values === string literals "income"/"expense"
   const allTimeCurrencyGroups = allTimeCurrencyGroupsRaw as Array<{
     originalCurrency: string | null;
