@@ -21,9 +21,11 @@
   Also **made lint NON-BLOCKING** in CI + `gate` — the codebase has **7 pre-existing react-hooks lint errors**
   (set-state-in-effect / purity in DebtsClient, RecurringClient, QuickAddForm, BudgetNudge, BulkDeleteDialog,
   trash/page, error.tsx) — NOT ours; logged as tech-debt (don't bundle a risky UI refactor here). Next: **Step C** (brain accuracy eval).
-  **🔴 USER ACTION — rotate the GitHub PAT:** a token `ghp_...` was found in PLAINTEXT in the git remote URL
-  (`origin`). Revoke it on GitHub + replace (or use credential manager/SSH); then I set the remote tokenless.
-  Don't push until decided.
+  **🔴 USER ACTION — rotate the GitHub PAT (now BLOCKING the push):** a token `ghp_...` was found in PLAINTEXT
+  in the git remote URL (`origin`). Push was REJECTED — the current PAT lacks the `workflow` scope, so it cannot
+  push `.github/workflows/ci.yml`. So: revoke the old token + create a NEW one WITH `repo` + `workflow` scopes
+  (or use credential manager/SSH), update the remote, THEN I push. Until then, commits `f5f4b85` / `b79c1a9` /
+  `200d835` (Steps A+B) are LOCAL-ONLY (not backed up to GitHub, CI not yet run).
 - **▶ START HERE NEXT SESSION (user's call 2026-06-19):** close the 3 weak agentic-engineering pillars —
   see `docs/BACKLOG.md` → "▶ NEXT SESSION — Agentic-engineering hardening". Order: (1) Verification depth —
   user live-tests the shipped bot changes (046–053) + I build a brain ACCURACY TEST SET; (2) Agentic CI/CD +
