@@ -243,7 +243,7 @@ async function showUpdatedTx(
   const dateKey = txDayStr === todayStr ? "today" : txDayStr === yesterdayStr ? "yesterday" : txDayStr;
 
   const updatedHeadline =
-    lang === "ru" ? "Обновлено" : lang === "en" ? "Updated" : "Yangilandi";
+    lang === "ru" ? "✅ Обновил" : lang === "en" ? "✅ Updated" : "✅ Yangiladim";
   const cardText = formatConfirmation({
     amount: tx.amountUzs,
     type: tx.type === TxType.income ? "income" : "expense",
@@ -302,24 +302,24 @@ function buildDebtCard(
 ): DebtCardResult {
   const headLine =
     mode === "saved"
-      ? (lang === "ru" ? "Сохранено" : lang === "en" ? "Saved" : "Saqlandi")
-      : (lang === "ru" ? "Обновлено" : lang === "en" ? "Updated" : "Yangilandi");
+      ? (lang === "ru" ? "✅ Сохранил" : lang === "en" ? "✅ Saved" : "✅ Saqladim")
+      : (lang === "ru" ? "✅ Обновил" : lang === "en" ? "✅ Updated" : "✅ Yangiladim");
 
   const dirLine =
     debt.direction === DebtDirection.given
-      ? (lang === "ru" ? `${debt.counterparty}у дали` : lang === "en" ? `lent to ${debt.counterparty}` : `${debt.counterparty}ga berdingiz`)
-      : (lang === "ru" ? `у ${debt.counterparty} взяли` : lang === "en" ? `borrowed from ${debt.counterparty}` : `${debt.counterparty}dan oldingiz`);
+      ? (lang === "ru" ? `🤝 ${debt.counterparty}у дали` : lang === "en" ? `🤝 lent to ${debt.counterparty}` : `🤝 ${debt.counterparty}ga berdingiz`)
+      : (lang === "ru" ? `🤝 у ${debt.counterparty} взяли` : lang === "en" ? `🤝 borrowed from ${debt.counterparty}` : `🤝 ${debt.counterparty}dan oldingiz`);
 
   const amtStr = formatAmount(debt.amountUzs, lang);
-  const lines = [headLine, dirLine, amtStr];
+  const lines = [headLine, dirLine, `💵 ${amtStr}`];
   if (occurredAt) {
-    lines.push(utcDateToTashkentLabel(occurredAt, lang));
+    lines.push(`📅 ${utcDateToTashkentLabel(occurredAt, lang)}`);
   }
   const text = lines.join("\n");
 
   const editDeleteRow: InlineKeyboardButton[] = [
-    { text: lang === "ru" ? "Изменить" : lang === "en" ? "Edit" : "Tahrirla", callback_data: `de:${debt.id}` },
-    { text: lang === "ru" ? "Удалить" : lang === "en" ? "Delete" : "O'chir", callback_data: `dx:${debt.id}` },
+    { text: lang === "ru" ? "✏️ Изменить" : lang === "en" ? "✏️ Edit" : "✏️ Tahrirla", callback_data: `de:${debt.id}` },
+    { text: lang === "ru" ? "🗑 Удалить" : lang === "en" ? "🗑 Delete" : "🗑 O'chir", callback_data: `dx:${debt.id}` },
   ];
 
   return { text, editDeleteRow };
@@ -353,10 +353,10 @@ async function buildAndSendReport(
     const filename = `Oson-Moliya-${yyyy}-${mm}.xlsx`;
     const caption =
       lang === "ru"
-        ? `Отчёт за ${yyyy}-${mm}`
+        ? `📊 Отчёт за ${yyyy}-${mm}`
         : lang === "en"
-        ? `Report for ${yyyy}-${mm}`
-        : `${yyyy}-${mm} oy hisoboti`;
+        ? `📊 Report for ${yyyy}-${mm}`
+        : `📊 ${yyyy}-${mm} oy hisoboti`;
     await replyWithDocument(new InputFile(buf, filename), { caption });
   } catch (err) {
     console.error("hisobot error:", err);
@@ -374,12 +374,12 @@ async function buildAndSendReport(
 //    handleMessage (📈 Grafik button) and createBot (/dashboard) can call it ──────
 function loginAccessText(l: "uz" | "ru" | "en", code: string, siteHost: string): string {
   if (l === "ru") {
-    return `Нажмите кнопку ниже — сайт откроется сам.\n\nС компьютера: откройте ${siteHost} и введите код ${code} (действителен 10 минут).`;
+    return `Нажмите кнопку ниже — сайт откроется сам. ✅\n\n💻 С компьютера: откройте ${siteHost} и введите код ${code} (действителен 10 минут).`;
   }
   if (l === "en") {
-    return `Tap the button below — the site opens itself.\n\nFrom a computer: open ${siteHost} and enter code ${code} (valid 10 minutes).`;
+    return `Tap the button below — the site opens itself. ✅\n\n💻 From a computer: open ${siteHost} and enter code ${code} (valid 10 minutes).`;
   }
-  return `Pastdagi tugmani bosing — sayt o'zi ochiladi.\n\nKompyuterdan: ${siteHost} ni oching va kodni kiriting: ${code} (10 daqiqa amal qiladi).`;
+  return `Pastdagi tugmani bosing — sayt o'zi ochiladi. ✅\n\n💻 Kompyuterdan: ${siteHost} ni oching va kodni kiriting: ${code} (10 daqiqa amal qiladi).`;
 }
 
 async function buildLoginAccessReply(
@@ -394,7 +394,7 @@ async function buildLoginAccessReply(
     try { return new URL(env.APP_URL).host; } catch { return env.APP_URL; }
   })();
   const buttonLabel =
-    lang === "ru" ? "Войти на сайт" : lang === "en" ? "Open & log in" : "Saytga kirish";
+    lang === "ru" ? "🔓 Войти на сайт" : lang === "en" ? "🔓 Open & log in" : "🔓 Saytga kirish";
   return {
     text: loginAccessText(lang, code, siteHost),
     reply_markup: { inline_keyboard: [[{ text: buttonLabel, url: loginUrl }]] },
@@ -404,12 +404,12 @@ async function buildLoginAccessReply(
 // ── Localized /help text (module-level so handleMessage can call it) ─────────
 function helpText(l: "uz" | "ru" | "en"): string {
   if (l === "ru") {
-    return `Oson Moliya — Помощь\n\nОтправьте мне текст или голосовое — я автоматически сохраню ваши расходы и доходы.\n\nКоманды:\n/start — Запустить бота\n/language — Сменить язык\n/dashboard — Открыть панель\n/hisobot — Excel отчёт за текущий месяц (также: /report или напишите «отчёт»)\n/help — Список команд\n\nНапример:\n"На обед ушло 35 тысяч"\n"Зарплата 5 000 000 сум"\n"сколько расходов в этом месяце?"`;
+    return `📖 Oson Moliya — Помощь\n\nОтправьте мне текст или 🎤 голосовое — я автоматически сохраню ваши расходы и доходы.\n\nКоманды:\n/start — Запустить бота\n/language — Сменить язык\n/dashboard — Открыть панель\n/hisobot — Excel отчёт за текущий месяц (также: /report или напишите «отчёт»)\n/help — Список команд\n\n💡 Например:\n"На обед ушло 35 тысяч"\n"Зарплата 5 000 000 сум"\n"сколько расходов в этом месяце?"`;
   }
   if (l === "en") {
-    return `Oson Moliya — Help\n\nSend me text or a voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the dashboard\n/hisobot — Excel monthly report (also: /report or type "report")\n/help — Command list\n\nFor example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
+    return `📖 Oson Moliya — Help\n\nSend me text or a 🎤 voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the dashboard\n/hisobot — Excel monthly report (also: /report or type "report")\n/help — Command list\n\n💡 For example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
   }
-  return `Oson Moliya — Yordam\n\nMenga matn yoki ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Panelni ochish\n/hisobot — Excel oylik hisobot (shuningdek: /report yoki «hisobot» deb yozing)\n/help — Buyruqlar ro'yxati\n\nMasalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
+  return `📖 Oson Moliya — Yordam\n\nMenga matn yoki 🎤 ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Panelni ochish\n/hisobot — Excel oylik hisobot (shuningdek: /report yoki «hisobot» deb yozing)\n/help — Buyruqlar ro'yxati\n\n💡 Masalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
 }
 
 // ── applyRepayment — shared helper for repay_debt dispatch + rp: callback ───
@@ -475,17 +475,17 @@ async function applyRepayment(
   if (remainingAfter <= 0n) {
     text =
       lang === "ru"
-        ? `Долг полностью погашён: ${cpName} · ${formatAmount(pay, lang)}`
+        ? `✅ Долг полностью погашён: ${cpName} · ${formatAmount(pay, lang)}`
         : lang === "en"
-        ? `Debt fully settled: ${cpName} · ${formatAmount(pay, lang)}`
-        : `Qarz to'liq yopildi: ${cpName} · ${formatAmount(pay, lang)}`;
+        ? `✅ Debt fully settled: ${cpName} · ${formatAmount(pay, lang)}`
+        : `✅ Qarz to'liq yopildi: ${cpName} · ${formatAmount(pay, lang)}`;
   } else {
     text =
       lang === "ru"
-        ? `Платёж записан: ${formatAmount(pay, lang)}. ${cpName} — остаток: ${formatAmount(remainingAfter, lang)}`
+        ? `✅ Платёж записан: ${formatAmount(pay, lang)}. ${cpName} — остаток: ${formatAmount(remainingAfter, lang)}`
         : lang === "en"
-        ? `Payment recorded: ${formatAmount(pay, lang)}. ${cpName} — remaining: ${formatAmount(remainingAfter, lang)}`
-        : `To'lov yozildi: ${formatAmount(pay, lang)}. ${cpName} — qoldiq: ${formatAmount(remainingAfter, lang)}`;
+        ? `✅ Payment recorded: ${formatAmount(pay, lang)}. ${cpName} — remaining: ${formatAmount(remainingAfter, lang)}`
+        : `✅ To'lov yozildi: ${formatAmount(pay, lang)}. ${cpName} — qoldiq: ${formatAmount(remainingAfter, lang)}`;
   }
 
   if (capped) {
@@ -565,10 +565,10 @@ async function handleMessage(
   // Exact-match the button labels before passing to the brain.
   // We check all three language variants so the correct button always fires
   // regardless of which language was active when the keyboard was rendered.
-  const REPORT_BTNS = ["Hisobot", "Отчёт", "Report"];
-  const HELP_BTNS = ["Yordam", "Помощь", "Help"];
-  const LANG_BTNS = ["Til", "Язык", "Language"];
-  const GRAFIK_BTNS = ["Grafik", "Графики", "Charts"];
+  const REPORT_BTNS = ["📊 Hisobot", "📊 Отчёт", "📊 Report"];
+  const HELP_BTNS = ["❓ Yordam", "❓ Помощь", "❓ Help"];
+  const LANG_BTNS = ["🌐 Til", "🌐 Язык", "🌐 Language"];
+  const GRAFIK_BTNS = ["📈 Grafik", "📈 Графики", "📈 Charts"];
 
   if (REPORT_BTNS.includes(text)) {
     const btnLang = (user.language as "uz" | "ru" | "en") ?? "uz";
@@ -852,15 +852,15 @@ async function handleMessage(
           const line =
             dir === DebtDirection.given
               ? lang === "ru"
-                ? `Дал в долг ${cp}: ${amtFmt}`
+                ? `↗️ Дал в долг ${cp}: ${amtFmt}`
                 : lang === "en"
-                ? `Lent to ${cp}: ${amtFmt}`
-                : `${cp}ga qarz berildi: ${amtFmt}`
+                ? `↗️ Lent to ${cp}: ${amtFmt}`
+                : `↗️ ${cp}ga qarz berildi: ${amtFmt}`
               : lang === "ru"
-              ? `Взял в долг у ${cp}: ${amtFmt}`
+              ? `↙️ Взял в долг у ${cp}: ${amtFmt}`
               : lang === "en"
-              ? `Borrowed from ${cp}: ${amtFmt}`
-              : `${cp}dan qarz olindi: ${amtFmt}`;
+              ? `↙️ Borrowed from ${cp}: ${amtFmt}`
+              : `↙️ ${cp}dan qarz olindi: ${amtFmt}`;
           captured.push(line);
         } else {
           // Transaction item → reuse finalizeLog, capturing its confirmation text
@@ -890,10 +890,10 @@ async function handleMessage(
 
       const header =
         lang === "ru"
-          ? `Записал ${valid.length} операц.:`
+          ? `✅ Записал ${valid.length} операц.:`
           : lang === "en"
-          ? `Logged ${valid.length} entries:`
-          : `${valid.length} ta yozuv qo'shildi:`;
+          ? `✅ Logged ${valid.length} entries:`
+          : `✅ ${valid.length} ta yozuv qo'shildi:`;
 
       const skipped = items.length - valid.length;
       const skipNote =
@@ -1063,16 +1063,16 @@ async function handleMessage(
     const amountStr = formatAmount(BigInt(amount), lang);
     const dirQuestion =
       lang === "ru"
-        ? `Понял долг:\n${counterparty}\n${amountStr}\n\nВы дали или взяли?`
+        ? `📋 Понял долг:\n👤 ${counterparty}\n💰 ${amountStr}\n\nВы дали или взяли?`
         : lang === "en"
-        ? `Got it — debt:\n${counterparty}\n${amountStr}\n\nDid you lend or borrow?`
-        : `Qarz tushundim:\n${counterparty}\n${amountStr}\n\nYo'nalishini tanlang:`;
+        ? `📋 Got it — debt:\n👤 ${counterparty}\n💰 ${amountStr}\n\nDid you lend or borrow?`
+        : `📋 Qarz tushundim:\n👤 ${counterparty}\n💰 ${amountStr}\n\nYo'nalishini tanlang:`;
 
     await ctx.reply(dirQuestion, {
       reply_markup: {
         inline_keyboard: [[
-          { text: lang === "ru" ? "Я дал" : lang === "en" ? "I lent" : "Men berdim", callback_data: "dd:given" },
-          { text: lang === "ru" ? "Я взял" : lang === "en" ? "I borrowed" : "Men oldim", callback_data: "dd:taken" },
+          { text: lang === "ru" ? "↗️ Я дал" : lang === "en" ? "↗️ I lent" : "↗️ Men berdim", callback_data: "dd:given" },
+          { text: lang === "ru" ? "↙️ Я взял" : lang === "en" ? "↙️ I borrowed" : "↙️ Men oldim", callback_data: "dd:taken" },
         ]],
       },
     });
@@ -1311,14 +1311,14 @@ async function handleMessage(
         const takenFmt = formatAmount(r.takenRemaining, lang);
 
         if (lang === "ru") {
-          if (r.givenRemaining > 0n) lines.push(`${cpQuery} вам должен: ${givenFmt}`);
-          if (r.takenRemaining > 0n) lines.push(`Вы должны ${cpQuery}: ${takenFmt}`);
+          if (r.givenRemaining > 0n) lines.push(`💰 ${cpQuery} вам должен: ${givenFmt}`);
+          if (r.takenRemaining > 0n) lines.push(`💸 Вы должны ${cpQuery}: ${takenFmt}`);
         } else if (lang === "en") {
-          if (r.givenRemaining > 0n) lines.push(`${cpQuery} owes you: ${givenFmt}`);
-          if (r.takenRemaining > 0n) lines.push(`You owe ${cpQuery}: ${takenFmt}`);
+          if (r.givenRemaining > 0n) lines.push(`💰 ${cpQuery} owes you: ${givenFmt}`);
+          if (r.takenRemaining > 0n) lines.push(`💸 You owe ${cpQuery}: ${takenFmt}`);
         } else {
-          if (r.givenRemaining > 0n) lines.push(`${cpQuery} sizga qarzdor: ${givenFmt}`);
-          if (r.takenRemaining > 0n) lines.push(`Siz ${cpQuery}ga qarzdorsiz: ${takenFmt}`);
+          if (r.givenRemaining > 0n) lines.push(`💰 ${cpQuery} sizga qarzdor: ${givenFmt}`);
+          if (r.takenRemaining > 0n) lines.push(`💸 Siz ${cpQuery}ga qarzdorsiz: ${takenFmt}`);
         }
 
         // Single-figure net → use phraseAnswer; multi-line → template
@@ -1366,10 +1366,10 @@ async function handleMessage(
       if (lang === "ru") {
         // Totals section
         if (dirFilter === null || dirFilter === "taken") {
-          lines.push(`Вы должны (взяли): ${formatAmount(totals.takenOpen, lang)}`);
+          lines.push(`💸 Вы должны (взяли): ${formatAmount(totals.takenOpen, lang)}`);
         }
         if (dirFilter === null || dirFilter === "given") {
-          lines.push(`Вам должны (дали): ${formatAmount(totals.givenOpen, lang)}`);
+          lines.push(`💰 Вам должны (дали): ${formatAmount(totals.givenOpen, lang)}`);
         }
 
         if (openDebts.length === 0) {
@@ -1377,17 +1377,18 @@ async function handleMessage(
         } else {
           lines.push("");
           for (const d of shown) {
+            const arrow = d.direction === DebtDirection.given ? "↗️" : "↙️";
             const dir = d.direction === DebtDirection.given ? "вы дали" : "вы взяли";
-            lines.push(`${d.counterparty} — ${formatAmount(d.amountUzs, lang)} (${dir})`);
+            lines.push(`${arrow} ${d.counterparty} — ${formatAmount(d.amountUzs, lang)} (${dir})`);
           }
           if (extra > 0) lines.push(`...и ещё ${extra}`);
         }
       } else if (lang === "en") {
         if (dirFilter === null || dirFilter === "taken") {
-          lines.push(`You owe (borrowed): ${formatAmount(totals.takenOpen, lang)}`);
+          lines.push(`💸 You owe (borrowed): ${formatAmount(totals.takenOpen, lang)}`);
         }
         if (dirFilter === null || dirFilter === "given") {
-          lines.push(`Owed to you (lent): ${formatAmount(totals.givenOpen, lang)}`);
+          lines.push(`💰 Owed to you (lent): ${formatAmount(totals.givenOpen, lang)}`);
         }
 
         if (openDebts.length === 0) {
@@ -1395,18 +1396,19 @@ async function handleMessage(
         } else {
           lines.push("");
           for (const d of shown) {
+            const arrow = d.direction === DebtDirection.given ? "↗️" : "↙️";
             const dir = d.direction === DebtDirection.given ? "you lent" : "you borrowed";
-            lines.push(`${d.counterparty} — ${formatAmount(d.amountUzs, lang)} (${dir})`);
+            lines.push(`${arrow} ${d.counterparty} — ${formatAmount(d.amountUzs, lang)} (${dir})`);
           }
           if (extra > 0) lines.push(`...and ${extra} more`);
         }
       } else {
         // uz (default)
         if (dirFilter === null || dirFilter === "taken") {
-          lines.push(`Sizning qarzingiz (olgan): ${formatAmount(totals.takenOpen, lang)}`);
+          lines.push(`💸 Sizning qarzingiz (olgan): ${formatAmount(totals.takenOpen, lang)}`);
         }
         if (dirFilter === null || dirFilter === "given") {
-          lines.push(`Sizga qarzdorlar (bergan): ${formatAmount(totals.givenOpen, lang)}`);
+          lines.push(`💰 Sizga qarzdorlar (bergan): ${formatAmount(totals.givenOpen, lang)}`);
         }
 
         if (openDebts.length === 0) {
@@ -1414,8 +1416,9 @@ async function handleMessage(
         } else {
           lines.push("");
           for (const d of shown) {
+            const arrow = d.direction === DebtDirection.given ? "↗️" : "↙️";
             const dir = d.direction === DebtDirection.given ? "siz berdingiz" : "siz oldingiz";
-            lines.push(`${d.counterparty} — ${formatAmount(d.amountUzs, lang)} (${dir})`);
+            lines.push(`${arrow} ${d.counterparty} — ${formatAmount(d.amountUzs, lang)} (${dir})`);
           }
           if (extra > 0) lines.push(`...va yana ${extra} ta`);
         }
@@ -1813,8 +1816,8 @@ async function handleMessage(
         language: lang,
       });
       const prefix =
-        lang === "ru" ? "Исправлено: " : lang === "en" ? "Updated: " : "Tuzatildi: ";
-      await ctx.reply(`${prefix}${confirmation} ${wasStr}`);
+        lang === "ru" ? "✏️ Исправлено: " : lang === "en" ? "✏️ Updated: " : "✏️ Tuzatildi: ";
+      await ctx.reply(`${prefix}${confirmation.replace(/^✅ /, "")} ${wasStr}`);
     } catch (err) {
       console.error("correct_transaction error:", err);
       await ctx.reply(intent.reply_text);
@@ -1857,7 +1860,7 @@ async function handleMessage(
       });
 
       const deleted =
-        lang === "ru" ? "Удалено." : lang === "en" ? "Deleted." : "O'chirildi.";
+        lang === "ru" ? "🗑️ Удалено." : lang === "en" ? "🗑️ Deleted." : "🗑️ O'chirildi.";
       await ctx.reply(deleted);
     } catch (err) {
       console.error("delete_transaction error:", err);
@@ -1887,10 +1890,10 @@ async function handleMessage(
       const cat = await prisma.category.findUnique({ where: { id: catId } });
       const confirm =
         lang === "ru"
-          ? `Категория "${cat?.name}" добавлена.`
+          ? `✅ Категория "${cat?.name}" добавлена.`
           : lang === "en"
-          ? `Category "${cat?.name}" added.`
-          : `"${cat?.name}" kategoriyasi qo'shildi.`;
+          ? `✅ Category "${cat?.name}" added.`
+          : `✅ "${cat?.name}" kategoriyasi qo'shildi.`;
       await ctx.reply(confirm);
     } catch (err) {
       console.error("add_category error:", err);
@@ -1909,10 +1912,10 @@ async function handleMessage(
       : "Tushunmadim. Kirim yoki chiqim haqida yozing.");
   const helpHint =
     lang === "ru"
-      ? '\nПодсказка: /help — список команд. Например: "На обед 35 000 сум".'
+      ? '\n💡 Подсказка: /help — список команд. Например: "На обед 35 000 сум".'
       : lang === "en"
-      ? '\nTip: /help — command list. E.g. "35 000 for lunch".'
-      : '\nMaslahat: /help — buyruqlar. Masalan: "Tushlikka 35 000 so\'m".';
+      ? '\n💡 Tip: /help — command list. E.g. "35 000 for lunch".'
+      : '\n💡 Maslahat: /help — buyruqlar. Masalan: "Tushlikka 35 000 so\'m".';
   await ctx.reply(unknownBase + helpHint);
 }
 
@@ -1947,12 +1950,12 @@ export function createBot(): Bot {
   // Localized welcome shown after the user picks a language.
   const welcomeText = (l: "uz" | "ru" | "en", name: string): string => {
     if (l === "ru") {
-      return `Привет, ${name}!\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\nПишите расход/доход ПРЯМО СЮДА или наговорите голосом — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"\n\nКнопка "Moliyachi" — только для ПРОСМОТРА отчётов и графиков (туда писать не нужно).`;
+      return `Привет, ${name}! 👋\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\n✍️ Пишите расход/доход ПРЯМО СЮДА или 🎤 наговорите — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"\n\n📊 Кнопка "Moliyachi" — только для ПРОСМОТРА отчётов и графиков (туда писать не нужно).`;
     }
     if (l === "en") {
-      return `Hi, ${name}!\n\nOson Moliya — a bot to track your business finances.\n\nLog an expense/income RIGHT HERE or by voice — I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"\n\nThe "Moliyachi" button just opens your dashboard to VIEW reports — no need to type there.`;
+      return `Hi, ${name}! 👋\n\nOson Moliya — a bot to track your business finances.\n\n✍️ Log an expense/income RIGHT HERE or 🎤 by voice — I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"\n\n📊 The "Moliyachi" button just opens your dashboard to VIEW reports — no need to type there.`;
     }
-    return `Salom, ${name}!\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\nXarajat/daromadni SHU YERGA yozing yoki ovoz bilan ayting — men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"\n\n"Moliyachi" tugmasi — faqat hisobot va grafiklarni KO'RISH uchun (u yerga yozish shart emas).`;
+    return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\n✍️ Xarajat/daromadni SHU YERGA yozing yoki 🎤 ayting — men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"\n\n📊 "Moliyachi" tugmasi — faqat hisobot va grafiklarni KO'RISH uchun (u yerga yozish shart emas).`;
   };
 
   // loginAccessText + buildLoginAccessReply are now module-level (defined above createBot)
@@ -2078,10 +2081,10 @@ export function createBot(): Bot {
     if (isRateLimited(from.id)) {
       await ctx.reply(
         lang === "ru"
-          ? "Подождите немного и попробуйте снова."
+          ? "⏳ Подождите немного и попробуйте снова."
           : lang === "en"
-          ? "Please wait a moment and try again."
-          : "Biroz kuting va qaytadan urinib ko'ring."
+          ? "⏳ Please wait a moment and try again."
+          : "⏳ Biroz kuting va qaytadan urinib ko'ring."
       );
       return;
     }
@@ -2390,19 +2393,20 @@ export function createBot(): Bot {
         const catBtns: InlineKeyboardButton[] = editCats.map((c) => ({ text: c.name, callback_data: `ec:${c.id}` }));
         for (let i = 0; i < catBtns.length; i += 2) rows.push(catBtns.slice(i, i + 2));
         rows.push([
-          { text: lang === "ru" ? "Другое" : lang === "en" ? "Other" : "Boshqa", callback_data: `ec:other:${txId}` },
+          { text: lang === "ru" ? "✏️ Другое" : lang === "en" ? "✏️ Other" : "✏️ Boshqa", callback_data: `ec:other:${txId}` },
         ]);
         rows.push([
           { text: labels.editAmountLabel, callback_data: "ef:amt" },
           { text: labels.deleteBtn, callback_data: `d:${txId}` },
         ]);
         const isExpenseEdit = tx.type === TxType.expense;
+        const typeIcon = isExpenseEdit ? "🔴" : "🟢";
         const typeWord = isExpenseEdit
           ? (lang === "ru" ? "Расход" : lang === "en" ? "Expense" : "Chiqim")
           : (lang === "ru" ? "Доход" : lang === "en" ? "Income" : "Kirim");
         const catName = tx.category?.name ?? (lang === "ru" ? "—" : lang === "en" ? "—" : "—");
         const amtStr = formatAmount(tx.amountUzs, lang);
-        const headerText = editPickerHeader("", typeWord, catName, amtStr, lang);
+        const headerText = editPickerHeader(typeIcon, typeWord, catName, amtStr, lang);
         await ctx.answerCallbackQuery();
         await ctx.reply(
           headerText,
@@ -2434,7 +2438,7 @@ export function createBot(): Bot {
         await ctx.answerCallbackQuery();
         await ctx.reply(
           labels.editAmountPrompt,
-          { reply_markup: { force_reply: true, input_field_placeholder: labels.editAmountLabel } }
+          { reply_markup: { force_reply: true, input_field_placeholder: labels.editAmountLabel.replace("💰 ", "") } }
         );
         return;
       }
@@ -2658,9 +2662,9 @@ export function createBot(): Bot {
           {
             reply_markup: {
               inline_keyboard: [[
-                { text: lang === "ru" ? "Имя" : lang === "en" ? "Name" : "Ism", callback_data: `def:n:${debtId}` },
-                { text: lang === "ru" ? "Сумма" : lang === "en" ? "Amount" : "Summa", callback_data: `def:a:${debtId}` },
-                { text: lang === "ru" ? "Тип" : lang === "en" ? "Direction" : "Yo'nalishi", callback_data: `def:d:${debtId}` },
+                { text: lang === "ru" ? "✏️ Имя" : lang === "en" ? "✏️ Name" : "✏️ Ism", callback_data: `def:n:${debtId}` },
+                { text: lang === "ru" ? "💰 Сумма" : lang === "en" ? "💰 Amount" : "💰 Summa", callback_data: `def:a:${debtId}` },
+                { text: lang === "ru" ? "↔️ Тип" : lang === "en" ? "↔️ Direction" : "↔️ Yo'nalishi", callback_data: `def:d:${debtId}` },
               ]],
             },
           }
@@ -2709,8 +2713,8 @@ export function createBot(): Bot {
           {
             reply_markup: {
               inline_keyboard: [[
-                { text: lang === "ru" ? "Я дал" : lang === "en" ? "I lent" : "Men berdim", callback_data: `ded:g:${debtId}` },
-                { text: lang === "ru" ? "Я взял" : lang === "en" ? "I borrowed" : "Men oldim", callback_data: `ded:t:${debtId}` },
+                { text: lang === "ru" ? "↗️ Я дал" : lang === "en" ? "↗️ I lent" : "↗️ Men berdim", callback_data: `ded:g:${debtId}` },
+                { text: lang === "ru" ? "↙️ Я взял" : lang === "en" ? "↙️ I borrowed" : "↙️ Men oldim", callback_data: `ded:t:${debtId}` },
               ]],
             },
           }
@@ -2767,7 +2771,7 @@ export function createBot(): Bot {
         }
         await ctx.answerCallbackQuery();
         await ctx.reply(
-          lang === "ru" ? "Долг удалён." : lang === "en" ? "Debt deleted." : "Qarz o'chirildi."
+          lang === "ru" ? "🗑 Долг удалён." : lang === "en" ? "🗑 Debt deleted." : "🗑 Qarz o'chirildi."
         );
         return;
       }
