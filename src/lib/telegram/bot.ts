@@ -872,9 +872,9 @@ async function handleMessage(
         return;
       }
 
-      // Build a NUMBERED, compact one-line-per-entry list so the numbers match the
-      // "✏️ Tahrirlash" → [1][2][3] picker, and identical-looking entries are distinguishable.
-      const lines: string[] = [];
+      // Numbered FULL per-entry blocks (user-preferred look): each entry rendered like a single
+      // confirmation card, prefixed with its number so it matches the [1][2][3] edit picker.
+      const blocks: string[] = [];
       const batchEntries: Array<{ id: string; kind: "tx" | "debt"; label: string }> = [];
       for (let idx = 0; idx < valid.length; idx++) {
         const it = valid[idx];
@@ -893,11 +893,20 @@ async function handleMessage(
           });
           const amtFmt = formatAmount(BigInt(amt), lang);
           const arrow = dir === DebtDirection.given ? "↗️" : "↙️";
-          lines.push(`${n}. ${arrow} ${cp} · ${amtFmt}`);
+          const savedWord = lang === "ru" ? "Сохранил" : lang === "en" ? "Saved" : "Saqladim";
+          const d = (it.date as string | undefined) ?? "today";
+          const dayLabel =
+            d === "today" ? (lang === "ru" ? "Сегодня" : lang === "en" ? "Today" : "Bugun")
+            : d === "yesterday" ? (lang === "ru" ? "Вчера" : lang === "en" ? "Yesterday" : "Kecha")
+            : d;
+          const dirText = dir === DebtDirection.given
+            ? (lang === "ru" ? `Дал в долг: ${cp}` : lang === "en" ? `Lent to ${cp}` : `${cp}ga berdim`)
+            : (lang === "ru" ? `Взял у ${cp}` : lang === "en" ? `Borrowed from ${cp}` : `${cp}dan oldim`);
+          blocks.push(`${n}. ✅ ${savedWord}\n${arrow} ${dirText}\n💵 ${amtFmt}\n📅 ${dayLabel}`);
           batchEntries.push({ id: createdBatchDebt.id, kind: "debt", label: `${cp} ${amtFmt}` });
         } else {
-          // Run finalizeLog for its side effects (create tx + pending + budget alert) but
-          // DISCARD its verbose reply — we render our own compact numbered line below.
+          // Run finalizeLog for side effects (create tx + pending + budget) but DISCARD its reply;
+          // build the numbered block ourselves via formatConfirmation (no per-entry dashboard hint).
           const sinkCtx = { reply: () => Promise.resolve(undefined as unknown) };
           const batchTxId = await finalizeLog(
             sinkCtx,
@@ -914,10 +923,16 @@ async function handleMessage(
             },
             lang
           );
-          const emoji = it.type === "income" ? "🟢" : "🔴";
+          const block = formatConfirmation({
+            amount: BigInt(it.amount as number),
+            type: it.type === "income" ? TxType.income : TxType.expense,
+            categoryName: (it.category as string | null | undefined) ?? null,
+            date: (it.date as string | undefined) ?? "today",
+            language: lang,
+          });
+          blocks.push(`${n}. ${block}`);
           const amtFmt = formatAmount(BigInt(it.amount as number), lang);
           const cat = (it.category as string | null | undefined) ?? null;
-          lines.push(`${n}. ${emoji} ${amtFmt}${cat ? ` · ${cat}` : ""}`);
           batchEntries.push({ id: batchTxId, kind: "tx", label: `${amtFmt}${cat ? ` · ${cat}` : ""}` });
         }
       }
@@ -956,7 +971,7 @@ async function handleMessage(
         }]);
       }
       await ctx.reply(
-        header + "\n\n" + lines.join("\n") + skipNote + dash.extraText,
+        header + "\n\n" + blocks.join("\n\n") + skipNote + dash.extraText,
         { reply_markup: { inline_keyboard: batchKeyboardRows } }
       );
       return;
