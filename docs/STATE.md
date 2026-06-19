@@ -3,6 +3,7 @@
 > Jonli holat taxtasi. Har sessiya quyidagi ⚡ STATUS blokidan boshlanadi.
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
+> Backlog / what's next (prioritized recommendations): `docs/BACKLOG.md`.
 
 ## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→055 ALL DEPLOYED; user live-testing bot; lessons in global memory)
 
