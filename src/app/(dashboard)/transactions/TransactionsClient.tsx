@@ -259,6 +259,12 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pagedRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // Select-all spans EVERY filtered row (all pages), not just the visible page.
+  const allFilteredSelected = filtered.length > 0 && filtered.every((tx) => selectedIds.has(tx.id));
+  const toggleSelectAll = () => {
+    setSelectedIds(allFilteredSelected ? new Set() : new Set(filtered.map((tx) => tx.id)));
+  };
+
   const resetFilters = () => {
     setTypeFilter("");
     setCatFilter("");
@@ -596,15 +602,31 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
         />
       </div>
 
-      {/* ── Bulk action bar (shown when items selected) ── */}
-      {selectMode && selectedIds.size > 0 && (
+      {/* ── Bulk action bar (shown whenever select mode is on) ── */}
+      {selectMode && (
         <div
-          className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 rounded-[12px]"
+          className="sticky top-0 z-40 flex items-center gap-2 px-4 py-3 rounded-[12px]"
           style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
         >
           <span className="flex-1 text-sm font-semibold" style={{ color: "var(--fg)" }}>
-            {t("bulk.selected_count", lang).replace("{n}", String(selectedIds.size))}
+            {selectedIds.size > 0
+              ? t("bulk.selected_count", lang).replace("{n}", String(selectedIds.size))
+              : t("bulk.select", lang)}
           </span>
+          {/* Select all / Deselect all — covers every filtered row across all pages */}
+          {filtered.length > 0 && (
+            <button
+              onClick={toggleSelectAll}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={
+                allFilteredSelected
+                  ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
+                  : { border: "1px solid var(--border)", color: "var(--fg-muted)" }
+              }
+            >
+              {allFilteredSelected ? t("bulk.deselect_all", lang) : t("bulk.select_all", lang)}
+            </button>
+          )}
           <button
             onClick={() => { setSelectedIds(new Set()); setSelectMode(false); }}
             className="px-3 py-1.5 rounded-full text-xs font-medium"
@@ -614,7 +636,8 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
           </button>
           <button
             onClick={() => setBulkDialogOpen(true)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold"
+            disabled={selectedIds.size === 0}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all disabled:opacity-40"
             style={{ background: "var(--expense)", color: "#fff" }}
           >
             {t("bulk.delete", lang)}

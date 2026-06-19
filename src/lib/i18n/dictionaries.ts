@@ -400,6 +400,8 @@ const uz: Dictionary = {
   "confirm.cancel": "Bekor qilish",
   // ── BulkDeleteDialog (multi-select delete)
   "bulk.select": "Tanlash",
+  "bulk.select_all": "Hammasini tanlash",
+  "bulk.deselect_all": "Belgini olib tashlash",
   "bulk.selected_count": "{n} tanlandi",
   "bulk.delete": "O'chirish",
   "bulk.cancel": "Bekor",
@@ -844,6 +846,8 @@ const ru: Dictionary = {
   "confirm.cancel": "Отмена",
   // ── BulkDeleteDialog (multi-select delete)
   "bulk.select": "Выбрать",
+  "bulk.select_all": "Выбрать все",
+  "bulk.deselect_all": "Снять всё",
   "bulk.selected_count": "{n} выбрано",
   "bulk.delete": "Удалить",
   "bulk.cancel": "Отмена",
@@ -1288,6 +1292,8 @@ const en: Dictionary = {
   "confirm.cancel": "Cancel",
   // ── BulkDeleteDialog (multi-select delete)
   "bulk.select": "Select",
+  "bulk.select_all": "Select all",
+  "bulk.deselect_all": "Deselect all",
   "bulk.selected_count": "{n} selected",
   "bulk.delete": "Delete",
   "bulk.cancel": "Cancel",

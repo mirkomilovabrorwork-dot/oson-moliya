@@ -404,6 +404,12 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
     return true;
   });
 
+  // Select-all spans every debt visible under the current tab.
+  const allVisibleSelected = visible.length > 0 && visible.every((d) => selectedIds.has(d.id));
+  const toggleSelectAll = () => {
+    setSelectedIds(allVisibleSelected ? new Set() : new Set(visible.map((d) => d.id)));
+  };
+
   const tabs: { key: Tab; label: string }[] = [
     { key: "all", label: t("debt.tab.all", lang) },
     { key: "given", label: t("debt.tab.given", lang) },
@@ -917,15 +923,30 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         )}
       </div>
 
-      {/* Sticky bulk action bar */}
-      {selectMode && selectedIds.size > 0 && (
+      {/* Sticky bulk action bar (shown whenever select mode is on) */}
+      {selectMode && (
         <div
-          className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 rounded-[12px] mb-3"
+          className="sticky top-0 z-40 flex items-center gap-2 px-4 py-3 rounded-[12px] mb-3"
           style={{ background: "var(--surface-elevated)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
         >
           <span className="flex-1 text-sm font-semibold" style={{ color: "var(--fg)" }}>
-            {t("bulk.selected_count", lang).replace("{n}", String(selectedIds.size))}
+            {selectedIds.size > 0
+              ? t("bulk.selected_count", lang).replace("{n}", String(selectedIds.size))
+              : t("bulk.select", lang)}
           </span>
+          {visible.length > 0 && (
+            <button
+              onClick={toggleSelectAll}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={
+                allVisibleSelected
+                  ? { background: "var(--accent-wash)", color: "var(--accent)", border: "1px solid var(--accent)" }
+                  : { border: "1px solid var(--border)", color: "var(--fg-muted)" }
+              }
+            >
+              {allVisibleSelected ? t("bulk.deselect_all", lang) : t("bulk.select_all", lang)}
+            </button>
+          )}
           <button
             onClick={() => { setSelectedIds(new Set()); setSelectMode(false); }}
             className="px-3 py-1.5 rounded-full text-xs font-medium"
@@ -935,7 +956,8 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
           </button>
           <button
             onClick={() => setBulkDialogOpen(true)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold"
+            disabled={selectedIds.size === 0}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all disabled:opacity-40"
             style={{ background: "var(--expense)", color: "#fff" }}
           >
             {t("bulk.delete", lang)}
