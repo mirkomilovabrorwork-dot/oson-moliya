@@ -26,6 +26,7 @@ export function BudgetNudge({ show, lang }: BudgetNudgeProps) {
     if (!show) return;
     try {
       const dismissed = localStorage.getItem(STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is unavailable during SSR; must read client-side to avoid hydration mismatch
       if (!dismissed) setVisible(true);
     } catch {
       // localStorage unavailable (e.g. private browsing with restrictions) — stay hidden

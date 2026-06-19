@@ -50,6 +50,7 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
 
   // A4: Set today's date on mount (client-side only) to avoid SSR/hydration mismatch.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- date must be client-only to avoid SSR/hydration mismatch
     setOccurredAt(new Date().toISOString().slice(0, 10));
   }, []);
 

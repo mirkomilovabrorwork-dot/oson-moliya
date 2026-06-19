@@ -115,6 +115,7 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
 
   // Init startDate on mount to avoid SSR mismatch
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- date must be client-only to avoid SSR/hydration mismatch
     setAddStartDate(new Date().toISOString().slice(0, 10));
   }, []);
 

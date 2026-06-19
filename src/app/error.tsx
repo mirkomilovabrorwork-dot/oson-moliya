@@ -43,6 +43,7 @@ export default function GlobalError({ error, reset }: ErrorProps) {
   const [lang, setLang] = useState<Lang>("uz");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- cookie is unavailable during SSR; must read client-side to set lang after hydration
     setLang(getLangFromCookie());
   }, []);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 
@@ -27,10 +27,16 @@ export function BulkDeleteDialog({
 }: BulkDeleteDialogProps) {
   const [checked, setChecked] = useState(false);
 
-  // Reset checkbox whenever dialog opens
-  useEffect(() => {
+  // Reset the confirm checkbox each time the dialog (re)opens. The parents keep this
+  // component mounted (they pass `open` as a prop instead of conditionally rendering
+  // it), so `checked` would otherwise persist across open/close — leaving the confirm
+  // box pre-ticked on a destructive bulk delete. Reset at render time (React's
+  // recommended alternative to a set-state-in-effect).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) setChecked(false);
-  }, [open]);
+  }
 
   if (!open) return null;
 

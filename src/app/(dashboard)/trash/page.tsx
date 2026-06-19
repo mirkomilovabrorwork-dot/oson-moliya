@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { serializeBigInt } from "@/lib/serialize";
 import { TrashClient } from "./TrashClient";
 import type { DisplayCurrency } from "@/lib/rates";
+import { thirtyDaysCutoff } from "@/lib/trash-cutoff";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function TrashPage() {
     : "UZS") as DisplayCurrency;
 
   const prisma = db as import("@prisma/client").PrismaClient;
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const since = thirtyDaysCutoff();
 
   const [transactions, debts, recurringRules] = await Promise.all([
     prisma.transaction.findMany({

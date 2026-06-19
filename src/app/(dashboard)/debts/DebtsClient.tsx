@@ -120,6 +120,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
 
   // A4: Set today's date on mount (client-side only) to avoid SSR/hydration mismatch.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- date must be client-only to avoid SSR/hydration mismatch
     setAddDate(new Date().toISOString().slice(0, 10));
   }, []);
 
