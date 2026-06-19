@@ -22,30 +22,39 @@ process.stdin.on("end", () => {
   }
   if (!cmd) process.exit(0);
 
+  // A prod DEPLOY is "authorizable": still blocked by default (no accidental/automatic
+  // deploys), but allowed when the command carries a DELIBERATE inline marker
+  // "# deploy-authorized". User pref 2026-06-20: "asking is enough, then just do it" —
+  // so an explicitly user-authorized deploy goes through, while a stray one cannot.
+  // Destructive git / DB-data-loss are NEVER authorizable here (human-only).
+  const deployAuthorized = /#\s*deploy-authorized\b/.test(cmd);
+
+  // [regex, label, authorizable]
   const DANGEROUS = [
-    // --- destructive git ---
-    [/git\s+push\b[^|&;]*(--force\b|--force-with-lease\b|(\s|^)-f\b)/, "force-push"],
-    [/git\s+push\b[^|&;]*--mirror\b/, "push --mirror"],
-    [/git\s+push\b[^|&;]*--delete\b/, "push --delete (remote branch deletion)"],
-    [/git\s+push\b[^|&;]*(\s|^):/, "push :branch (remote branch deletion)"],
-    [/\bgit\s+reset\b[^|&;]*--hard\b/, "git reset --hard"],
-    [/\bgit\s+clean\b[^|&;]*-[a-zA-Z]*f/, "git clean -f (deletes untracked files)"],
-    [/\bgit\s+branch\b[^|&;]*\s-D\b/, "git branch -D (force-delete branch)"],
-    [/\bgit\s+checkout\b[^|&;]*(--\s+)?\.(\s|$)/, "git checkout . (discards changes)"],
-    [/\bgit\s+restore\b[^|&;]*(--\s+)?\.(\s|$)/, "git restore . (discards changes)"],
+    // --- destructive git (always blocked) ---
+    [/git\s+push\b[^|&;]*(--force\b|--force-with-lease\b|(\s|^)-f\b)/, "force-push", false],
+    [/git\s+push\b[^|&;]*--mirror\b/, "push --mirror", false],
+    [/git\s+push\b[^|&;]*--delete\b/, "push --delete (remote branch deletion)", false],
+    [/git\s+push\b[^|&;]*(\s|^):/, "push :branch (remote branch deletion)", false],
+    [/\bgit\s+reset\b[^|&;]*--hard\b/, "git reset --hard", false],
+    [/\bgit\s+clean\b[^|&;]*-[a-zA-Z]*f/, "git clean -f (deletes untracked files)", false],
+    [/\bgit\s+branch\b[^|&;]*\s-D\b/, "git branch -D (force-delete branch)", false],
+    [/\bgit\s+checkout\b[^|&;]*(--\s+)?\.(\s|$)/, "git checkout . (discards changes)", false],
+    [/\bgit\s+restore\b[^|&;]*(--\s+)?\.(\s|$)/, "git restore . (discards changes)", false],
     // --- irreversible prod / data actions ---
-    [/\bvercel\b[^|&;]*--prod\b/, "vercel --prod (production deploy)"],
-    [/--accept-data-loss\b/, "prisma --accept-data-loss (destructive DB change)"],
-    [/\bprisma\s+migrate\s+(deploy|reset)\b/, "prisma migrate deploy/reset"],
+    [/\bvercel\b[^|&;]*--prod\b/, "vercel --prod (production deploy)", true],
+    [/\bvercel\s+(promote|rollout)\b/, "vercel promote/rollout (production)", true],
+    [/--accept-data-loss\b/, "prisma --accept-data-loss (destructive DB change)", false],
+    [/\bprisma\s+migrate\s+(deploy|reset)\b/, "prisma migrate deploy/reset", false],
   ];
 
-  for (const [re, label] of DANGEROUS) {
+  for (const [re, label, authorizable] of DANGEROUS) {
     if (re.test(cmd)) {
-      process.stderr.write(
-        `BLOCKED by guardrail [${label}]: "${cmd}"\n` +
-          `This is an irreversible/destructive command. It requires a deliberate, explicit human action — ` +
-          `Claude is not permitted to run it. If you truly need this, the user must run it themselves.\n`
-      );
+      if (authorizable && deployAuthorized) break; // explicit user-authorized deploy → allow
+      const hint = authorizable
+        ? `If the user has explicitly authorized this deploy, re-run with an inline "# deploy-authorized" marker.\n`
+        : `It requires a deliberate human action — Claude is not permitted to run it; the user must run it themselves.\n`;
+      process.stderr.write(`BLOCKED by guardrail [${label}]: "${cmd}"\n` + hint);
       process.exit(2);
     }
   }
