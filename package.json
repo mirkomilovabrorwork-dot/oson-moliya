@@ -15,7 +15,8 @@
     "db:migrate": "prisma migrate dev",
     "bot:dev": "tsx scripts/bot-dev.ts",
     "set-webhook": "tsx scripts/set-webhook.ts",
-    "setup-bot": "tsx scripts/setup-bot.ts"
+    "setup-bot": "tsx scripts/setup-bot.ts",
+    "eval": "tsx scripts/eval-brain.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
