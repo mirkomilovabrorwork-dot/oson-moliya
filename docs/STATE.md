@@ -4,7 +4,15 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044→053 ALL DEPLOYED to prod; user live-testing bot; lessons captured to global memory)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→054 ALL DEPLOYED; user live-testing bot; lessons in global memory)
+
+- **AGREED-NEXT / DEFERRED (user decisions 2026-06-19):**
+  - **Cost: build a CODE-FIRST fast-path LATER** — parse clear "amount + keyword" msgs deterministically (no LLM), fall back to Haiku only when unsure (~50-70% fewer LLM calls, zero accuracy risk if conservative). KEEP Haiku (cheap models risk Uzbek). User: "keyinroq sinab ko'rish, topolmasa Haiku'ga". (lever in [[playbook_tech_gotchas]] LLM-cost section.)
+  - **Premium model (future):** free = ~0-token text logging (the code path) + dashboard; PREMIUM = money-costing features (voice STT, photo vision). Gather users first.
+  - **Admin panel: NO** (user: not needed now).
+  - **User announcement of top-5 updates: DEFERRED** ("hozircha shart emas") — draft ready (qarz-by-voice, Q&A, multi-entry, login+password, backup/feedback). Deliver via an owner-only /announce broadcast OR manual, when user-base grows.
+  - **Responsive: FINE** — auto-adapts desktop+mobile (mobile-first, centered, no breakage); optional desktop-width polish only if going web-first.
+  - **TASK 054 — "typing…" indicator on the text path (`b9715d3`, dpl `dpl_9tDfwbitdFvGSoJwj96c9KdFhhpo`) — DEPLOYED.** Text path now sends ChatAction("typing") during the brain call (voice/audio/photo already had it). Optional: a literal "🤔 O'ylayapman…" message instead of native typing — not built (offered).
 
 - **✅ ALL LIVE on prod (full branch HEAD `b39741e`, deployment `dpl_8PqwoKmJ6jNghyz6sr4Fs6mhZyZW`, `oson-moliya.vercel.app`).** Verified: /login 200 · /api/telegram 405 · /api/health {"ok":true}. Newest batch:
   - **TASK 051 — perf + Lucide icons.** Home was slow: batched ~7 sequential home-page DB queries into one Promise.all + code-split Recharts (next/dynamic; Next16: ssr:false NOT allowed in a Server Component) + new GET /api/health keep-warm (point a free uptime monitor at it OR Neon paid → fixes cold-start; USER ACTION). Hand-drawn icons → professional Lucide set (lucide-react).
