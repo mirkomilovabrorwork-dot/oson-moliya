@@ -1,0 +1,42 @@
+name: CI
+
+# Pipeline-enforced gates: every push and PR runs typecheck + lint + test + build.
+# No secrets needed — all DB-touching tests mock `@/lib/db`, so no live database is used.
+# Build gets placeholder env so module-load env reads don't throw (no real credentials).
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install (also runs prisma generate via postinstall)
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Placeholders only — NOT real credentials. Prisma/Neon adapter just needs
+          # a well-formed URL string at build; no connection is made during `next build`.
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+          DIRECT_URL: postgresql://user:pass@localhost:5432/db
