@@ -5,9 +5,30 @@
 > Specs: `docs/tasks/NNN-*.md`.
 > Backlog / what's next (prioritized recommendations): `docs/BACKLOG.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→055 + fixes DEPLOYED; NEXT SESSION = agentic-engineering hardening, see docs/BACKLOG.md top)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — Task 056 C+D BUILT + Select-all feature; ON A WORKTREE, not pushed/merged)
 
-- **🔧 IN PROGRESS — Task 056 agentic-engineering hardening (user: "hammasi birma bir" = do all 4 steps).**
+- **⚠️ READ FIRST — this is the `eloquent-agnesi-2a94d2` WORKTREE (a 2nd parallel session ran here while the
+  MAIN session worked `fix/lint-gate-rearm` on the 7 react-hooks lint fixes).** My commits are on branch
+  `claude/eloquent-agnesi-2a94d2`, NOT yet merged to main and NOT pushed. What this session shipped (2 commits):
+  - **`ea51cae` — Select-all / Deselect-all feature.** The bulk-delete bar (transactions + debts) now shows
+    the moment select-mode is on and gains a Select-all toggle (selects every filtered/visible row across all
+    pages → flips to Deselect-all); Delete disabled at 0; Roziman confirm dialog kept as the delete-all safety
+    gate. New i18n `bulk.select_all`/`bulk.deselect_all` (uz/ru/en). Trash = restore-only, unaffected.
+    Files: `transactions/TransactionsClient.tsx`, `debts/DebtsClient.tsx`, `lib/i18n/dictionaries.ts`.
+    Gate: typecheck + 223 tests green. NOT browser-verified live (2 sessions → dev-server clash risk).
+  - **`87c31de` — Task 056 Step C: brain accuracy eval harness.** `tests/eval/brain-cases.ts` (43 labeled
+    uz/ru cases) + `scripts/eval-brain.ts` (`npm run eval`) → overall + per-intent + per-field accuracy + miss
+    table. NOT in gate/CI (live API = money). **NOT yet RUN** (needs user OK ~cents → first accuracy %).
+  - **Step D (sandboxing) — DECIDED + documented** in memory `playbook_agent_delegation`: keep one-writer-per-file
+    LOCK by default; per-agent worktree isolation only for big mechanical parallel writes.
+  - **Did NOT touch** `.github/workflows/ci.yml` or `.claude/launch.json` — those uncommitted changes belong to
+    the main session's lint-gate-rearm stream; left them for that session to commit.
+- **▶ START HERE NEXT (user's order 2026-06-19, "qolgan ishlarni birma bir"):** full remaining-work list lives in
+  `docs/BACKLOG.md`. Recommended next = **P0 #1: user live-tests the bot (046–053)** — free, user-only, and it
+  unblocks the risky brain work. Then: rotate GitHub PAT (`repo`+`workflow`) → push A+B+C+D+select-all → CI runs ·
+  run `npm run eval` (~cents) for the first accuracy % · merge this branch with the lint-gate-rearm work.
+
+- **🔧 Task 056 agentic-engineering hardening (user: "hammasi birma bir" = do all 4 steps) — A+B+C+D all BUILT.**
   Plan: `docs/tasks/056-agentic-hardening-PLAN.md` (Steps A→D). Research synthesis → memory
   `reference_agentic_engineering_pillars` (Alex Barady/ENDGAME framing; we already have ~9/12 pillars).
   **Step A DONE + verified (commit `f5f4b85`, NOT pushed yet):** GitHub Actions CI (`.github/workflows/ci.yml`
