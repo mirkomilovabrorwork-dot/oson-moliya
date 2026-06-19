@@ -33,6 +33,11 @@ import { InputFile } from "grammy";
 import { getTashkentNow } from "../dates";
 import { evalCostlyCap } from "./costlyCap";
 
+// ── Owner chat for forwarded feedback ────────────────────────────────────────
+// Feedback messages collected via /feedback or the help inline button are
+// forwarded to this Telegram chat ID (the product owner).
+const FEEDBACK_CHAT_ID = 8582045913;
+
 // ── Per-user rate limiter (in-memory, sliding window) ────────────────────────
 // Guards STT + brain calls: 20 AI messages per 10 minutes per Telegram user.
 // In-memory is acceptable for a single-instance bot deployment.
@@ -404,12 +409,19 @@ async function buildLoginAccessReply(
 // ── Localized /help text (module-level so handleMessage can call it) ─────────
 function helpText(l: "uz" | "ru" | "en"): string {
   if (l === "ru") {
-    return `📖 Oson Moliya — Помощь\n\nОтправьте мне текст или 🎤 голосовое — я автоматически сохраню ваши расходы и доходы.\n\nКоманды:\n/start — Запустить бота\n/language — Сменить язык\n/dashboard — Открыть панель\n/hisobot — Excel отчёт за текущий месяц (также: /report или напишите «отчёт»)\n/help — Список команд\n\n💡 Например:\n"На обед ушло 35 тысяч"\n"Зарплата 5 000 000 сум"\n"сколько расходов в этом месяце?"`;
+    return `📖 Oson Moliya — Помощь\n\nОтправьте мне текст или 🎤 голосовое — я автоматически сохраню ваши расходы и доходы.\n\nКоманды:\n/start — Запустить бота\n/language — Сменить язык\n/dashboard — Открыть панель\n/hisobot — Excel отчёт за текущий месяц (также: /report или напишите «отчёт»)\n/kirish — Восстановить доступ (уже пользовались?)\n/feedback — Отправить отзыв команде\n/help — Список команд\n\n💡 Например:\n"На обед ушло 35 тысяч"\n"Зарплата 5 000 000 сум"\n"сколько расходов в этом месяце?"`;
   }
   if (l === "en") {
-    return `📖 Oson Moliya — Help\n\nSend me text or a 🎤 voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the dashboard\n/hisobot — Excel monthly report (also: /report or type "report")\n/help — Command list\n\n💡 For example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
+    return `📖 Oson Moliya — Help\n\nSend me text or a 🎤 voice message — I'll automatically save your expenses and income.\n\nCommands:\n/start — Start the bot\n/language — Change language\n/dashboard — Open the dashboard\n/hisobot — Excel monthly report (also: /report or type "report")\n/kirish — Recover access (used this before?)\n/feedback — Send feedback to the team\n/help — Command list\n\n💡 For example:\n"Spent 35 thousand on lunch"\n"Salary 5,000,000 so'm"\n"how much did I spend this month?"`;
   }
-  return `📖 Oson Moliya — Yordam\n\nMenga matn yoki 🎤 ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Panelni ochish\n/hisobot — Excel oylik hisobot (shuningdek: /report yoki «hisobot» deb yozing)\n/help — Buyruqlar ro'yxati\n\n💡 Masalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
+  return `📖 Oson Moliya — Yordam\n\nMenga matn yoki 🎤 ovozli xabar yuboring — xarajat va daromadlaringizni avtomatik saqlayman.\n\nBuyruqlar:\n/start — Botni ishga tushirish\n/language — Tilni o'zgartirish\n/dashboard — Panelni ochish\n/hisobot — Excel oylik hisobot (shuningdek: /report yoki «hisobot» deb yozing)\n/kirish — Kirishni tiklash (oldin foydalanganmisiz?)\n/feedback — Jamoa bilan fikr ulashing\n/help — Buyruqlar ro'yxati\n\n💡 Masalan:\n"Tushlikka 35 ming ketdi"\n"Oylik 5 000 000 so'm"\n"bu oy qancha chiqim?"`;
+}
+
+/** Returns the inline keyboard row for the /help reply — includes the feedback button */
+function helpInlineKeyboard(l: "uz" | "ru" | "en"): { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> } {
+  const label =
+    l === "ru" ? "💬 Оставить отзыв" : l === "en" ? "💬 Send Feedback" : "💬 Fikr / Taklif";
+  return { inline_keyboard: [[{ text: label, callback_data: "feedback:start" }]] };
 }
 
 // ── applyRepayment — shared helper for repay_debt dispatch + rp: callback ───
@@ -527,6 +539,9 @@ async function handleMessage(
     from: { id: number; first_name?: string; username?: string } | undefined;
     reply: (text: string, opts?: Parameters<Bot["api"]["sendMessage"]>[2]) => Promise<unknown>;
     replyWithDocument?: ReplyWithDocumentFn;
+    /** Optional bot API — passed through from command/message handlers so
+     *  feedback messages can be forwarded to the owner without the brain. */
+    api?: Bot["api"];
   },
   text: string,
   prisma: import("@prisma/client").PrismaClient
@@ -594,7 +609,7 @@ async function handleMessage(
 
   if (HELP_BTNS.includes(text)) {
     const helpLang = (user.language as "uz" | "ru" | "en") ?? "uz";
-    await ctx.reply(helpText(helpLang));
+    await ctx.reply(helpText(helpLang), { reply_markup: helpInlineKeyboard(helpLang) });
     return;
   }
 
@@ -776,6 +791,29 @@ async function handleMessage(
       });
       return;
     }
+  }
+
+  // ── feedback pending — must come BEFORE the brain so the text is never parsed
+  //    as a transaction. The user's message is forwarded to the owner verbatim.
+  if (pending && pending.intent === "feedback") {
+    const fbLang = (user.language as "uz" | "ru" | "en") ?? "uz";
+    try {
+      await ctx.api?.sendMessage(
+        FEEDBACK_CHAT_ID,
+        `📩 Fikr — ${from.first_name ?? ""} (@${from.username ?? "—"}, id ${from.id}):\n\n${text}`
+      );
+    } catch (fbErr) {
+      console.error("feedback forward error:", fbErr);
+    }
+    await clearPendingAction(user.id);
+    await ctx.reply(
+      fbLang === "ru"
+        ? "✅ Rahmat! Ваш отзыв отправлен команде."
+        : fbLang === "en"
+        ? "✅ Thank you! Your feedback has been sent to the team."
+        : "✅ Rahmat! Fikringiz yuborildi."
+    );
+    return;
   }
 
   // Run brain
@@ -1950,12 +1988,12 @@ export function createBot(): Bot {
   // Localized welcome shown after the user picks a language.
   const welcomeText = (l: "uz" | "ru" | "en", name: string): string => {
     if (l === "ru") {
-      return `Привет, ${name}! 👋\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\n✍️ Пишите расход/доход ПРЯМО СЮДА или 🎤 наговорите — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"\n\n📊 Кнопка "Moliyachi" — только для ПРОСМОТРА отчётов и графиков (туда писать не нужно).`;
+      return `Привет, ${name}! 👋\n\nOson Moliya — бот для учёта финансов вашего бизнеса.\n\n✍️ Пишите расход/доход ПРЯМО СЮДА или 🎤 наговорите — я запишу. Например:\n• "500 тысяч продажа"\n• "150 тысяч логистика расход"\n• "покажи отчёт за этот месяц"\n\n📊 Кнопка "Moliyachi" — только для ПРОСМОТРА отчётов и графиков (туда писать не нужно).\n\nУже пользовались? /kirish`;
     }
     if (l === "en") {
-      return `Hi, ${name}! 👋\n\nOson Moliya — a bot to track your business finances.\n\n✍️ Log an expense/income RIGHT HERE or 🎤 by voice — I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"\n\n📊 The "Moliyachi" button just opens your dashboard to VIEW reports — no need to type there.`;
+      return `Hi, ${name}! 👋\n\nOson Moliya — a bot to track your business finances.\n\n✍️ Log an expense/income RIGHT HERE or 🎤 by voice — I'll record it. For example:\n• "500 thousand sales"\n• "150 thousand logistics expense"\n• "show this month's report"\n\n📊 The "Moliyachi" button just opens your dashboard to VIEW reports — no need to type there.\n\nUsed this before? /kirish`;
     }
-    return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\n✍️ Xarajat/daromadni SHU YERGA yozing yoki 🎤 ayting — men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"\n\n📊 "Moliyachi" tugmasi — faqat hisobot va grafiklarni KO'RISH uchun (u yerga yozish shart emas).`;
+    return `Salom, ${name}! 👋\n\nOson Moliya — biznesingiz moliyasini kuzatish uchun bot.\n\n✍️ Xarajat/daromadni SHU YERGA yozing yoki 🎤 ayting — men qayd qilaman. Masalan:\n• "500 ming sotuv"\n• "150 ming logistika chiqim"\n• "shu oyni hisobot ko'rsat"\n\n📊 "Moliyachi" tugmasi — faqat hisobot va grafiklarni KO'RISH uchun (u yerga yozish shart emas).\n\nAvval foydalanganmisiz? /kirish`;
   };
 
   // loginAccessText + buildLoginAccessReply are now module-level (defined above createBot)
@@ -2053,7 +2091,48 @@ export function createBot(): Bot {
       select: { language: true },
     });
     const lang = (u?.language as "uz" | "ru" | "en") ?? "uz";
-    await ctx.reply(helpText(lang));
+    await ctx.reply(helpText(lang), { reply_markup: helpInlineKeyboard(lang) });
+  });
+
+  // /feedback — ask user to write a message that is forwarded to the owner
+  bot.command("feedback", async (ctx) => {
+    const from = ctx.from;
+    if (!from) return;
+    const u = await prisma.user.findUnique({
+      where: { telegramId: BigInt(from.id) },
+      select: { id: true, language: true },
+    });
+    const lang = (u?.language as "uz" | "ru" | "en") ?? "uz";
+    if (u) {
+      await upsertPendingAction(u.id, { intent: "feedback", draft: {}, question: "" });
+    }
+    const prompt =
+      lang === "ru"
+        ? "✍️ Напишите ваш отзыв или вопрос — он дойдёт прямо до команды.\n\n(Ru / En / Uz — любой язык)"
+        : lang === "en"
+        ? "✍️ Write your feedback or question — it goes straight to the team.\n\n(Uz / Ru / En — any language)"
+        : "✍️ Fikr yoki muammoyingizni yozing — to'g'ridan-to'g'ri jamoaga yetadi.\n\n(Uz / Ru / En — istalgan tilda)";
+    await ctx.reply(prompt, { reply_markup: { force_reply: true } });
+  });
+
+  // /kirish — recovery entry point for returning users (password-based login on the web)
+  bot.command("kirish", async (ctx) => {
+    if (!ctx.from) return;
+    const env = getEnv();
+    // Use the existing APP_URL — same source as buildLoginAccessReply / dashboardReplyOptions.
+    const loginUrl = `${env.APP_URL}/login`;
+    const u = await prisma.user.findUnique({
+      where: { telegramId: BigInt(ctx.from.id) },
+      select: { language: true },
+    });
+    const lang = (u?.language as "uz" | "ru" | "en") ?? "uz";
+    const msg =
+      lang === "ru"
+        ? `🔑 Если вы уже пользовались ботом, войдите на сайт по логину и паролю:\n${loginUrl}\n\nВсе ваши данные там. Забыли пароль? Напишите /feedback.`
+        : lang === "en"
+        ? `🔑 If you've used the bot before, log in with your login and password:\n${loginUrl}\n\nAll your data is there. Forgot your password? Use /feedback.`
+        : `🔑 Avval foydalangan bo'lsangiz, saytga login va parolingiz bilan kiring:\n${loginUrl}\n\nBarcha ma'lumotingiz o'sha yerda. Parolni unutsangiz — /feedback orqali yozing.`;
+    await ctx.reply(msg);
   });
 
   // /hisobot, /report, /otchet — send a styled monthly Excel report as a document
@@ -2132,6 +2211,7 @@ export function createBot(): Bot {
         reply: (text, opts) => ctx.reply(text, opts),
         // A1: pass replyWithDocument so keyword handler can send Excel
         replyWithDocument: (file, opts) => ctx.replyWithDocument(file, opts),
+        api: ctx.api,
       },
       ctx.message.text,
       prisma
@@ -2215,6 +2295,7 @@ export function createBot(): Bot {
           from,
           reply: (text, opts) => ctx.reply(text, opts),
           replyWithDocument: (file, opts) => ctx.replyWithDocument(file, opts),
+          api: ctx.api,
         },
         transcript,
         prisma
@@ -2828,6 +2909,20 @@ export function createBot(): Bot {
         return;
       }
 
+      // ── feedback:start — "💬 Fikr / Taklif" button from the /help reply ──
+      if (data === "feedback:start") {
+        await upsertPendingAction(user.id, { intent: "feedback", draft: {}, question: "" });
+        await ctx.answerCallbackQuery();
+        const fbPrompt =
+          lang === "ru"
+            ? "✍️ Напишите ваш отзыв или вопрос — он дойдёт прямо до команды.\n\n(Ru / En / Uz — любой язык)"
+            : lang === "en"
+            ? "✍️ Write your feedback or question — it goes straight to the team.\n\n(Uz / Ru / En — any language)"
+            : "✍️ Fikr yoki muammoyingizni yozing — to'g'ridan-to'g'ri jamoaga yetadi.\n\n(Uz / Ru / En — istalgan tilda)";
+        await ctx.reply(fbPrompt, { reply_markup: { force_reply: true } });
+        return;
+      }
+
       // Unknown callback data — just dismiss the spinner
       await ctx.answerCallbackQuery();
     } catch (err) {
@@ -3032,6 +3127,7 @@ export function createBot(): Bot {
           from,
           reply: (text, opts) => ctx.reply(text, opts),
           replyWithDocument: (file, opts) => ctx.replyWithDocument(file, opts),
+          api: ctx.api,
         },
         transcript,
         prisma
