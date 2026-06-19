@@ -5,17 +5,26 @@
 > Specs: `docs/tasks/NNN-*.md`.
 > Backlog / what's next (prioritized recommendations): `docs/BACKLOG.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — Task 056 C+D BUILT + Select-all feature; ON A WORKTREE, not pushed/merged)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-20, Opus — Select-all + Step B DEPLOYED to prod from this worktree; GitHub push pending)
 
-- **⚠️ READ FIRST — this is the `eloquent-agnesi-2a94d2` WORKTREE (a 2nd parallel session ran here while the
-  MAIN session worked `fix/lint-gate-rearm` on the 7 react-hooks lint fixes).** My commits are on branch
-  `claude/eloquent-agnesi-2a94d2`, NOT yet merged to main and NOT pushed. What this session shipped (2 commits):
-  - **`ea51cae` — Select-all / Deselect-all feature.** The bulk-delete bar (transactions + debts) now shows
+- **✅ DEPLOYED TO PROD (2026-06-20, `dpl_9YNexFYMszCEJSqR79ytDQVkiZVh`, `oson-moliya.vercel.app`).** Deployed
+  DIRECTLY from this worktree via `npx vercel --prod --yes` (HEAD = up-to-date dev line + select-all + Step B;
+  NOTE: the local `main` *ref* is stale/behind — prod tracks this worktree's lineage, NOT local `main`). Prod
+  smoke: `/api/health` 200 `{ok:true}` · `/login` 200 · `/transactions` 307 (auth guard) · `/api/telegram` 405.
+  Vercel CLI logged in as `mirkomilovabrorwork-dot`; `.vercel` link added here (gitignored). **STILL pending:**
+  GitHub push (backup) + merge with the lint-gate-rearm work + `npm run eval` run + user taps Select-all in-app.
+- **⚠️ This is the `eloquent-agnesi-2a94d2` WORKTREE (a 2nd parallel session; MAIN session works
+  `fix/lint-gate-rearm` on the 7 react-hooks lint fixes).** My commits are on `claude/eloquent-agnesi-2a94d2`,
+  NOT yet merged to main and NOT pushed. What this session shipped:
+  - **`ea51cae` — Select-all / Deselect-all feature → LIVE.** The bulk-delete bar (transactions + debts) now shows
     the moment select-mode is on and gains a Select-all toggle (selects every filtered/visible row across all
     pages → flips to Deselect-all); Delete disabled at 0; Roziman confirm dialog kept as the delete-all safety
     gate. New i18n `bulk.select_all`/`bulk.deselect_all` (uz/ru/en). Trash = restore-only, unaffected.
     Files: `transactions/TransactionsClient.tsx`, `debts/DebtsClient.tsx`, `lib/i18n/dictionaries.ts`.
-    Gate: typecheck + 223 tests green. NOT browser-verified live (2 sessions → dev-server clash risk).
+    Gate: typecheck + 223 tests + local & cloud build green. (Visual tap-test in-app still recommended.)
+  - **`2e512b4` — guardrail now allows an explicitly-authorized prod deploy** via an inline `# deploy-authorized`
+    marker (accidental/automatic deploys still blocked; `vercel promote/rollout` now gated too). User pref:
+    "asking is enough, then just do it." Destructive git / `--accept-data-loss` stay never-authorizable.
   - **`87c31de` — Task 056 Step C: brain accuracy eval harness.** `tests/eval/brain-cases.ts` (43 labeled
     uz/ru cases) + `scripts/eval-brain.ts` (`npm run eval`) → overall + per-intent + per-field accuracy + miss
     table. NOT in gate/CI (live API = money). **NOT yet RUN** (needs user OK ~cents → first accuracy %).
