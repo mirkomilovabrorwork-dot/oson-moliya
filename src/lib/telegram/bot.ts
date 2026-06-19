@@ -872,11 +872,14 @@ async function handleMessage(
         return;
       }
 
-      const captured: string[] = [];
+      // Build a NUMBERED, compact one-line-per-entry list so the numbers match the
+      // "✏️ Tahrirlash" → [1][2][3] picker, and identical-looking entries are distinguishable.
+      const lines: string[] = [];
       const batchEntries: Array<{ id: string; kind: "tx" | "debt"; label: string }> = [];
-      for (const it of valid) {
+      for (let idx = 0; idx < valid.length; idx++) {
+        const it = valid[idx];
+        const n = idx + 1;
         if (isDebtItem(it)) {
-          // Debt item → createDebt (no per-item reply; build a short line)
           const cp = (it.counterparty as string).trim();
           const amt = it.amount as number;
           const dir = it.direction === "given" ? DebtDirection.given : DebtDirection.taken;
@@ -889,30 +892,15 @@ async function handleMessage(
             occurredAt: dateStringToUtc((it.date as string | undefined) ?? "today"),
           });
           const amtFmt = formatAmount(BigInt(amt), lang);
-          const line =
-            dir === DebtDirection.given
-              ? lang === "ru"
-                ? `↗️ Дал в долг ${cp}: ${amtFmt}`
-                : lang === "en"
-                ? `↗️ Lent to ${cp}: ${amtFmt}`
-                : `↗️ ${cp}ga qarz berildi: ${amtFmt}`
-              : lang === "ru"
-              ? `↙️ Взял в долг у ${cp}: ${amtFmt}`
-              : lang === "en"
-              ? `↙️ Borrowed from ${cp}: ${amtFmt}`
-              : `↙️ ${cp}dan qarz olindi: ${amtFmt}`;
-          captured.push(line);
-          batchEntries.push({ id: createdBatchDebt.id, kind: "debt", label: line.replace(/^[^\w]*/, "").slice(0, 40) });
+          const arrow = dir === DebtDirection.given ? "↗️" : "↙️";
+          lines.push(`${n}. ${arrow} ${cp} · ${amtFmt}`);
+          batchEntries.push({ id: createdBatchDebt.id, kind: "debt", label: `${cp} ${amtFmt}` });
         } else {
-          // Transaction item → reuse finalizeLog, capturing its confirmation text
-          const capCtx = {
-            reply: (t: string) => {
-              captured.push(t);
-              return Promise.resolve(undefined as unknown);
-            },
-          };
+          // Run finalizeLog for its side effects (create tx + pending + budget alert) but
+          // DISCARD its verbose reply — we render our own compact numbered line below.
+          const sinkCtx = { reply: () => Promise.resolve(undefined as unknown) };
           const batchTxId = await finalizeLog(
-            capCtx,
+            sinkCtx,
             user,
             prisma,
             {
@@ -926,8 +914,11 @@ async function handleMessage(
             },
             lang
           );
-          const batchTxLabel = captured[captured.length - 1]?.split("\n")[0]?.replace(/^✅ /, "").slice(0, 40) ?? "";
-          batchEntries.push({ id: batchTxId, kind: "tx", label: batchTxLabel });
+          const emoji = it.type === "income" ? "🟢" : "🔴";
+          const amtFmt = formatAmount(BigInt(it.amount as number), lang);
+          const cat = (it.category as string | null | undefined) ?? null;
+          lines.push(`${n}. ${emoji} ${amtFmt}${cat ? ` · ${cat}` : ""}`);
+          batchEntries.push({ id: batchTxId, kind: "tx", label: `${amtFmt}${cat ? ` · ${cat}` : ""}` });
         }
       }
 
@@ -965,7 +956,7 @@ async function handleMessage(
         }]);
       }
       await ctx.reply(
-        header + "\n\n" + captured.join("\n\n") + skipNote + dash.extraText,
+        header + "\n\n" + lines.join("\n") + skipNote + dash.extraText,
         { reply_markup: { inline_keyboard: batchKeyboardRows } }
       );
       return;
