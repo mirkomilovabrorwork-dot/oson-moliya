@@ -5,9 +5,9 @@
 > Specs: `docs/tasks/NNN-*.md`.
 > Backlog / what's next (prioritized recommendations): `docs/BACKLOG.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→055 + fixes DEPLOYED (HEAD `8cfb7af`, dpl `dpl_CfksesAL8qo6Nwo3RwL4Bk942HUJ`); next steps in docs/BACKLOG.md)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→055 + fixes DEPLOYED (HEAD `8b0b347`, dpl `dpl_GK2NcoUH1xggH8mA91twkQr229Wm`); next steps in docs/BACKLOG.md)
 
-- **FIX (`8cfb7af`):** multi-entry batch confirmation is now a NUMBERED compact list ("1. 🔴 5 000 so'm · ta'lim") matching the [1][2][3] edit buttons (was unnumbered + repeated "Saqladim" → couldn't tell which entry to edit).
+- **FIX (`8b0b347`):** multi-entry batch confirmation = NUMBERED FULL per-entry blocks ("1. ✅ Saqladim / 🔴 5 000 so'm / 🗂 ta'lim / 📅 Bugun") matching the [1][2][3] edit picker. (First tried a compact one-liner; user preferred the full detailed blocks — design density is the owner's call, "subtraction has a floor".)
 
 - **TASK 055 — instant loading skeletons (`9c0fc5a`, dpl `dpl_7WSFFYtpJcJwTkbZBdqxJhRPZyya`) — DEPLOYED.** Fixes the "slow load looks BROKEN" fear (esp. Telegram WebApp): root cause was NO loading.tsx → blank screen during (cold) server fetch. Added Next.js `loading.tsx` (home + dashboard group) + a Skeleton primitive → real nav + shimmer placeholders render INSTANTLY → never blank. Perceived-speed fix; pairs with keep-warm (actual cold-start). **KEEP-WARM still a USER ACTION:** point a free UptimeRobot/cron-job.org monitor at `oson-moliya.vercel.app/api/health` every 5 min (Neon suspends after ~5min idle). [[playbook_tech_gotchas]].
 
