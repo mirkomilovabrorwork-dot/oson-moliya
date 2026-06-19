@@ -32,11 +32,12 @@ import { buildMonthlyReportXlsx } from "../report/excel";
 import { InputFile } from "grammy";
 import { getTashkentNow } from "../dates";
 import { evalCostlyCap } from "./costlyCap";
+import { OWNER_CHAT_ID, notifyOwnerError } from "./notifyOwnerError";
 
 // ── Owner chat for forwarded feedback ────────────────────────────────────────
 // Feedback messages collected via /feedback or the help inline button are
 // forwarded to this Telegram chat ID (the product owner).
-const FEEDBACK_CHAT_ID = 8582045913;
+const FEEDBACK_CHAT_ID = OWNER_CHAT_ID;
 
 // ── Per-user rate limiter (in-memory, sliding window) ────────────────────────
 // Guards STT + brain calls: 20 AI messages per 10 minutes per Telegram user.
@@ -1993,6 +1994,8 @@ export function createBot(): Bot {
   // Global error handler
   bot.catch(async (err) => {
     console.error("Bot error while handling update:", err.error);
+    // Alert the owner about the failure — best-effort, throttled, never throws.
+    await notifyOwnerError(err.ctx.api, "bot.catch", err.error);
     try {
       const fromId = err.ctx.from?.id;
       let catchLang: "uz" | "ru" | "en" = "uz";

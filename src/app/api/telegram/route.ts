@@ -2,6 +2,7 @@ import { webhookCallback } from "grammy";
 import { timingSafeEqual } from "crypto";
 import { getBot } from "@/lib/telegram/bot";
 import { getEnv } from "@/lib/env";
+import { notifyOwnerError } from "@/lib/telegram/notifyOwnerError";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -20,6 +21,7 @@ export async function POST(request: Request): Promise<Response> {
     }
   } catch (err) {
     console.error("Telegram webhook: env_error");
+    try { await notifyOwnerError(getBot().api, "telegram-webhook:env_error", err); } catch { /* env broken → can't alert */ }
     // Still return 200 per spec to avoid Telegram retries
     return new Response("OK", { status: 200 });
   }
@@ -32,6 +34,7 @@ export async function POST(request: Request): Promise<Response> {
     return await handler(request);
   } catch (err) {
     console.error("Telegram webhook: handler_error");
+    try { await notifyOwnerError(getBot().api, "telegram-webhook:handler_error", err); } catch { /* swallow */ }
     // Always return 200 so Telegram doesn't keep retrying.
     return new Response("OK", { status: 200 });
   }
