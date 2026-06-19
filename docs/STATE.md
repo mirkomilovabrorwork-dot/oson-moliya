@@ -6,7 +6,7 @@
 
 ## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044→048 ALL DEPLOYED to prod; STT (028) confirmed GOOD; user live-testing bot Q&A + debt-repay + multi-tx)
 
-- **✅ ALL LIVE on prod (full branch HEAD `12dd308`, deployment `dpl_Gkde11gqfXqx3qZjjBGDSjhvc9DU`, `oson-moliya.vercel.app`).** Deployed in stages: 044+045 → 046+047 → 048 → 048-debt-fix → **049 de-emoji**. Verified each: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change beyond 044's columns. **STT (Gemini, 028) confirmed GOOD by user.** Rollback if a brain change regresses = redeploy commit `32476d8` (= 044+045 only).
+- **✅ ALL LIVE on prod (full branch HEAD `714a842`, deployment `dpl_AS5QMESC4UB5tHdGjGjXCGpdYgJt`, `oson-moliya.vercel.app`).** (049 follow-up `714a842`: RESTORED purposeful bot emoji — full-strip was an over-correction; user missed the ✅/🟢/🔴 signals. Kept the redundant-word drop. Web custom icons unchanged. Custom emoji/stickers NOT used: custom emoji need Telegram Premium to render; stickers are separate bubbles → standard emoji is the universal/clear choice.) Deployed in stages: 044+045 → 046+047 → 048 → 048-debt-fix → **049 de-emoji**. Verified each: /login 200 · /api/telegram 405 · /api/backup 401. NO prod DB change beyond 044's columns. **STT (Gemini, 028) confirmed GOOD by user.** Rollback if a brain change regresses = redeploy commit `32476d8` (= 044+045 only).
   - **✅ TASK 049 — de-emoji (`12dd308`) — DEPLOYED.** User: emojis read as AI-made; +/− sign + "kirim/chiqim"
     word is redundant. WEB: extended `CategoryMark` to a cohesive custom line-icon set for all 26 categories +
     account types + a `tag` fallback; transaction/home/accounts render icons not emoji. BOT (Telegram can't show
