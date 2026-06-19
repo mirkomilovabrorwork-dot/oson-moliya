@@ -4,9 +4,14 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044→048 ALL DEPLOYED to prod; STT (028) confirmed GOOD; user live-testing bot Q&A + debt-repay + multi-tx)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-18 (2-sessiya), Opus — 044→053 ALL DEPLOYED to prod; user live-testing bot; lessons captured to global memory)
 
-- **✅ ALL LIVE on prod (full branch HEAD `eae85d8`, deployment `dpl_EuVAijC1qcBaoGmCQFfi7NGmQ565`, `oson-moliya.vercel.app`).** (049 follow-up `714a842`: RESTORED purposeful bot emoji — full-strip was an over-correction; kept the redundant-word drop. Custom emoji/stickers NOT used: custom emoji need TG Premium; stickers are separate bubbles → standard emoji is the universal choice.)
+- **✅ ALL LIVE on prod (full branch HEAD `b39741e`, deployment `dpl_8PqwoKmJ6jNghyz6sr4Fs6mhZyZW`, `oson-moliya.vercel.app`).** Verified: /login 200 · /api/telegram 405 · /api/health {"ok":true}. Newest batch:
+  - **TASK 051 — perf + Lucide icons.** Home was slow: batched ~7 sequential home-page DB queries into one Promise.all + code-split Recharts (next/dynamic; Next16: ssr:false NOT allowed in a Server Component) + new GET /api/health keep-warm (point a free uptime monitor at it OR Neon paid → fixes cold-start; USER ACTION). Hand-drawn icons → professional Lucide set (lucide-react).
+  - **TASK 052 — bot feedback + /kirish + /start line.** /feedback + a help button → forwards to owner (FEEDBACK_CHAT_ID **8582045913**); /kirish → web login+password; /start gained ONE quiet "Avval foydalanganmisiz? /kirish" (new users ignore it — chosen over asking everyone).
+  - **TASK 053 — 2-way feedback reply + multi-entry edit + web feedback row.** Owner REPLIES to a forwarded feedback msg → bot relays to the user (owner+reply only). log_multiple batch confirmation → "Tahrirlash" → numbered [1][2][3] → that entry's usual edit/delete (reuses showUpdatedTx / buildDebtCard). /more gained one "Yordam / Fikr" row → opens the bot.
+  - **⚠️ NEEDS USER LIVE-TEST on @oson_moliya_bot:** /feedback (does it reach you, id 8582045913?), your REPLY relays back, /kirish, multi-entry Tahrirlash→[1][2][3]→edit/delete. Web: home faster? Lucide icons + /more "Yordam/Fikr". Rollback if a brain change regresses = redeploy `32476d8`.
+  - (049 follow-up `714a842`: restored purposeful bot emoji — full-strip was an over-correction; custom emoji need TG Premium / stickers are separate bubbles → standard emoji is the universal choice.)
   - **✅ TASK 050 — recovery anchor: login + password (`eae85d8`) — DEPLOYED + VERIFIED ON PREVIEW.** Identity
     was Telegram-only → add optional `loginName`+`passwordHash` (scrypt+salt, zero-dep) so a user can log into
     the WEB without Telegram → reach + export data. `/more` "Hisobni himoyalash" card with a plain-language WHY
