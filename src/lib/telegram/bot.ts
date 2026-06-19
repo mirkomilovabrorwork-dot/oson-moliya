@@ -2252,6 +2252,9 @@ export function createBot(): Bot {
       await ctx.reply(getBotLabels(rlLang).rateLimitMsg);
       return;
     }
+    // "Typing…" indicator while the brain processes the text (native Telegram action;
+    // never block logging if it fails). Auto-clears when the reply is sent.
+    await ctx.replyWithChatAction("typing").catch(() => {});
     await handleMessage(
       {
         from: ctx.from,
