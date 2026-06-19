@@ -5,7 +5,14 @@
 > Specs: `docs/tasks/NNN-*.md`.
 > Backlog / what's next (prioritized recommendations): `docs/BACKLOG.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→055 + fixes DEPLOYED (HEAD `8b0b347`, dpl `dpl_GK2NcoUH1xggH8mA91twkQr229Wm`); next steps in docs/BACKLOG.md)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→055 + fixes DEPLOYED; NEXT SESSION = agentic-engineering hardening, see docs/BACKLOG.md top)
+
+- **▶ START HERE NEXT SESSION (user's call 2026-06-19):** close the 3 weak agentic-engineering pillars —
+  see `docs/BACKLOG.md` → "▶ NEXT SESSION — Agentic-engineering hardening". Order: (1) Verification depth —
+  user live-tests the shipped bot changes (046–053) + I build a brain ACCURACY TEST SET; (2) Agentic CI/CD +
+  prod error MONITORING (GitHub Actions gates on push + DM-owner-on-error); (3) Sandboxing decision
+  (per-agent worktree isolation vs the current file-lock). We're already agentic-eng on ~9/12 pillars; these
+  close the gaps so it compounds. Prod is live (HEAD `8b0b347`, dpl `dpl_GK2NcoUH1xggH8mA91twkQr229Wm`).
 
 - **FIX (`8b0b347`):** multi-entry batch confirmation = NUMBERED FULL per-entry blocks ("1. ✅ Saqladim / 🔴 5 000 so'm / 🗂 ta'lim / 📅 Bugun") matching the [1][2][3] edit picker. (First tried a compact one-liner; user preferred the full detailed blocks — design density is the owner's call, "subtraction has a floor".)
 

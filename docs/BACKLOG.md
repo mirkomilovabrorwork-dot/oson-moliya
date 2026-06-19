@@ -7,6 +7,36 @@ Legend: **[me]** = I (Opus) build it · **[you]** = your action (account/decisio
 
 ---
 
+## ▶ NEXT SESSION — Agentic-engineering hardening (START HERE; user's call 2026-06-19)
+
+We're already doing agentic engineering (CLAUDE.md/AGENTS.md · subagents/skills/hooks · spec-first ·
+gates · trajectory-review · guardrails · knowledge-hub · feedback-loop). To make the foundations
+COMPOUND (not vibe-coding that sinks), close the 3 WEAK pillars — in this order:
+
+1. **Verification depth — do first (highest value, in our control).**
+   - **Live-test the shipped bot changes — [you], S.** Verify 046–053 on @oson_moliya_bot (debt-repay,
+     Q&A, multi-entry, feedback 2-way + your reply relays, /kirish, multi-edit [1][2][3]). Do NOT build
+     more brain features until confirmed. (Same as P0 #1.)
+   - **Brain accuracy test set — [me], M.** ~50–100 REAL labeled Uzbek messages → measure classification
+     accuracy %; becomes the GATE for any future brain/cost change. The missing "Verification Loops" depth.
+     (Same as P0 #3.)
+
+2. **Agentic CI/CD + monitoring — [me], M (the weakest pillar).**
+   - **GitHub Actions CI:** on push, auto-run `typecheck + test + build` so gates are enforced by the
+     PIPELINE, not just by me. (Workflow must live on the branch GitHub schedules from / main.)
+   - **Prod error monitoring:** wrap the bot + API error handlers to DM the owner (FEEDBACK_CHAT_ID
+     8582045913) on uncaught errors (or a free Sentry) → we LEARN when prod breaks instead of users telling us.
+   - *(Optional)* Vercel git-integration auto-deploy on merge vs the current manual `vercel --prod`.
+
+3. **Sandboxing / isolation — [me], S (decide).**
+   - Parallel agents currently share ONE worktree + a one-writer-per-file lock (works, but a clash risk).
+     Option: use the Workflow tool's `isolation: "worktree"` (per-agent worktree) for parallel file-writers.
+     Decide: adopt per-agent isolation OR keep the file-lock discipline (fine at our scale) — and document it.
+
+> Closing these = the demo doesn't sink; foundations compound. Then resume P0/P1/P2 below.
+
+---
+
 ## P0 — do first (highest value / risk)
 
 1. **LIVE-TEST the bot-brain changes shipped this session — [you], S.**
