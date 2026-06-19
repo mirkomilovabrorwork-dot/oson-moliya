@@ -424,6 +424,25 @@ const uz: Dictionary = {
   "trash.section.debts": "Qarzlar",
   "trash.section.recurring": "Takroriy",
   "trash.deleted_at": "o'chirilgan: {date}",
+  // ── Recovery anchor (login + password)
+  "recovery.title": "Hisobni himoyalash",
+  "recovery.why": "Hozir hisobingiz faqat Telegram orqali ochiladi. Agar Telegramni yo'qotsangiz (o'chirib qayta o'rnatsangiz yoki raqamingiz o'zgarsa), ma'lumotlaringizga kira olmay qolishingiz mumkin. Login va parol qo'shsangiz — Telegramsiz ham kirib, barcha yozuvlaringizni ko'rasiz va yuklab olasiz.",
+  "recovery.login_label": "Login (faqat a-z, 0-9, _)",
+  "recovery.password_label": "Parol",
+  "recovery.password_confirm_label": "Parolni tasdiqlang",
+  "recovery.save": "Himoyani yoqish",
+  "recovery.saved": "Himoyalangan",
+  "recovery.change_password": "Parolni o'zgartirish",
+  "recovery.login_taken": "Bu login band, boshqa tanlang",
+  "recovery.invalid": "Login yoki parolni tekshiring (login 3-20 belgi a-z0-9_, parol kamida 8 belgi)",
+  "recovery.login_with_password": "Login va parol bilan kirish",
+  "recovery.login_why": "Telegramsiz kirish uchun (zaxira usul)",
+  "recovery.bad_credentials": "Login yoki parol noto'g'ri",
+  "recovery.too_many": "Juda ko'p urinish, biroz kuting",
+  "recovery.submitting": "Saqlanmoqda...",
+  "recovery.checking": "Tekshirilmoqda...",
+  "recovery.passwords_mismatch": "Parollar mos kelmadi",
+  "recovery.protected_status": "Himoyalangan · login: {loginName}",
 };
 
 const ru: Dictionary = {
@@ -847,6 +866,25 @@ const ru: Dictionary = {
   "trash.section.debts": "Долги",
   "trash.section.recurring": "Регулярные",
   "trash.deleted_at": "удалено: {date}",
+  // ── Recovery anchor (login + password)
+  "recovery.title": "Защита аккаунта",
+  "recovery.why": "Сейчас ваш аккаунт открывается только через Telegram. Если вы потеряете доступ к Telegram (переустановка, смена номера), вы не сможете войти в свои данные. Добавьте логин и пароль — и сможете войти без Telegram, увидеть и скачать все свои записи.",
+  "recovery.login_label": "Логин (только a-z, 0-9, _)",
+  "recovery.password_label": "Пароль",
+  "recovery.password_confirm_label": "Повторите пароль",
+  "recovery.save": "Включить защиту",
+  "recovery.saved": "Защищено",
+  "recovery.change_password": "Сменить пароль",
+  "recovery.login_taken": "Этот логин занят, выберите другой",
+  "recovery.invalid": "Проверьте логин или пароль (логин 3-20 символов a-z0-9_, пароль от 8 символов)",
+  "recovery.login_with_password": "Войти по логину и паролю",
+  "recovery.login_why": "Для входа без Telegram (резервный способ)",
+  "recovery.bad_credentials": "Логин или пароль неверны",
+  "recovery.too_many": "Слишком много попыток, подождите немного",
+  "recovery.submitting": "Сохранение...",
+  "recovery.checking": "Проверяем...",
+  "recovery.passwords_mismatch": "Пароли не совпадают",
+  "recovery.protected_status": "Защищено · логин: {loginName}",
 };
 
 const en: Dictionary = {
@@ -1270,6 +1308,25 @@ const en: Dictionary = {
   "trash.section.debts": "Debts",
   "trash.section.recurring": "Recurring",
   "trash.deleted_at": "deleted: {date}",
+  // ── Recovery anchor (login + password)
+  "recovery.title": "Account protection",
+  "recovery.why": "Right now your account can only be accessed via Telegram. If you lose access to Telegram (reinstall, SIM change, deleted account), you will lose access to all your records. Add a login and password — and you can log in without Telegram to view and download all your data.",
+  "recovery.login_label": "Login (a-z, 0-9, _ only)",
+  "recovery.password_label": "Password",
+  "recovery.password_confirm_label": "Confirm password",
+  "recovery.save": "Enable protection",
+  "recovery.saved": "Protected",
+  "recovery.change_password": "Change password",
+  "recovery.login_taken": "This login is taken, choose another",
+  "recovery.invalid": "Check login or password (login 3-20 chars a-z0-9_, password at least 8 chars)",
+  "recovery.login_with_password": "Sign in with login and password",
+  "recovery.login_why": "To sign in without Telegram (backup method)",
+  "recovery.bad_credentials": "Login or password is incorrect",
+  "recovery.too_many": "Too many attempts, please wait a moment",
+  "recovery.submitting": "Saving...",
+  "recovery.checking": "Checking...",
+  "recovery.passwords_mismatch": "Passwords do not match",
+  "recovery.protected_status": "Protected · login: {loginName}",
 };
 
 export const dictionaries: Record<LangCode, Dictionary> = { uz, ru, en };

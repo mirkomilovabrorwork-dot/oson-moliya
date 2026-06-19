@@ -4,6 +4,7 @@ import { LangSwitcher } from "@/components/LangSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TelegramBootstrap } from "@/components/TelegramBootstrap";
 import { LoginCodeForm } from "@/components/LoginCodeForm";
+import { PasswordLoginForm } from "@/components/PasswordLoginForm";
 
 export default async function LoginPage() {
   let lang: LangCode = "uz";
@@ -126,6 +127,25 @@ export default async function LoginPage() {
           </h2>
           <LoginCodeForm lang={lang} />
         </div>
+
+        {/* Divider */}
+        <div className="relative my-6 flex items-center">
+          <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+          <span className="mx-3 text-xs" style={{ color: "var(--fg-subtle)" }}>
+            {lang === "ru" ? "или" : lang === "en" ? "or" : "yoki"}
+          </span>
+          <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+        </div>
+
+        {/* Password login section */}
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold" style={{ color: "var(--fg)" }}>
+            {t("recovery.login_with_password", lang)}
+          </h2>
+          <PasswordLoginForm lang={lang} />
+        </div>
+
+        <div className="my-6 h-px" style={{ background: "var(--border)" }} />
 
         {/* CTA */}
         <a

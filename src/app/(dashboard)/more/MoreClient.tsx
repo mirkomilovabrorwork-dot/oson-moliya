@@ -13,6 +13,8 @@ type DisplayCurrency = "UZS" | "USD" | "EUR" | "RUB";
 interface MoreClientProps {
   lang: LangCode;
   displayCurrency: DisplayCurrency;
+  hasLoginName: boolean;
+  currentLoginName: string | null;
 }
 
 function IconTile({
@@ -80,6 +82,24 @@ function IconRecurring() {
   );
 }
 
+function IconLock() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function IconCheckCircle() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  );
+}
+
 /** Right-side chevron that rotates down when its row is open. */
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -119,7 +139,7 @@ const CURRENCY_LABELS: Record<DisplayCurrency, Record<LangCode, string>> = {
 
 type RowKey = "currency" | "lang" | "theme";
 
-export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClientProps) {
+export function MoreClient({ lang, displayCurrency: initialCurrency, hasLoginName, currentLoginName }: MoreClientProps) {
   const router = useRouter();
   // Accordion: only one row's options open at a time.
   const [open, setOpen] = useState<RowKey | null>(null);
@@ -128,6 +148,66 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
   const [currency, setCurrency] = useState<DisplayCurrency>(initialCurrency);
   const [currencyLoading, setCurrencyLoading] = useState(false);
   const [currencyError, setCurrencyError] = useState<string | null>(null);
+
+  // Recovery anchor state
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryLoginName, setRecoveryLoginName] = useState(currentLoginName ?? "");
+  const [recoveryPassword, setRecoveryPassword] = useState("");
+  const [recoveryPasswordConfirm, setRecoveryPasswordConfirm] = useState("");
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoverySuccess, setRecoverySuccess] = useState(hasLoginName);
+  const [recoverySavedLogin, setRecoverySavedLogin] = useState(currentLoginName);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+
+  const handleRecoverySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setRecoveryError(null);
+
+    // Client-side validation
+    if (!/^[a-z0-9_]{3,20}$/.test(recoveryLoginName)) {
+      setRecoveryError(t("recovery.invalid", lang));
+      return;
+    }
+    if (recoveryPassword.length < 8) {
+      setRecoveryError(t("recovery.invalid", lang));
+      return;
+    }
+    if (recoveryPassword !== recoveryPasswordConfirm) {
+      setRecoveryError(t("recovery.passwords_mismatch", lang));
+      return;
+    }
+
+    setRecoveryLoading(true);
+    try {
+      const res = await fetch("/api/auth/set-credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loginName: recoveryLoginName, password: recoveryPassword }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string; loginName?: string };
+
+      if (res.ok && data.ok) {
+        setRecoverySuccess(true);
+        setRecoverySavedLogin(data.loginName ?? recoveryLoginName);
+        setRecoveryOpen(false);
+        setRecoveryPassword("");
+        setRecoveryPasswordConfirm("");
+        return;
+      }
+
+      if (res.status === 409) {
+        setRecoveryError(t("recovery.login_taken", lang));
+      } else if (res.status === 422) {
+        setRecoveryError(t("recovery.invalid", lang));
+      } else {
+        setRecoveryError(t("recovery.invalid", lang));
+      }
+    } catch {
+      setRecoveryError(t("error.generic", lang));
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
 
   const handleCurrencySelect = async (cur: DisplayCurrency) => {
     if (cur === currency) {
@@ -410,6 +490,187 @@ export function MoreClient({ lang, displayCurrency: initialCurrency }: MoreClien
           </a>
         </div>
 
+      </div>
+
+      {/* Account protection card */}
+      <div
+        style={{
+          background: "var(--surface-elevated)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)",
+          overflow: "hidden",
+          boxShadow: "var(--shadow-sm)",
+        }}
+      >
+        {recoverySuccess && !recoveryOpen ? (
+          /* Protected state row */
+          <div>
+            <button
+              type="button"
+              onClick={() => setRecoveryOpen(true)}
+              className={rowClass}
+              style={{ minHeight: 56, background: "transparent" }}
+              aria-label={t("recovery.change_password", lang)}
+            >
+              <IconTile bg="var(--surface-sunken)" color="var(--accent)">
+                <IconCheckCircle />
+              </IconTile>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium" style={{ color: "var(--fg)" }}>
+                  {t("recovery.saved", lang)} · login: {recoverySavedLogin}
+                </div>
+                <div className="text-xs" style={{ color: "var(--fg-subtle)" }}>
+                  {t("recovery.change_password", lang)}
+                </div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-subtle)", flexShrink: 0 }}>
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          </div>
+        ) : recoveryOpen && recoverySuccess ? (
+          /* Change password form (login pre-filled, not editable) */
+          <div className="px-4 py-4 space-y-3">
+            <div className="flex items-center gap-3 mb-1">
+              <IconTile bg="var(--surface-sunken)" color="var(--fg-muted)">
+                <IconLock />
+              </IconTile>
+              <span className="text-sm font-semibold" style={{ color: "var(--fg)" }}>
+                {t("recovery.change_password", lang)}
+              </span>
+            </div>
+            <form className="space-y-3" onSubmit={handleRecoverySubmit}>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--fg-muted)" }}>
+                  {t("recovery.login_label", lang)}
+                </label>
+                <input
+                  type="text"
+                  value={recoverySavedLogin ?? ""}
+                  disabled
+                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+                  style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)", color: "var(--fg-muted)" }}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--fg-muted)" }}>
+                  {t("recovery.password_label", lang)}
+                </label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={recoveryPassword}
+                  onChange={(e) => { setRecoveryPassword(e.target.value); setRecoveryError(null); }}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--fg)" }}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--fg-muted)" }}>
+                  {t("recovery.password_confirm_label", lang)}
+                </label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={recoveryPasswordConfirm}
+                  onChange={(e) => { setRecoveryPasswordConfirm(e.target.value); setRecoveryError(null); }}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--fg)" }}
+                />
+              </div>
+              {recoveryError && (
+                <p className="text-xs" style={{ color: "var(--expense)" }}>{recoveryError}</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setRecoveryOpen(false); setRecoveryError(null); setRecoveryPassword(""); setRecoveryPasswordConfirm(""); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: "var(--surface-sunken)", color: "var(--fg-muted)", border: "1px solid var(--border)" }}
+                >
+                  {t("common.cancel", lang)}
+                </button>
+                <button
+                  type="submit"
+                  disabled={recoveryLoading}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60"
+                  style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
+                >
+                  {recoveryLoading ? t("recovery.submitting", lang) : t("recovery.save", lang)}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : (
+          /* Setup form (not yet protected) */
+          <div className="px-4 py-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <IconTile bg="var(--surface-sunken)" color="var(--fg-muted)">
+                <IconLock />
+              </IconTile>
+              <span className="text-sm font-semibold" style={{ color: "var(--fg)" }}>
+                {t("recovery.title", lang)}
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+              {t("recovery.why", lang)}
+            </p>
+            <form className="space-y-3" onSubmit={handleRecoverySubmit}>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--fg-muted)" }}>
+                  {t("recovery.login_label", lang)}
+                </label>
+                <input
+                  type="text"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={recoveryLoginName}
+                  onChange={(e) => { setRecoveryLoginName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "")); setRecoveryError(null); }}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--fg)" }}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--fg-muted)" }}>
+                  {t("recovery.password_label", lang)}
+                </label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={recoveryPassword}
+                  onChange={(e) => { setRecoveryPassword(e.target.value); setRecoveryError(null); }}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--fg)" }}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--fg-muted)" }}>
+                  {t("recovery.password_confirm_label", lang)}
+                </label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={recoveryPasswordConfirm}
+                  onChange={(e) => { setRecoveryPasswordConfirm(e.target.value); setRecoveryError(null); }}
+                  className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--fg)" }}
+                />
+              </div>
+              {recoveryError && (
+                <p className="text-xs" style={{ color: "var(--expense)" }}>{recoveryError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={recoveryLoading}
+                className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60"
+                style={{ background: "var(--accent-gradient)", color: "#fff", boxShadow: "var(--shadow-sm)" }}
+              >
+                {recoveryLoading ? t("recovery.submitting", lang) : t("recovery.save", lang)}
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* Privacy note — builds trust */}

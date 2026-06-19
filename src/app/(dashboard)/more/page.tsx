@@ -138,7 +138,12 @@ export default async function MorePage() {
 
         {/* Client section: Til (Language) + Mavzu (Theme) rows + Logout button
             MoreClient renders a second card for Til/Mavzu and the logout button below */}
-        <MoreClient lang={lang} displayCurrency={displayCurrency} />
+        <MoreClient
+          lang={lang}
+          displayCurrency={displayCurrency}
+          hasLoginName={!!user.loginName}
+          currentLoginName={user.loginName ?? null}
+        />
       </main>
     </div>
   );
