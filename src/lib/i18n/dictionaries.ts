@@ -415,6 +415,8 @@ const uz: Dictionary = {
   // ── More > Backup download
   "more.backup": "Ma'lumotlarni yuklab olish",
   "more.backup_sub": "Barcha yozuvlaringiz bitta JSON faylda (zaxira nusxa).",
+  "more.feedback": "Yordam / Fikr",
+  "more.feedback_sub": "Savol yoki taklif — to'g'ridan-to'g'ri jamoaga",
   // ── Trash page
   "trash.title": "O'chirilganlar",
   "trash.empty": "Savatcha bo'sh",
@@ -857,6 +859,8 @@ const ru: Dictionary = {
   // ── More > Backup download
   "more.backup": "Скачать мои данные",
   "more.backup_sub": "Все ваши записи в одном JSON-файле (резервная копия).",
+  "more.feedback": "Помощь / Отзыв",
+  "more.feedback_sub": "Вопрос или предложение — напрямую команде",
   // ── Trash page
   "trash.title": "Удалённые",
   "trash.empty": "Корзина пуста",
@@ -1299,6 +1303,8 @@ const en: Dictionary = {
   // ── More > Backup download
   "more.backup": "Download my data",
   "more.backup_sub": "All your records in one JSON file (a backup copy).",
+  "more.feedback": "Help / Feedback",
+  "more.feedback_sub": "A question or idea — straight to the team",
   // ── Trash page
   "trash.title": "Deleted items",
   "trash.empty": "Trash is empty",

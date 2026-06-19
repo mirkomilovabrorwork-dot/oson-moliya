@@ -104,7 +104,7 @@ async function finalizeLog(
   prisma: import("@prisma/client").PrismaClient,
   params: FinalizeLogParams,
   lang: string
-): Promise<void> {
+): Promise<string> {
   const { amount, txType, category, dateStr, note, originalAmount, originalCurrency } = params;
 
   let categoryId: string | null = null;
@@ -217,6 +217,7 @@ async function finalizeLog(
   await ctx.reply(confirmation + budgetWarning + dashConfirm.extraText, {
     reply_markup: { inline_keyboard: keyboardRows },
   });
+  return tx.id;
 }
 
 // Re-show a transaction after an edit, with the same edit/delete keyboard.
@@ -872,13 +873,14 @@ async function handleMessage(
       }
 
       const captured: string[] = [];
+      const batchEntries: Array<{ id: string; kind: "tx" | "debt"; label: string }> = [];
       for (const it of valid) {
         if (isDebtItem(it)) {
           // Debt item → createDebt (no per-item reply; build a short line)
           const cp = (it.counterparty as string).trim();
           const amt = it.amount as number;
           const dir = it.direction === "given" ? DebtDirection.given : DebtDirection.taken;
-          await createDebt({
+          const createdBatchDebt = await createDebt({
             userId: user.id,
             counterparty: cp,
             amountUzs: BigInt(amt),
@@ -900,6 +902,7 @@ async function handleMessage(
               ? `↙️ Borrowed from ${cp}: ${amtFmt}`
               : `↙️ ${cp}dan qarz olindi: ${amtFmt}`;
           captured.push(line);
+          batchEntries.push({ id: createdBatchDebt.id, kind: "debt", label: line.replace(/^[^\w]*/, "").slice(0, 40) });
         } else {
           // Transaction item → reuse finalizeLog, capturing its confirmation text
           const capCtx = {
@@ -908,7 +911,7 @@ async function handleMessage(
               return Promise.resolve(undefined as unknown);
             },
           };
-          await finalizeLog(
+          const batchTxId = await finalizeLog(
             capCtx,
             user,
             prisma,
@@ -923,6 +926,8 @@ async function handleMessage(
             },
             lang
           );
+          const batchTxLabel = captured[captured.length - 1]?.split("\n")[0]?.replace(/^✅ /, "").slice(0, 40) ?? "";
+          batchEntries.push({ id: batchTxId, kind: "tx", label: batchTxLabel });
         }
       }
 
@@ -943,10 +948,25 @@ async function handleMessage(
             : `\n\n(${skipped} tasini tushunmadim — alohida yozing)`
           : "";
 
+      if (batchEntries.length >= 1) {
+        await upsertPendingAction(user.id, {
+          intent: "multi_edit",
+          draft: { entries: batchEntries },
+          question: "",
+        });
+      }
+
       const dash = await dashboardReplyOptions(user.id);
+      const batchKeyboardRows: InlineKeyboardButton[][] = [...dash.dashRows];
+      if (batchEntries.length >= 1) {
+        batchKeyboardRows.push([{
+          text: lang === "ru" ? "✏️ Изменить запись" : lang === "en" ? "✏️ Edit an entry" : "✏️ Tahrirlash",
+          callback_data: "medit:menu",
+        }]);
+      }
       await ctx.reply(
         header + "\n\n" + captured.join("\n\n") + skipNote + dash.extraText,
-        { reply_markup: { inline_keyboard: [...dash.dashRows] } }
+        { reply_markup: { inline_keyboard: batchKeyboardRows } }
       );
       return;
     } catch (err) {
@@ -2198,6 +2218,33 @@ export function createBot(): Bot {
   // Text message handler
   bot.on("message:text", async (ctx) => {
     if (!ctx.from) return;
+    // ── Feature A: owner can reply to forwarded feedback messages ────────────
+    // If the sender is the owner AND the message is a reply to a forwarded
+    // feedback message, extract the original user's Telegram id from the
+    // forwarded text and relay the reply back to them.
+    if (
+      ctx.from.id === FEEDBACK_CHAT_ID &&
+      ctx.message.reply_to_message &&
+      typeof (ctx.message.reply_to_message as { text?: string }).text === "string"
+    ) {
+      const repliedText = (ctx.message.reply_to_message as { text?: string }).text ?? "";
+      const idMatch = repliedText.match(/id (\d+)\)/);
+      if (idMatch) {
+        const targetUserId = parseInt(idMatch[1], 10);
+        try {
+          await ctx.api.sendMessage(
+            targetUserId,
+            "💬 Jamoadan javob:\n\n" + ctx.message.text
+          );
+          await ctx.reply("✅ Javob yuborildi.");
+        } catch (relayErr) {
+          console.error("owner relay error:", relayErr);
+          await ctx.reply("❌ Yetkazib bo'lmadi.");
+        }
+        return; // do NOT run handleMessage — owner's reply must not be logged
+      }
+      // If no id found in the replied text, fall through to normal handleMessage
+    }
     // Rate limit check before brain call
     if (isRateLimited(ctx.from.id)) {
       const rlUser = await prisma.user.findUnique({ where: { telegramId: BigInt(ctx.from.id) }, select: { language: true } });
@@ -2920,6 +2967,79 @@ export function createBot(): Bot {
             ? "✍️ Write your feedback or question — it goes straight to the team.\n\n(Uz / Ru / En — any language)"
             : "✍️ Fikr yoki muammoyingizni yozing — to'g'ridan-to'g'ri jamoaga yetadi.\n\n(Uz / Ru / En — istalgan tilda)";
         await ctx.reply(fbPrompt, { reply_markup: { force_reply: true } });
+        return;
+      }
+
+      // ── medit:menu — show numbered list of batch entries ──────────────────
+      if (data === "medit:menu") {
+        const meditPending = await getPendingAction(user.id);
+        if (!meditPending || meditPending.intent !== "multi_edit") {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+        const meditEntries = (meditPending.draft as Record<string, unknown>).entries as Array<{ id: string; kind: "tx" | "debt"; label: string }>;
+        if (!Array.isArray(meditEntries) || meditEntries.length === 0) {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+        // Build numbered buttons, up to 4 per row
+        const numBtns: InlineKeyboardButton[] = meditEntries.map((_, idx) => ({
+          text: String(idx + 1),
+          callback_data: `medit:pick:${idx}`,
+        }));
+        const numRows: InlineKeyboardButton[][] = [];
+        for (let i = 0; i < numBtns.length; i += 4) {
+          numRows.push(numBtns.slice(i, i + 4));
+        }
+        await ctx.answerCallbackQuery();
+        await ctx.reply(
+          lang === "ru" ? "Какую запись изменить/удалить?" : lang === "en" ? "Which entry to edit/delete?" : "Qaysi yozuvni tahrirlash/o'chirish?",
+          { reply_markup: { inline_keyboard: numRows } }
+        );
+        return;
+      }
+
+      // ── medit:pick:<index> — show edit/delete for a specific batch entry ──
+      if (data.startsWith("medit:pick:")) {
+        const meditIdx = parseInt(data.slice(11), 10);
+        const meditPending2 = await getPendingAction(user.id);
+        if (!meditPending2 || meditPending2.intent !== "multi_edit") {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+        const meditEntries2 = (meditPending2.draft as Record<string, unknown>).entries as Array<{ id: string; kind: "tx" | "debt"; label: string }>;
+        if (!Array.isArray(meditEntries2) || meditIdx < 0 || meditIdx >= meditEntries2.length) {
+          await ctx.answerCallbackQuery({ text: labels.expiredMsg });
+          await ctx.reply(labels.expiredMsg);
+          return;
+        }
+        const meditEntry = meditEntries2[meditIdx];
+        await ctx.answerCallbackQuery();
+
+        if (meditEntry.kind === "debt") {
+          // Fetch debt with ownership guard
+          const meditDebt = await getDebtWithPayments(meditEntry.id, user.id);
+          if (!meditDebt) {
+            await ctx.reply(labels.notFoundMsg);
+            return;
+          }
+          const meditCard = buildDebtCard(
+            { id: meditDebt.id, counterparty: meditDebt.counterparty, amountUzs: meditDebt.amountUzs, direction: meditDebt.direction },
+            lang,
+            "saved",
+            meditDebt.occurredAt
+          );
+          const meditDash = await dashboardReplyOptions(user.id);
+          await ctx.reply(meditCard.text + meditDash.extraText, {
+            reply_markup: { inline_keyboard: [...meditDash.dashRows, meditCard.editDeleteRow] },
+          });
+        } else {
+          // tx — reuse showUpdatedTx (same edit/delete keyboard as single-entry flow)
+          await showUpdatedTx({ reply: (t, o) => ctx.reply(t, o) }, prisma, user, meditEntry.id, lang);
+        }
         return;
       }
 
