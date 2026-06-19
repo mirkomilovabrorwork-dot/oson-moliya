@@ -4,7 +4,9 @@
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→054 ALL DEPLOYED; user live-testing bot; lessons in global memory)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→055 ALL DEPLOYED; user live-testing bot; lessons in global memory)
+
+- **TASK 055 — instant loading skeletons (`9c0fc5a`, dpl `dpl_7WSFFYtpJcJwTkbZBdqxJhRPZyya`) — DEPLOYED.** Fixes the "slow load looks BROKEN" fear (esp. Telegram WebApp): root cause was NO loading.tsx → blank screen during (cold) server fetch. Added Next.js `loading.tsx` (home + dashboard group) + a Skeleton primitive → real nav + shimmer placeholders render INSTANTLY → never blank. Perceived-speed fix; pairs with keep-warm (actual cold-start). **KEEP-WARM still a USER ACTION:** point a free UptimeRobot/cron-job.org monitor at `oson-moliya.vercel.app/api/health` every 5 min (Neon suspends after ~5min idle). [[playbook_tech_gotchas]].
 
 - **AGREED-NEXT / DEFERRED (user decisions 2026-06-19):**
   - **Cost: build a CODE-FIRST fast-path LATER** — parse clear "amount + keyword" msgs deterministically (no LLM), fall back to Haiku only when unsure (~50-70% fewer LLM calls, zero accuracy risk if conservative). KEEP Haiku (cheap models risk Uzbek). User: "keyinroq sinab ko'rish, topolmasa Haiku'ga". (lever in [[playbook_tech_gotchas]] LLM-cost section.)
