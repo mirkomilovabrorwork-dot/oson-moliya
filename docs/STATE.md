@@ -5,7 +5,9 @@
 > Specs: `docs/tasks/NNN-*.md`.
 > Backlog / what's next (prioritized recommendations): `docs/BACKLOG.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→055 ALL DEPLOYED; user live-testing bot; lessons in global memory)
+## ⚡ STATUS (oxirgi yangilangan: 2026-06-19, Opus — 044→055 + fixes DEPLOYED (HEAD `8cfb7af`, dpl `dpl_CfksesAL8qo6Nwo3RwL4Bk942HUJ`); next steps in docs/BACKLOG.md)
+
+- **FIX (`8cfb7af`):** multi-entry batch confirmation is now a NUMBERED compact list ("1. 🔴 5 000 so'm · ta'lim") matching the [1][2][3] edit buttons (was unnumbered + repeated "Saqladim" → couldn't tell which entry to edit).
 
 - **TASK 055 — instant loading skeletons (`9c0fc5a`, dpl `dpl_7WSFFYtpJcJwTkbZBdqxJhRPZyya`) — DEPLOYED.** Fixes the "slow load looks BROKEN" fear (esp. Telegram WebApp): root cause was NO loading.tsx → blank screen during (cold) server fetch. Added Next.js `loading.tsx` (home + dashboard group) + a Skeleton primitive → real nav + shimmer placeholders render INSTANTLY → never blank. Perceived-speed fix; pairs with keep-warm (actual cold-start). **KEEP-WARM still a USER ACTION:** point a free UptimeRobot/cron-job.org monitor at `oson-moliya.vercel.app/api/health` every 5 min (Neon suspends after ~5min idle). [[playbook_tech_gotchas]].
 
