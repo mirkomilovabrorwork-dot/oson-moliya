@@ -1,3 +1,8 @@
+> ## ⚠️ BIRINCHI VAZIFA (Jarvis qoldirdi 2026-06-25) — bu STATE'ni SIQ, keyin shu blokni o'chir
+> Bu fayl ~51 KB. Har resume'da TO'LIQ yuklanadi -> uzun kontekst Claude'ni "ahmoqlashtiradi" (context rot, model adashadi).
+> QIL (o'z loyiha konteksting bilan; avval `Copy-Item docs/STATE.md docs/STATE.md.bak`): (1) tepada FAQAT qisqa ⚡ STATUS qoldir (~15 qator: Active/LOCK · oxirgi bajarilgan · keyingi task · blocker). (2) eski bajarilgan TASK-loglarni `docs/STATE_ARCHIVE.md`ga KO'CHIR (o'chirma — ko'chir, hech narsa yo'qolmasin). (3) maqsad: bu fayl < ~12 KB. (4) tekshirib tugagach — SHU blokni o'chir.
+> Sabab: global JARVIS tizimi 9.2 KB ga tushirildi; loyiha STATE'lari oxirgi qolgan katta "ahmoqlashtiruvchi".
+
 # PulTrack — Ish holati (HANDOFF board)
 
 > Jonli holat taxtasi. Har sessiya quyidagi ⚡ STATUS blokidan boshlanadi.

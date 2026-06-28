@@ -1,0 +1,4 @@
+.codex-checkpoints/before-codex-20260627-220109/HEAD.txt
+.codex-checkpoints/before-codex-20260627-220109/status.txt
+.codex-checkpoints/before-codex-20260627-220109/working-tree.diff
+docs/tasks/022-automated-daily-backup.md
