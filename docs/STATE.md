@@ -1,10 +1,18 @@
+> ## ⚠️ BIRINCHI VAZIFA (Jarvis qoldirdi 2026-06-25) — bu STATE'ni SIQ, keyin shu blokni o'chir
+> Bu fayl ~51 KB. Har resume'da TO'LIQ yuklanadi -> uzun kontekst Claude'ni "ahmoqlashtiradi" (context rot, model adashadi).
+> QIL (o'z loyiha konteksting bilan; avval `Copy-Item docs/STATE.md docs/STATE.md.bak`): (1) tepada FAQAT qisqa ⚡ STATUS qoldir (~15 qator: Active/LOCK · oxirgi bajarilgan · keyingi task · blocker). (2) eski bajarilgan TASK-loglarni `docs/STATE_ARCHIVE.md`ga KO'CHIR (o'chirma — ko'chir, hech narsa yo'qolmasin). (3) maqsad: bu fayl < ~12 KB. (4) tekshirib tugagach — SHU blokni o'chir.
+> Sabab: global JARVIS tizimi 9.2 KB ga tushirildi; loyiha STATE'lari oxirgi qolgan katta "ahmoqlashtiruvchi".
+
 # PulTrack — Ish holati (HANDOFF board)
+
+_Trigger words: "pultrack", "pul track". Source of truth for resume._
 
 > Jonli holat taxtasi. Har sessiya quyidagi ⚡ STATUS blokidan boshlanadi.
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
 ## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→043 + extras SHIPPED, 14 deploys; ONLY bot-side + minor polish left)
+- **Native git pre-commit hook (2026-07-18):** `.githooks/pre-commit` runs this repo's own `.claude/gate.cmd` before any commit, so a commit from a terminal, an IDE or another agent is checked too - previously only commits made through Claude's own tools were. Proven BOTH ways before landing: a deliberate breakage blocked the commit with the real failure, and reverting it let the same commit through. Escape hatch `SKIP_GATE=1` (deliberately loud). **After a fresh clone it is INERT until you run `git config core.hooksPath .githooks`** - that setting is local git config and does not travel with the repo.
 
 - **LIVE on prod (oson-moliya.vercel.app, main `446073b`).** Shipped this session:
   - **HAMMASI button prominent (`446073b`).** User: in the debt-repayment modal the "Hammasi"
