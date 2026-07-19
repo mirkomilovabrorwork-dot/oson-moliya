@@ -39,6 +39,7 @@ export function getBotLabels(lang: string): {
   // Error / edge-case messages
   botErrorMsg: string;
   rateLimitMsg: string;
+  voiceRateLimitMsg: string;
   audioTooLongMsg: string;
   voiceDownloadErrMsg: string;
   voiceTranscribeErrMsg: string;
@@ -74,6 +75,7 @@ export function getBotLabels(lang: string): {
       categoryExpiredMsg: "Время вышло, напишите заново.",
       botErrorMsg: "Извините, произошла ошибка. Пожалуйста, попробуйте ещё раз.",
       rateLimitMsg: "⏳ Подождите немного — слишком много запросов. Попробуйте через 10 минут.",
+      voiceRateLimitMsg: "🎤 Слишком много голосовых сообщений. Подождите немного или напишите текстом.",
       audioTooLongMsg: "🎤 Аудио слишком длинное. Пожалуйста, отправьте запись короче 60 секунд или напишите сообщение.",
       voiceDownloadErrMsg: "Не удалось загрузить голосовое сообщение.",
       voiceTranscribeErrMsg: "Не удалось распознать голос. Пожалуйста, напишите сообщение или попробуйте ещё раз.",
@@ -107,6 +109,7 @@ export function getBotLabels(lang: string): {
       categoryExpiredMsg: "Expired, please write again.",
       botErrorMsg: "Sorry, something went wrong. Please try again.",
       rateLimitMsg: "⏳ Please wait — too many requests. Try again in 10 minutes.",
+      voiceRateLimitMsg: "🎤 Too many voice messages. Please wait a bit or type your message instead.",
       audioTooLongMsg: "🎤 Audio is too long. Please send a voice message under 60 seconds or type a message.",
       voiceDownloadErrMsg: "Could not download the voice file.",
       voiceTranscribeErrMsg: "Could not transcribe the voice message. Please send a text message or try again.",
@@ -140,6 +143,7 @@ export function getBotLabels(lang: string): {
       categoryExpiredMsg: "Muddati tugadi, qaytadan yozing.",
       botErrorMsg: "Kechirasiz, xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.",
       rateLimitMsg: "⏳ Biroz kuting — so'rovlar juda ko'p. 10 daqiqadan so'ng qaytadan urinib ko'ring.",
+      voiceRateLimitMsg: "🎤 Ovozli xabarlar juda ko'p. Biroz kuting yoki xabarni yozib yuboring.",
       audioTooLongMsg: "🎤 Audio juda uzun. Iltimos, 60 soniyadan qisqaroq ovozli xabar yuboring yoki yozma xabar kiriting.",
       voiceDownloadErrMsg: "Ovozli faylni yuklab bo'lmadi.",
       voiceTranscribeErrMsg: "Ovozni tanib bo'lmadi. Iltimos, yozma xabar yuboring yoki qaytadan urinib ko'ring.",

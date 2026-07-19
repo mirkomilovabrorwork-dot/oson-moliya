@@ -30,27 +30,59 @@ import { InputFile } from "grammy";
 import { getTashkentNow } from "../dates";
 
 // ── Per-user rate limiter (in-memory, sliding window) ────────────────────────
-// Guards STT + brain calls: 20 AI messages per 10 minutes per Telegram user.
+// Guards brain calls: 20 AI messages per 10 minutes per Telegram user.
+// Voice/audio ALSO carry a separate, tighter cap because each one spends money
+// on a Speech-to-Text call — see VOICE_RATE_LIMIT_* below.
 // In-memory is acceptable for a single-instance bot deployment.
 
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
-const userMessageTimestamps = new Map<number, number[]>();
+// Voice/audio spend real money per message (STT API), so cap them tighter than text.
+const VOICE_RATE_LIMIT_MAX = 8;
+const VOICE_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
-function isRateLimited(telegramUserId: number): boolean {
+const userMessageTimestamps = new Map<number, number[]>();
+const voiceMessageTimestamps = new Map<number, number[]>();
+
+// Shared sliding-window check: returns true (and blocks) when the user is over
+// `max` events within `windowMs`; otherwise records this event and returns false.
+function checkRateLimit(
+  store: Map<number, number[]>,
+  telegramUserId: number,
+  max: number,
+  windowMs: number
+): boolean {
   const now = Date.now();
-  const windowStart = now - RATE_LIMIT_WINDOW_MS;
-  const timestamps = (userMessageTimestamps.get(telegramUserId) ?? []).filter(
+  const windowStart = now - windowMs;
+  const timestamps = (store.get(telegramUserId) ?? []).filter(
     (t) => t >= windowStart
   );
-  if (timestamps.length >= RATE_LIMIT_MAX) {
-    userMessageTimestamps.set(telegramUserId, timestamps);
+  if (timestamps.length >= max) {
+    store.set(telegramUserId, timestamps);
     return true;
   }
   timestamps.push(now);
-  userMessageTimestamps.set(telegramUserId, timestamps);
+  store.set(telegramUserId, timestamps);
   return false;
+}
+
+function isRateLimited(telegramUserId: number): boolean {
+  return checkRateLimit(
+    userMessageTimestamps,
+    telegramUserId,
+    RATE_LIMIT_MAX,
+    RATE_LIMIT_WINDOW_MS
+  );
+}
+
+function isVoiceRateLimited(telegramUserId: number): boolean {
+  return checkRateLimit(
+    voiceMessageTimestamps,
+    telegramUserId,
+    VOICE_RATE_LIMIT_MAX,
+    VOICE_RATE_LIMIT_WINDOW_MS
+  );
 }
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -1550,11 +1582,11 @@ export function createBot(): Bot {
       return;
     }
 
-    // Rate limit check before STT + brain
-    if (isRateLimited(from.id)) {
+    // Rate limit check before STT + brain (tighter voice cap — STT costs money)
+    if (isVoiceRateLimited(from.id)) {
       const vlrlUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
       const vlrlLang = (vlrlUser?.language as "uz" | "ru" | "en") ?? "uz";
-      await ctx.reply(getBotLabels(vlrlLang).rateLimitMsg);
+      await ctx.reply(getBotLabels(vlrlLang).voiceRateLimitMsg);
       return;
     }
 
@@ -2294,11 +2326,11 @@ export function createBot(): Bot {
       return;
     }
 
-    // Rate limit check before STT + brain
-    if (isRateLimited(from.id)) {
+    // Rate limit check before STT + brain (tighter voice cap — STT costs money)
+    if (isVoiceRateLimited(from.id)) {
       const aurlUser = await prisma.user.findUnique({ where: { telegramId: BigInt(from.id) }, select: { language: true } });
       const aurlLang = (aurlUser?.language as "uz" | "ru" | "en") ?? "uz";
-      await ctx.reply(getBotLabels(aurlLang).rateLimitMsg);
+      await ctx.reply(getBotLabels(aurlLang).voiceRateLimitMsg);
       return;
     }
 
