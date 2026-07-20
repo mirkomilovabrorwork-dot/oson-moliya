@@ -11,7 +11,64 @@ _Trigger words: "pultrack", "pul track". Source of truth for resume._
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-06-18, Opus — TASK 028→043 + extras SHIPPED, 14 deploys; ONLY bot-side + minor polish left)
+## ⚡ STATUS (oxirgi yangilangan: 2026-07-20, Opus — security headers committed, DEPLOY kutilmoqda)
+
+**GOAL (nima "tayyor" degani):** O'zbek kichik biznesi uchun Telegram bot (matn + ovoz) +
+web dashboard — pul kirim/chiqim, qarzlar, hisobotlar. Prod'da ishlaydi, egasi telefonidan
+kundalik ishlata oladi. Hozir: mahsulot ishlayapti; qolgani bot-tomon sayqal + xavfsizlik.
+
+**Active branch:** `fix/lint-gate-rearm` — main'dan 9 commit oldinda, HALI MERGE QILINMAGAN.
+
+**Oxirgi bajarilgan (2026-07-20):**
+- `888b55e` — **security headers** (`next.config.ts`). Jonli saytda faqat Vercel'ning HSTS'i
+  bor edi; qolgan hammasi yo'q edi. Qo'shildi: nosniff, Referrer-Policy, Permissions-Policy,
+  CSP `frame-ancestors`. Lokal prod-build'da tasdiqlangan (4 header hamma yo'lda; /api/telegram
+  hamon 200; login sahifa ochiladi, CSP xatosi yo'q). typecheck + 124 test + build — yashil.
+- `793ae31` — ovozli xabarlar uchun alohida, qattiqroq rate-limit (8/10daq, matn 20/10daq).
+  Bu ish 8 kun commit qilinmay yotgan edi; tugallangan va izchil bo'lgani uchun saqlandi.
+
+**⛔ KEYINGI QADAM (bitta): DEPLOY.** `npx vercel --prod --yes` — egasi ruxsati kerak.
+Deploy'dan keyin darhol: `curl -sSI https://oson-moliya.vercel.app/login` → 4 header ko'rinishi
+va `x-frame-options` YO'Qligi tekshiriladi.
+
+**⚠️ ENG MUHIM XAVF — Telegram Mini App ramkasi.** `X-Frame-Options` ATAYLAB qo'yilmadi:
+bu ilova Telegram Mini App, Telegram'ning WEB mijozi uni iframe ichida ochadi. DENY ham,
+SAMEORIGIN ham uni oq ekran qilardi. Himoyani faqat CSP `frame-ancestors` ushlab turibdi
+(`'self' https://web.telegram.org https://*.telegram.org`). Kimdir "xavfsizlikni kuchaytiraman"
+deb XFO'ni qaytarsa — Mini App buziladi. Qaytarish oson: `next.config.ts` dagi CSP qatorini
+o'chirib qayta deploy (2 daqiqa, boshqa hech narsaga tegmaydi).
+
+**OWNER TODO (deploy'dan KEYIN, ~2 daqiqa — buni faqat siz qila olasiz):**
+@oson_moliya_bot ni oching → pastki-chapdagi **Moliyachi** tugmasini bosing → dashboard
+ochilishi kerak (grafik va raqamlar ko'rinsin, oq ekran EMAS). Iloji bo'lsa web.telegram.org
+dan ham tekshiring — aynan o'sha iframe yo'li uchun bu o'zgarish qilingan. Oq ekran bo'lsa
+menga ayting, darhol qaytaraman.
+
+### Dependency advisories — QABUL QILINGAN, tuzatilmaydi (2026-07-20 tekshiruvi)
+`npm audit` 4 ta "moderate" ko'rsatadi. Ikkalasi ham bizda yetib bo'lmaydigan joyda, va
+ikkalasining ham tuzatilgan versiyasi YO'Q. **`npm audit fix --force` ni HECH QACHON ishlatmang**
+— u next'ni 16→9.3.3, exceljs'ni 4→3.4.0 ga TUSHIRADI, ya'ni prod'ni buzadi.
+- **uuid** (GHSA-w5hq-g745-h8pq), exceljs ichida: zaiflik `v3/v5/v6` ni `buf` argumenti bilan
+  chaqirganda. exceljs esa faqat `uuidv4()` ni argumentsiz chaqiradi — ikki tomonlama yetib
+  bo'lmaydi. exceljs 4.4.0 eng oxirgi versiya (2023-10-19 chiqqan), yangisi yo'q.
+  *Qachon qayta ko'rish:* exceljs 4.4.0 dan yuqori versiya chiqsa.
+- **postcss** (GHSA-qx2v-qp2m-jg93), Next ichida: build-vaqtidagi CSS zaifligi; CSS'imiz o'zimizniki.
+  next@16.2.10 (eng oxirgi barqaror) hamon `postcss@8.4.31` ni ushlab turadi; faqat 16.3 canary'da
+  tuzatilgan. *Qachon qayta ko'rish:* `postcss>=8.5.10` ni ushlagan barqaror Next chiqsa.
+- Ataylab rad etilgan variant: `overrides` bilan majburan yangilash. Sabab — Excel hisobotning
+  **umuman testi yo'q** va uni faqat egasi Telegramdan `/hisobot` yuborib tekshira oladi.
+  Yetib bo'lmaydigan zaiflik uchun ishlaydigan funksiyani xavf ostiga qo'yish — yomon savdo.
+
+### Bu sessiyada topilgan, TUZATILMAGAN (alohida ish)
+- `.claude/gate.cmd` FAQAT `typecheck` ni ishga tushiradi — CLAUDE.md esa typecheck + test + build
+  talab qiladi. Ya'ni pre-commit hook o'zi va'da qilgandan kamroq tekshiradi. (Bu sessiyada
+  uchalasi QO'LDA ishlatildi, yashil.)
+- `src/lib/report/excel.ts:379` — ustun harfini `String.fromCharCode(64 + totalCols)` bilan
+  hisoblaydi, 26 ustundan keyin buziladi. Hozir uxlab yotibdi (maksimum 6 ustun).
+- "📊 Hisobot" tugmasi yo'li `isRateLimited` tekshiruvidan o'tmaydi (`/hisobot` buyrug'i o'tadi).
+- To'liq CSP (`script-src`/`style-src`, nonce bilan `proxy.ts` orqali) — alohida katta ish.
+- Bu STATE.md hamon ~53 KB (yuqoridagi banner). Siqish kerak.
+
 - **Merge-commit hook tracked (2026-07-18):** `.githooks/pre-merge-commit` is now in git too. It was created but untracked, so a clone carried only half the protection - git routes a MERGE through that hook, and that path would have been silently unguarded.
 - **Native git pre-commit hook (2026-07-18):** `.githooks/pre-commit` runs this repo's own `.claude/gate.cmd` before any commit, so a commit from a terminal, an IDE or another agent is checked too - previously only commits made through Claude's own tools were. Proven BOTH ways before landing: a deliberate breakage blocked the commit with the real failure, and reverting it let the same commit through. Escape hatch `SKIP_GATE=1` (deliberately loud). The gate file `.claude/gate.cmd` is now TRACKED too (it was untracked, so a clone would have run the hook, found no gate and exited 0 - a hook reporting success while checking nothing). **After a fresh clone it is INERT until you run `git config core.hooksPath .githooks`** - that setting is local git config and does not travel with the repo.
 
