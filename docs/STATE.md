@@ -7,6 +7,19 @@
 
 _Trigger words: "pultrack", "pul track". Source of truth for resume._
 
+## NEXT STEP (2026-07-28)
+
+**One thing blocks this product, and it is the owner's word: `npx vercel --prod --yes`.** Everything on
+the machine side is ready and was re-verified today.
+- Gate GREEN 2026-07-28: `npm run typecheck` + `npm test` (124/124, 9 files) + `npm run build` (prisma
+  generate + next build), all exit 0.
+- `package-lock.json` (the full relock) is now COMMITTED, so a fresh session sees the same tree.
+- The deploy really has not happened, and that is proven rather than assumed: `curl -sSI` against the
+  live login page returns only `Strict-Transport-Security`; the four new security headers are absent.
+- Top risk to watch on the first load after deploying: `X-Frame-Options` was dropped in favour of CSP
+  `frame-ancestors` for the Telegram WebView. If the dashboard opens blank inside Telegram, the revert
+  is a one-line CSP edit plus a redeploy (~2 min).
+
 > Jonli holat taxtasi. Har sessiya quyidagi ⚡ STATUS blokidan boshlanadi.
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
