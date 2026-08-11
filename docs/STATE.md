@@ -7,30 +7,79 @@
 
 _Trigger words: "pultrack", "pul track". Source of truth for resume._
 
-## NEXT STEP (2026-07-28)
+## NEXT STEP (2026-08-11)
 
-**One thing blocks this product, and it is the owner's word: `npx vercel --prod --yes`.** Everything on
-the machine side is ready and was re-verified today.
-- Gate GREEN 2026-07-28: `npm run typecheck` + `npm test` (124/124, 9 files) + `npm run build` (prisma
-  generate + next build), all exit 0.
-- `package-lock.json` (the full relock) is now COMMITTED, so a fresh session sees the same tree.
-- The deploy really has not happened, and that is proven rather than assumed: `curl -sSI` against the
-  live login page returns only `Strict-Transport-Security`; the four new security headers are absent.
-- Top risk to watch on the first load after deploying: `X-Frame-Options` was dropped in favour of CSP
-  `frame-ancestors` for the Telegram WebView. If the dashboard opens blank inside Telegram, the revert
-  is a one-line CSP edit plus a redeploy (~2 min).
+**DEPLOY IS DONE — the old "deploy pending" text below was false and is superseded.** Shipped
+2026-08-05 (commit `c562e8a`, deployment `dpl_DGEsbcZzLJQGPTzXtMsERppgmhnm`), merged to `main`
+(`1ac676d`) and pushed. Live-verified on the canonical URL: 4 security headers present,
+`X-Frame-Options` absent (required for the Telegram Mini App), `/api/telegram` 405, webhook healthy
+(0 pending, no `last_error`). **Deploy gotcha recorded:** `vercel --prod` created the production
+deployment but did NOT move the `oson-moliya.vercel.app` alias — it had to be moved by hand with
+`vercel alias set`. Always re-check the canonical URL after deploying, never the deployment URL.
+
+### ⛔ THE ONE THING BLOCKING THE PRODUCT: voice is broken
+The bot's voice-to-text does not work, and this is the product's main convenience.
+- Telegram side is HEALTHY (webhook has no errors, 0 pending) — the failure is inside the app's STT.
+- **ElevenLabs key is DEAD — proven, HTTP 401.** Groq key works. The prod `GEMINI_API_KEY` and
+  `STT_PROVIDER` are marked *sensitive* in Vercel, so their values can NEVER be read back by anyone,
+  including the API — the live setting is genuinely unknowable from here.
+- Owner chose: **he supplies a fresh Gemini key** (aistudio.google.com/apikey → "Create API key").
+  Nothing else unblocks this; do not guess a provider.
+
+### Who actually uses it (measured 2026-08-05, read-only query on prod DB)
+21 accounts, of which **5 are test/demo** (telegramIds 999*) → **16 real people**. 114 transactions.
+**0 users active in the last 7 days**; the newest transaction anywhere was 2026-07-13. 8 people opened
+the bot and never logged a single entry. Read honestly: people arrived and did not stay — and the
+most likely cause is sitting right above (voice broken).
+
+### In flight, awaiting the owner's word
+1. **Admin panel** — scope agreed by him (see below); the plan was shown, his "ha" not yet given.
+   Scope: view users + totals + block/delete. Explicitly OUT: messaging users, reading their
+   transactions, Excel export. Admin access keyed to his Telegram id `8582045913` via server config
+   (not a DB flag — a DB flag can be escalated by a DB write, an env-pinned id cannot).
+   **Blocking must be real:** a blocked user's messages must be refused by the BOT, not merely
+   flagged in a list, or the button is a lie.
+2. **Currency on debts/accounts + name autocomplete + per-person "oldi-berdi"** — direction received
+   via the HQ relay 2026-08-11; not started. Decisions locked (see the next section).
+
+### Locked decisions for the currency / oldi-berdi work (do not re-litigate)
+- **Currencies:** UZS, USD, RUB shown first; the rest of the world's currencies selectable from a
+  searchable list below (owner named PLN and EUR as examples, NOT as the limit). Do not hardcode a
+  closed set. The app already has UZS/USD/EUR/RUB + CBU rates + a converter page — extend that, do
+  not invent a second mechanism.
+- **NO conversion, NO exchange rate, anywhere in debts.** A debt given in USD and repaid in UZS stays
+  TWO lines ("100$ berildi · 500 000 so'm qaytarildi"). Owner's deliberate correctness choice: a
+  stored debt must never drift when a rate moves.
+- **Reports: one row per currency**, never a single combined figure.
+- **"Oldi-berdi" per-person view goes in BOTH the bot and the dashboard.**
+- **Existing rows are UZS.** Not a guess: the column is literally named `amountUzs`, no writer ever
+  stored anything else, and `Transaction` already treats a null `originalCurrency` as UZS. Legacy
+  rows are left untouched; the migration is additive.
+- **Person identity = the normalized name** (trim + lowercase + collapsed spaces) used as a grouping
+  key, NOT a separate contact table. Rationale: picking a suggestion writes the identical string, so
+  duplicates are prevented at the point of entry, which is where they are actually created. A real
+  contact record can be added later if renaming-in-one-place is ever needed.
+- Current schema is UZS-only on `Debt.amountUzs`, `DebtPayment.amountUzs`,
+  `Account.initialBalanceUzs`; `Debt.counterparty` is free text with no key. Blast radius is real:
+  20+ files read those amount fields (dashboard, API, analytics, import, excel, trash, recurring) —
+  adapt them in the SAME change.
 
 > Jonli holat taxtasi. Har sessiya quyidagi ⚡ STATUS blokidan boshlanadi.
 > Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
 > Specs: `docs/tasks/NNN-*.md`.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-07-20, Opus — security headers committed, DEPLOY kutilmoqda)
+## ⚡ STATUS (oxirgi yangilangan: 2026-08-11, Opus — DEPLOYED 08-05; blocker = voice/STT key)
+
+> ⚠️ The block below is HISTORY from 2026-07-20 and its "DEPLOY kutilmoqda" / "HALI MERGE
+> QILINMAGAN" lines are FALSE now. The true current state is the `## NEXT STEP (2026-08-11)`
+> section above. Kept for the security-header rationale only.
 
 **GOAL (nima "tayyor" degani):** O'zbek kichik biznesi uchun Telegram bot (matn + ovoz) +
 web dashboard — pul kirim/chiqim, qarzlar, hisobotlar. Prod'da ishlaydi, egasi telefonidan
 kundalik ishlata oladi. Hozir: mahsulot ishlayapti; qolgani bot-tomon sayqal + xavfsizlik.
 
-**Active branch:** `fix/lint-gate-rearm` — main'dan 9 commit oldinda, HALI MERGE QILINMAGAN.
+**Active branch:** ~~`fix/lint-gate-rearm`~~ → **MERGED into `main` 2026-08-05 (`1ac676d`), pushed.**
+Work continues on `main`.
 
 **Oxirgi bajarilgan (2026-07-20):**
 - `888b55e` — **security headers** (`next.config.ts`). Jonli saytda faqat Vercel'ning HSTS'i
@@ -40,9 +89,8 @@ kundalik ishlata oladi. Hozir: mahsulot ishlayapti; qolgani bot-tomon sayqal + x
 - `793ae31` — ovozli xabarlar uchun alohida, qattiqroq rate-limit (8/10daq, matn 20/10daq).
   Bu ish 8 kun commit qilinmay yotgan edi; tugallangan va izchil bo'lgani uchun saqlandi.
 
-**⛔ KEYINGI QADAM (bitta): DEPLOY.** `npx vercel --prod --yes` — egasi ruxsati kerak.
-Deploy'dan keyin darhol: `curl -sSI https://oson-moliya.vercel.app/login` → 4 header ko'rinishi
-va `x-frame-options` YO'Qligi tekshiriladi.
+**✅ DEPLOY DONE 2026-08-05** — verified exactly as this line asked: 4 headers present on
+`https://oson-moliya.vercel.app/login`, `x-frame-options` absent. (See NEXT STEP block at the top.)
 
 **⚠️ ENG MUHIM XAVF — Telegram Mini App ramkasi.** `X-Frame-Options` ATAYLAB qo'yilmadi:
 bu ilova Telegram Mini App, Telegram'ning WEB mijozi uni iframe ichida ochadi. DENY ham,
@@ -609,3 +657,9 @@ C. **Commit hygiene** — uncommitted before this commit: docs/tasks/017 (modifi
 - Node PATH: `$env:Path = "C:\Program Files\nodejs;" + $env:Path` (PowerShell tool, Bash emas).
 - Gate: `npm run typecheck` + `npm test` + `npm run build` yashil bo'lmasa "tayyor" yo'q.
 - Har task = 1 commit + STATE yangilash (commit'ni Opus qiladi).
+
+## DECISIONS (owner one-tap answers - auto-appended; a decided question is never re-asked)
+- 2026-08-11 [Valyutalar] Qarz va hisobda qaysi valyutalar bo'lsin? -> **[User dismissed ΓÇö do not proceed, wait for next instruction]**
+- 2026-08-11 [Aralash valyuta] Qarz dollarda berilib, so'mda qaytarilsa nima qilamiz? (bu pul aniqligining eng nozik joyi) -> **[User dismissed ΓÇö do not proceed, wait for next instruction]**
+- 2026-08-11 [Hisobot] Umumiy hisobotda qarzlar qanday ko'rinsin? -> **[User dismissed ΓÇö do not proceed, wait for next instruction]**
+- 2026-08-11 [Oldi-berdi] Bir odam bo'yicha 'oldi-berdi' hisobi qayerda ko'rinsin? -> **[User dismissed ΓÇö do not proceed, wait for next instruction]**
