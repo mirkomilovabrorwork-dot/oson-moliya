@@ -8,6 +8,7 @@ import { Toast } from "@/components/Toast";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatMoney } from "@/lib/currency";
 import type { Rates } from "@/lib/rates";
+import { toAmountDigits } from "@/lib/money-input";
 
 type TxType = "income" | "expense";
 type Frequency = "monthly" | "yearly";
@@ -130,7 +131,7 @@ export function RecurringClient({ rules: initial, categories, lang }: Props) {
       const body: Record<string, unknown> = {
         type: addType,
         categoryId: addCategoryId || null,
-        amountUzs: addAmount.replace(/\s/g, ""),
+        amountUzs: toAmountDigits(addAmount),
         frequency: addFrequency,
         dayOfMonth: addDay,
         startDate: addStartDate ? new Date(addStartDate).toISOString() : new Date().toISOString(),

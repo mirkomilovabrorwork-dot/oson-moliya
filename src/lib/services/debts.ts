@@ -61,14 +61,33 @@ export async function listDebts(
   });
 }
 
+/**
+ * Sum of the live (non-deleted) payments on one debt.
+ *
+ * The debts LIST builds `paidUzs` for every row, so the client's row shape
+ * always carries it. Any single-debt write must return the SAME shape, or the
+ * client replaces a complete row with an incomplete one and the next action on
+ * that row operates on `undefined`. That was the 2026-08-12 silent-save bug.
+ */
+export async function getDebtPaidUzs(debtId: string): Promise<bigint> {
+  const prisma = db as import("@prisma/client").PrismaClient;
+  const agg = await prisma.debtPayment.aggregate({
+    where: { debtId, deletedAt: null },
+    _sum: { amountUzs: true },
+  });
+  return (agg._sum.amountUzs ?? 0n) as bigint;
+}
+
 export async function settleDebt(id: string, userId: string) {
   const prisma = db as import("@prisma/client").PrismaClient;
   const existing = await prisma.debt.findFirst({ where: { id, userId, deletedAt: null } });
   if (!existing) return null;
-  return prisma.debt.update({
+  const updated = await prisma.debt.update({
     where: { id, userId },
     data: { status: DebtStatus.settled, settledAt: new Date() },
   });
+  // Same shape as a row from listDebts — see getDebtPaidUzs above.
+  return { ...updated, paidUzs: await getDebtPaidUzs(id) };
 }
 
 export async function updateDebt(
@@ -79,7 +98,7 @@ export async function updateDebt(
   const prisma = db as import("@prisma/client").PrismaClient;
   const existing = await prisma.debt.findFirst({ where: { id, userId, deletedAt: null } });
   if (!existing) return null;
-  return prisma.debt.update({
+  const updated = await prisma.debt.update({
     where: { id, userId },
     data: {
       counterparty: input.counterparty,
@@ -89,6 +108,8 @@ export async function updateDebt(
       direction: input.direction,
     },
   });
+  // Same shape as a row from listDebts — see getDebtPaidUzs above.
+  return { ...updated, paidUzs: await getDebtPaidUzs(id) };
 }
 
 export async function deleteDebt(id: string, userId: string) {

@@ -10,6 +10,7 @@ import { BulkDeleteDialog } from "@/components/BulkDeleteDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn, formatTxMoney as formatTxMoneyFn } from "@/lib/currency";
 import { translateCategoryName } from "@/lib/categories-i18n";
+import { toAmountDigits } from "@/lib/money-input";
 
 interface TxRow {
   id: string;
@@ -374,7 +375,7 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: editing.type,
-          amountUzs: editing.amountUzs.replace(/[\s ]/g, ""),
+          amountUzs: toAmountDigits(editing.amountUzs),
           categoryId: editing.categoryId || null,
           note: editing.note || null,
           occurredAt: new Date(editing.occurredAt + "T00:00:00+05:00").toISOString(),
@@ -387,7 +388,7 @@ function TransactionsClientInner({ transactions: initial, categories, lang, curr
             ? {
                 ...tx,
                 type: editing.type,
-                amountUzs: editing.amountUzs.replace(/[\s ]/g, ""),
+                amountUzs: toAmountDigits(editing.amountUzs),
                 categoryId: editing.categoryId || null,
                 categoryName:
                   categories.find((c) => c.id === editing.categoryId)?.name ?? null,

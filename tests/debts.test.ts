@@ -18,6 +18,8 @@ const mockDebtFindFirst = vi.fn();
 const mockDebtUpdate = vi.fn();
 const mockDebtDelete = vi.fn();
 const mockDebtCreate = vi.fn();
+// Single-debt writes must report how much is already paid (see getDebtPaidUzs).
+const mockPaymentAggregate = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   db: new Proxy({} as import("@prisma/client").PrismaClient, {
@@ -32,6 +34,9 @@ vi.mock("@/lib/db", () => ({
           findMany: mockDebtFindMany,
         };
       }
+      if (prop === "debtPayment") {
+        return { aggregate: mockPaymentAggregate };
+      }
       return undefined;
     },
   }),
@@ -45,6 +50,9 @@ const RUN = `${process.pid}-${Date.now()}`;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: no payments recorded. Individual tests override to prove that a
+  // real paid total is carried back on single-debt writes.
+  mockPaymentAggregate.mockResolvedValue({ _sum: { amountUzs: null } });
 });
 
 // ── getDebtTotals ─────────────────────────────────────────────────────────────
@@ -147,6 +155,26 @@ describe("settleDebt", () => {
     expect(result).not.toBeNull();
     expect(result!.status).toBe(DebtStatus.settled);
     expect(result!.settledAt).toBeInstanceOf(Date);
+    // REGRESSION GUARD (2026-08-12): the row this returns replaces a row in the
+    // client's list, and that list shape carries paidUzs. Returning it without
+    // paidUzs made the NEXT payment on that row compute BigInt(undefined),
+    // which threw outside the save's try/catch — the user saw nothing save and
+    // no error. The shape must be complete, not merely correct.
+    expect(result!.paidUzs).toBeDefined();
+    expect(typeof result!.paidUzs).toBe("bigint");
+  });
+
+  it("carries the REAL paid total back, not a placeholder", async () => {
+    mockDebtFindFirst.mockResolvedValueOnce(mockDebt);
+    mockDebtUpdate.mockResolvedValueOnce({
+      ...mockDebt,
+      status: DebtStatus.settled,
+      settledAt: new Date(),
+    });
+    mockPaymentAggregate.mockResolvedValueOnce({ _sum: { amountUzs: 750_000n } });
+
+    const result = await settleDebt(debtId, userId);
+    expect(result!.paidUzs).toBe(750_000n);
   });
 
   it("returns null when debt not found (owner check fails)", async () => {
@@ -258,6 +286,21 @@ describe("updateDebt", () => {
     createdAt: new Date(),
     deletedAt: null,
   };
+
+  // Same guard as settleDebt: an edited row replaces a list row wholesale, so
+  // it must carry paidUzs. Without this assertion the updateDebt half of the
+  // fix could be deleted and the suite would stay green — and the failure is
+  // now SILENT (the client's `?? "0"` would show a wrong "remaining" instead
+  // of throwing), which is worse than the original crash.
+  it("carries the paid total back so the edited row keeps the list shape", async () => {
+    mockDebtFindFirst.mockResolvedValueOnce(baseDebt);
+    mockDebtUpdate.mockResolvedValueOnce({ ...baseDebt, counterparty: "Sardor" });
+    mockPaymentAggregate.mockResolvedValueOnce({ _sum: { amountUzs: 3_000_000n } });
+
+    const result = await updateDebt(debtId, userId, { counterparty: "Sardor" });
+    expect(result).not.toBeNull();
+    expect(result!.paidUzs).toBe(3_000_000n);
+  });
 
   it("persists a new counterparty literally (no brain parsing)", async () => {
     const updated = { ...baseDebt, counterparty: "Sarvar" };

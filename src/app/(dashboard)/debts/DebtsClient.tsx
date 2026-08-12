@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { BulkDeleteDialog } from "@/components/BulkDeleteDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn } from "@/lib/currency";
+import { toAmountDigits, toAmountBigInt } from "@/lib/money-input";
 
 // Local interface — amountUzs is serialized as string by serializeBigInt
 interface DebtRow {
@@ -178,7 +179,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           counterparty: addCounterparty.trim(),
-          amountUzs: addAmount.replace(/\s/g, ""),
+          amountUzs: toAmountDigits(addAmount),
           direction: addDirection,
           note: addNote.trim() || null,
           occurredAt: addDate ? new Date(addDate).toISOString() : null,
@@ -221,7 +222,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           counterparty: editCounterparty.trim(),
-          amountUzs: editAmount.replace(/\s/g, ""),
+          amountUzs: toAmountDigits(editAmount),
           note: editNote.trim() || null,
           occurredAt: editDate ? new Date(editDate).toISOString() : undefined,
         }),
@@ -358,12 +359,22 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
   const handleAddPayment = useCallback(async () => {
     if (!paymentTarget || !paymentAmount.trim()) return;
 
-    // Client-side: check amount does not exceed remaining
+    // Client-side: check amount does not exceed remaining.
+    // `paidUzs` is tolerated as missing: a row refreshed from a single-debt
+    // write used to arrive without it, and BigInt(undefined) THROWS here —
+    // outside the try below — which silently killed the save with no error.
     const originalAmt = BigInt(paymentTarget.amountUzs);
-    const paidAmt = BigInt(paymentTarget.paidUzs);
+    const paidAmt = BigInt(paymentTarget.paidUzs ?? "0");
     const remaining = originalAmt - paidAmt;
-    const enteredAmt = BigInt(paymentAmount.replace(/\s/g, "").replace(/\D/g, "") || "0");
-    if (enteredAmt <= 0n || enteredAmt > remaining) {
+    // Two DIFFERENT failures, two different messages. Telling someone that
+    // "12.50" exceeds a 5 000 000 remainder is a false statement about their
+    // own number; the real problem is that the format could not be read.
+    const enteredAmt = toAmountBigInt(paymentAmount);
+    if (enteredAmt <= 0n) {
+      setPaymentError(t("debt.payment.bad_amount", lang));
+      return;
+    }
+    if (enteredAmt > remaining) {
       setPaymentError(t("debt.payment.exceeds", lang));
       return;
     }
@@ -375,7 +386,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amountUzs: paymentAmount.replace(/\s/g, ""),
+          amountUzs: toAmountDigits(paymentAmount),
           occurredAt: paymentDate ? new Date(paymentDate).toISOString() : new Date().toISOString(),
           note: paymentNote.trim() || null,
         }),
@@ -733,7 +744,7 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
             {/* Remaining hint */}
             {(() => {
               const orig = BigInt(paymentTarget.amountUzs);
-              const paid = BigInt(paymentTarget.paidUzs);
+              const paid = BigInt(paymentTarget.paidUzs ?? "0");
               const rem = orig - paid;
               return (
                 <p className="text-xs" style={{ color: "var(--fg-muted)" }}>
@@ -755,10 +766,10 @@ export function DebtsClient({ debts: initial, totals: initialTotals, lang, curre
                 Full-width accent button showing the remaining amount; fills the input. */}
             {(() => {
               const orig = BigInt(paymentTarget.amountUzs);
-              const paid = BigInt(paymentTarget.paidUzs);
+              const paid = BigInt(paymentTarget.paidUzs ?? "0");
               const rem = orig - paid;
               const remStr = String(rem > 0n ? rem : 0n);
-              const isAll = paymentAmount.replace(/\s/g, "").replace(/\D/g, "") === remStr;
+              const isAll = toAmountDigits(paymentAmount) === remStr;
               return (
                 <button
                   type="button"

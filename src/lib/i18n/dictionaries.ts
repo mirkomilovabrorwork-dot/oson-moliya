@@ -305,6 +305,7 @@ const uz: Dictionary = {
   "debt.payment.partial_label": "Yoki qisman summa",
   "debt.payment.date_label": "Sana",
   "debt.payment.exceeds": "Qoldiq summasidan oshmasin",
+  "debt.payment.bad_amount": "Summani faqat raqam bilan yozing (masalan 500 000)",
   "debt.payment.saved": "To'lov saqlandi",
   // ── Common
   "delete.typed.title": "O'chirishni tasdiqlang",
@@ -725,6 +726,7 @@ const ru: Dictionary = {
   "debt.payment.partial_label": "Или частичная сумма",
   "debt.payment.date_label": "Дата",
   "debt.payment.exceeds": "Не больше остатка",
+  "debt.payment.bad_amount": "Введите сумму только цифрами (например 500 000)",
   "debt.payment.saved": "Платёж сохранён",
   // ── Common
   "delete.typed.title": "Подтвердите удаление",
@@ -1145,6 +1147,7 @@ const en: Dictionary = {
   "debt.payment.partial_label": "Or partial amount",
   "debt.payment.date_label": "Date",
   "debt.payment.exceeds": "Cannot exceed the remaining",
+  "debt.payment.bad_amount": "Enter the amount using digits only (e.g. 500 000)",
   "debt.payment.saved": "Payment saved",
   // ── Common
   "delete.typed.title": "Confirm deletion",

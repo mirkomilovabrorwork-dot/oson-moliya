@@ -9,6 +9,7 @@ import { Toast } from "@/components/Toast";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { DisplayCurrency, Rates } from "@/lib/rates";
 import { formatMoney as formatMoneyFn } from "@/lib/currency";
+import { toAmountDigits } from "@/lib/money-input";
 
 // Local types — all BigInt fields are serialized to string
 interface AccountRow {
@@ -96,7 +97,10 @@ export function AccountsClient({ accounts: initial, totalBalance: initialTotal, 
         body: JSON.stringify({
           name: addName.trim(),
           type: addType,
-          initialBalanceUzs: addInitial.replace(/\s/g, "") || "0",
+          // Blank means "start at zero". Anything the normalizer cannot read
+          // (a minus, a decimal, letters) must NOT collapse to 0 — it goes to
+          // the server as "" and comes back as a visible error.
+          initialBalanceUzs: addInitial.trim() === "" ? "0" : toAmountDigits(addInitial),
         }),
       });
       if (!res.ok) {
@@ -149,7 +153,7 @@ export function AccountsClient({ accounts: initial, totalBalance: initialTotal, 
         body: JSON.stringify({
           name: editName.trim(),
           type: editType,
-          initialBalanceUzs: editInitial.replace(/\s/g, "") || "0",
+          initialBalanceUzs: editInitial.trim() === "" ? "0" : toAmountDigits(editInitial),
         }),
       });
       if (!res.ok) {

@@ -32,6 +32,32 @@ The bot's voice-to-text does not work, and this is the product's main convenienc
 the bot and never logged a single entry. Read honestly: people arrived and did not stay — and the
 most likely cause is sitting right above (voice broken).
 
+### 2026-08-12 — owner-reported debt bugs: ROOT-CAUSED, FIXED, LIVE-PROVEN
+He reported: "pressing the repaid/settle button then saving does not save."
+- **Root cause (not a guess):** `settleDebt` / `updateDebt` returned the raw Prisma row, which has no
+  `paidUzs`. The debts LIST shape carries `paidUzs`, and the client splices the write response into
+  that list (`DebtsClient` handleSettle/handleEdit). The next payment then evaluated
+  `BigInt(paymentTarget.paidUzs)` → `BigInt(undefined)`, which THREW **outside** the save's
+  try/catch: no save, no error message. Exactly "saqlanmayapti".
+- **Fix:** new `getDebtPaidUzs()`; both writes now return the list shape. Client also defends with
+  `?? "0"` at all six `.paidUzs` reads.
+- **Proven live** against a running server + real session: create 201 → partial payment 200 →
+  settle 200 with `paidUzs:"2000000"` present → edit keeps it → test row deleted. Not inferred.
+- **Second defect found while there:** amount fields validated with one rule and SENT with a weaker
+  one, so "5,000,000" passed the check and was rejected by the server. Now one shared module,
+  `src/lib/money-input.ts`, used by all six call sites.
+- **A defect I INTRODUCED and blind review caught — record it so it is not repeated:** the first
+  version of that module stripped every non-digit, which turned `-500000` into `500000` (sign
+  flipped) and `12.50` into `1250` (100×). Those were loud 422s before; my version made them silent
+  wrong writes. Rule now encoded in the module and in tests: **normalize, never reinterpret** —
+  anything not readable as an unambiguous whole amount returns `""` so the server rejects it and the
+  user sees an error. A silent wrong number is worse than a refusal.
+- Gates: typecheck 0 · **141/141** tests (was 124) · build OK.
+- **Audit note — a claim I made and then disproved:** I suspected the same shape defect in Accounts
+  and Categories. Verified live: **both are already correct** (accounts' service does return
+  `balance`; the categories client fills `txCount: 0` itself). Only debts was real. Recorded so
+  nobody "fixes" working code on my say-so.
+
 ### In flight, awaiting the owner's word
 1. **Admin panel** — scope agreed by him (see below); the plan was shown, his "ha" not yet given.
    Scope: view users + totals + block/delete. Explicitly OUT: messaging users, reading their
