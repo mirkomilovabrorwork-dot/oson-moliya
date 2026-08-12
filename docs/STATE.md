@@ -17,7 +17,21 @@ _Trigger words: "pultrack", "pul track". Source of truth for resume._
 deployment but did NOT move the `oson-moliya.vercel.app` alias — it had to be moved by hand with
 `vercel alias set`. Always re-check the canonical URL after deploying, never the deployment URL.
 
-### ⛔ THE ONE THING BLOCKING THE PRODUCT: voice is broken
+### ✅ 2026-08-12 — VOICE IS FIXED (`de8aaf4`, deployed). The block below is history.
+**It was never the key.** The provider was pinned to `gemini-2.5-flash`, which Google now answers
+`404 "no longer available to new users"`. Two things hid it: (1) that model is still **LISTED** by
+`GET /v1beta/models` for a key that 404s on it — a list check lies, only a real `generateContent`
+call proves a model is alive; (2) `STT_PROVIDER` + `GEMINI_API_KEY` were stored in Vercel as
+`type=sensitive`, whose values can NEVER be read back, so the live setting was undiagnosable from
+outside. Both are now `type=encrypted` — still encrypted at rest, readable via `vercel env pull`.
+Fix = a fallback CHAIN, not a new pin: `gemini-3-flash-preview` → `gemini-3.5-flash` →
+`gemini-flash-latest` (404/429/5xx falls through; 400/401/403 fails fast). Order is evidence-based:
+3-flash-preview is what Ustoz transcribes his Uzbek/Russian audio with and is the cheapest of the
+three. **Proven before deploying** by running the real provider on a real OGG file — old model 404,
+new chain returned a correct Uzbek transcript in 4.7s. Prod env verified after deploy
+(`STT_PROVIDER=gemini`, key matches). **Remaining: the owner's own phone test on @oson_moliya_bot.**
+
+### (history) THE ONE THING BLOCKING THE PRODUCT: voice is broken
 The bot's voice-to-text does not work, and this is the product's main convenience.
 - Telegram side is HEALTHY (webhook has no errors, 0 pending) — the failure is inside the app's STT.
 - **ElevenLabs key is DEAD — proven, HTTP 401.** Groq key works. The prod `GEMINI_API_KEY` and
