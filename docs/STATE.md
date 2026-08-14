@@ -1,705 +1,117 @@
-> ## ⚠️ BIRINCHI VAZIFA (Jarvis qoldirdi 2026-06-25) — bu STATE'ni SIQ, keyin shu blokni o'chir
-> Bu fayl ~51 KB. Har resume'da TO'LIQ yuklanadi -> uzun kontekst Claude'ni "ahmoqlashtiradi" (context rot, model adashadi).
-> QIL (o'z loyiha konteksting bilan; avval `Copy-Item docs/STATE.md docs/STATE.md.bak`): (1) tepada FAQAT qisqa ⚡ STATUS qoldir (~15 qator: Active/LOCK · oxirgi bajarilgan · keyingi task · blocker). (2) eski bajarilgan TASK-loglarni `docs/STATE_ARCHIVE.md`ga KO'CHIR (o'chirma — ko'chir, hech narsa yo'qolmasin). (3) maqsad: bu fayl < ~12 KB. (4) tekshirib tugagach — SHU blokni o'chir.
-> Sabab: global JARVIS tizimi 9.2 KB ga tushirildi; loyiha STATE'lari oxirgi qolgan katta "ahmoqlashtiruvchi".
+# PulTrack / Oson Moliya — resume board
 
-# PulTrack — Ish holati (HANDOFF board)
+_Trigger words: "pultrack", "pul track", "oson moliya". Source of truth for resume._
+_Last updated: 2026-08-14. History → `docs/STATE_ARCHIVE.md` (nothing deleted). Deploys → `docs/DEPLOY_LOG.md`._
 
-_Trigger words: "pultrack", "pul track". Source of truth for resume._
+## GOAL — what "done" looks like
+A Telegram bot (text **and voice**) + web dashboard that an Uzbek small business actually uses daily:
+money in/out, debts, reports. Live in production, usable from the owner's phone.
 
-## NEXT STEP (2026-08-11)
+**Where it really stands:** the product works and is deployed — but **16 real people signed up and none
+stayed**. Measured 2026-08-05 on the prod DB: 21 accounts (5 of them test/demo), 114 transactions,
+**0 users active in the last 7 days**, newest transaction anywhere 2026-07-13, and 8 people who opened
+the bot and never logged a single entry. Voice — the bot's whole convenience — had been dead the entire
+time. It is fixed now; whether that brings anyone back is the open question, not a settled one.
 
-**DEPLOY IS DONE — the old "deploy pending" text below was false and is superseded.** Shipped
-2026-08-05 (commit `c562e8a`, deployment `dpl_DGEsbcZzLJQGPTzXtMsERppgmhnm`), merged to `main`
-(`1ac676d`) and pushed. Live-verified on the canonical URL: 4 security headers present,
-`X-Frame-Options` absent (required for the Telegram Mini App), `/api/telegram` 405, webhook healthy
-(0 pending, no `last_error`). **Deploy gotcha recorded:** `vercel --prod` created the production
-deployment but did NOT move the `oson-moliya.vercel.app` alias — it had to be moved by hand with
-`vercel alias set`. Always re-check the canonical URL after deploying, never the deployment URL.
+## Live system
+- Web: **https://oson-moliya.vercel.app** (Vercel, project `moliyachi/oson-moliya`) · DB: Neon Postgres
+- Bot: **@oson_moliya_bot** (webhook healthy: 0 pending, no last_error)
+- Deploy: `npx vercel --prod --yes` — **then ALWAYS `vercel alias set <new-url> oson-moliya.vercel.app`.**
+  Three deploys in a row created the production deployment but did NOT move the canonical alias. Verifying
+  the deployment URL instead of the canonical one will show you a green build the public cannot see.
 
-### ✅ 2026-08-12 — VOICE IS FIXED (`de8aaf4`, deployed). The block below is history.
-**It was never the key.** The provider was pinned to `gemini-2.5-flash`, which Google now answers
-`404 "no longer available to new users"`. Two things hid it: (1) that model is still **LISTED** by
-`GET /v1beta/models` for a key that 404s on it — a list check lies, only a real `generateContent`
-call proves a model is alive; (2) `STT_PROVIDER` + `GEMINI_API_KEY` were stored in Vercel as
-`type=sensitive`, whose values can NEVER be read back, so the live setting was undiagnosable from
-outside. Both are now `type=encrypted` — still encrypted at rest, readable via `vercel env pull`.
-Fix = a fallback CHAIN, not a new pin: `gemini-3-flash-preview` → `gemini-3.5-flash` →
-`gemini-flash-latest` (404/429/5xx falls through; 400/401/403 fails fast). Order is evidence-based:
-3-flash-preview is what Ustoz transcribes his Uzbek/Russian audio with and is the cheapest of the
-three. **Proven before deploying** by running the real provider on a real OGG file — old model 404,
-new chain returned a correct Uzbek transcript in 4.7s. Prod env verified after deploy
-(`STT_PROVIDER=gemini`, key matches). **Remaining: the owner's own phone test on @oson_moliya_bot.**
+## NEXT STEP
+**Currency picker on debts and accounts** — the owner asked for it twice; not started. Direction is
+already decided (see Locked decisions), so this can begin without asking him anything.
+Done-criterion: recording a debt in USD and repaying it in UZS shows **two separate lines**, no
+conversion anywhere, and `npm run typecheck` + `npm test` + `npm run build` stay green.
 
-### (history) THE ONE THING BLOCKING THE PRODUCT: voice is broken
-The bot's voice-to-text does not work, and this is the product's main convenience.
-- Telegram side is HEALTHY (webhook has no errors, 0 pending) — the failure is inside the app's STT.
-- **ElevenLabs key is DEAD — proven, HTTP 401.** Groq key works. The prod `GEMINI_API_KEY` and
-  `STT_PROVIDER` are marked *sensitive* in Vercel, so their values can NEVER be read back by anyone,
-  including the API — the live setting is genuinely unknowable from here.
-- Owner chose: **he supplies a fresh Gemini key** (aistudio.google.com/apikey → "Create API key").
-  Nothing else unblocks this; do not guess a provider.
+## Blockers
+None on my side. The only outstanding item is the owner's own phone test (below).
 
-### Who actually uses it (measured 2026-08-05, read-only query on prod DB)
-21 accounts, of which **5 are test/demo** (telegramIds 999*) → **16 real people**. 114 transactions.
-**0 users active in the last 7 days**; the newest transaction anywhere was 2026-07-13. 8 people opened
-the bot and never logged a single entry. Read honestly: people arrived and did not stay — and the
-most likely cause is sitting right above (voice broken).
+## OWNER TODO
+- **(since 2026-08-12) Voice test.** Open `@oson_moliya_bot`, send a voice message such as
+  *"logistikaga besh yuz ming chiqim"*. Expected: the bot writes back what it heard and records it as an
+  expense. If it fails, send me the reply text — the model chain has two more models to fall back on.
 
-### 2026-08-12 — owner-reported debt bugs: ROOT-CAUSED, FIXED, LIVE-PROVEN
-He reported: "pressing the repaid/settle button then saving does not save."
-- **Root cause (not a guess):** `settleDebt` / `updateDebt` returned the raw Prisma row, which has no
-  `paidUzs`. The debts LIST shape carries `paidUzs`, and the client splices the write response into
-  that list (`DebtsClient` handleSettle/handleEdit). The next payment then evaluated
-  `BigInt(paymentTarget.paidUzs)` → `BigInt(undefined)`, which THREW **outside** the save's
-  try/catch: no save, no error message. Exactly "saqlanmayapti".
-- **Fix:** new `getDebtPaidUzs()`; both writes now return the list shape. Client also defends with
-  `?? "0"` at all six `.paidUzs` reads.
-- **Proven live** against a running server + real session: create 201 → partial payment 200 →
-  settle 200 with `paidUzs:"2000000"` present → edit keeps it → test row deleted. Not inferred.
-- **Second defect found while there:** amount fields validated with one rule and SENT with a weaker
-  one, so "5,000,000" passed the check and was rejected by the server. Now one shared module,
-  `src/lib/money-input.ts`, used by all six call sites.
-- **A defect I INTRODUCED and blind review caught — record it so it is not repeated:** the first
-  version of that module stripped every non-digit, which turned `-500000` into `500000` (sign
-  flipped) and `12.50` into `1250` (100×). Those were loud 422s before; my version made them silent
-  wrong writes. Rule now encoded in the module and in tests: **normalize, never reinterpret** —
-  anything not readable as an unambiguous whole amount returns `""` so the server rejects it and the
-  user sees an error. A silent wrong number is worse than a refusal.
-- Gates: typecheck 0 · **141/141** tests (was 124) · build OK.
-- **Audit note — a claim I made and then disproved:** I suspected the same shape defect in Accounts
-  and Categories. Verified live: **both are already correct** (accounts' service does return
-  `balance`; the categories client fills `txCount: 0` itself). Only debts was real. Recorded so
-  nobody "fixes" working code on my say-so.
+## Open decisions — asked, NOT answered
+- **Admin panel — waiting on his "ha".** Plan was shown 2026-08-05, no reply. Agreed scope: see users +
+  totals + block/delete. Explicitly OUT: messaging users, reading their transactions, Excel export.
+  Admin access keyed to his Telegram id `8582045913` via server config — deliberately NOT a DB flag,
+  because a DB flag can be escalated by a DB write. **Blocking must be enforced in the BOT**, or the
+  button is a lie. Nothing built yet.
 
-### In flight, awaiting the owner's word
-1. **Admin panel** — scope agreed by him (see below); the plan was shown, his "ha" not yet given.
-   Scope: view users + totals + block/delete. Explicitly OUT: messaging users, reading their
-   transactions, Excel export. Admin access keyed to his Telegram id `8582045913` via server config
-   (not a DB flag — a DB flag can be escalated by a DB write, an env-pinned id cannot).
-   **Blocking must be real:** a blocked user's messages must be refused by the BOT, not merely
-   flagged in a list, or the button is a lie.
-2. **Currency on debts/accounts + name autocomplete + per-person "oldi-berdi"** — direction received
-   via the HQ relay 2026-08-11; not started. Decisions locked (see the next section).
-
-### Locked decisions for the currency / oldi-berdi work (do not re-litigate)
+## Locked decisions — do not re-litigate
+_(2026-08-11, answered by the owner via the HQ relay. The auto-appended DECISIONS block below records
+these as "dismissed" because he answered in a different session — the answers here are the real ones.)_
 - **Currencies:** UZS, USD, RUB shown first; the rest of the world's currencies selectable from a
-  searchable list below (owner named PLN and EUR as examples, NOT as the limit). Do not hardcode a
-  closed set. The app already has UZS/USD/EUR/RUB + CBU rates + a converter page — extend that, do
-  not invent a second mechanism.
-- **NO conversion, NO exchange rate, anywhere in debts.** A debt given in USD and repaid in UZS stays
-  TWO lines ("100$ berildi · 500 000 so'm qaytarildi"). Owner's deliberate correctness choice: a
-  stored debt must never drift when a rate moves.
+  searchable list below. He named PLN and EUR as examples, NOT as the limit — do not hardcode a closed set.
+- **NO conversion and NO exchange rate anywhere in debts.** A debt given in USD and repaid in UZS stays
+  TWO lines ("100$ berildi · 500 000 so'm qaytarildi"). His deliberate correctness choice: a stored debt
+  must never drift when a rate moves.
 - **Reports: one row per currency**, never a single combined figure.
-- **"Oldi-berdi" per-person view goes in BOTH the bot and the dashboard.**
-- **Existing rows are UZS.** Not a guess: the column is literally named `amountUzs`, no writer ever
-  stored anything else, and `Transaction` already treats a null `originalCurrency` as UZS. Legacy
-  rows are left untouched; the migration is additive.
-- **Person identity = the normalized name** (trim + lowercase + collapsed spaces) used as a grouping
-  key, NOT a separate contact table. Rationale: picking a suggestion writes the identical string, so
-  duplicates are prevented at the point of entry, which is where they are actually created. A real
-  contact record can be added later if renaming-in-one-place is ever needed.
-- Current schema is UZS-only on `Debt.amountUzs`, `DebtPayment.amountUzs`,
-  `Account.initialBalanceUzs`; `Debt.counterparty` is free text with no key. Blast radius is real:
-  20+ files read those amount fields (dashboard, API, analytics, import, excel, trash, recurring) —
-  adapt them in the SAME change.
+- **Per-person "oldi-berdi" view goes in BOTH the bot and the dashboard.**
+- **Existing rows are UZS.** Not a guess: the column is literally `amountUzs`, no writer ever stored
+  anything else, and `Transaction` already treats a null `originalCurrency` as UZS. Migration is additive;
+  legacy rows are not touched.
+- **Person identity = the normalized name** (trim + lowercase + collapsed spaces) as a grouping key, NOT a
+  contact table — picking an autocomplete suggestion writes the identical string, which is where duplicates
+  are actually created. A contact record can come later if renaming-in-one-place is ever needed.
+- Current schema is UZS-only on `Debt.amountUzs`, `DebtPayment.amountUzs`, `Account.initialBalanceUzs`;
+  `Debt.counterparty` is free text. **20+ files read those amount fields** — adapt them in the SAME change.
 
-> Jonli holat taxtasi. Har sessiya quyidagi ⚡ STATUS blokidan boshlanadi.
-> Reja: `C:\Users\localhost\.claude\plans\c-users-localhost-desktop-paste-this-md-iridescent-diffie.md`.
-> Specs: `docs/tasks/NNN-*.md`.
+## Hard-won facts a fresh session must not rediscover
+- **A pinned LLM model is a time bomb, and ListModels is not proof.** Voice was dead for weeks because the
+  STT provider was pinned to `gemini-2.5-flash`, which Google now 404s ("no longer available to new
+  users") — while still LISTING it for the very key that fails. Only a real `generateContent` call proves a
+  model is alive. Now a chain: `gemini-3-flash-preview` → `gemini-3.5-flash` → `gemini-flash-latest`.
+- **A secret stored write-only cannot be debugged.** `STT_PROVIDER`/`GEMINI_API_KEY` were Vercel
+  `type=sensitive`, whose values can never be read back by anyone — which is exactly why the outage was
+  undiagnosable. Both are now `type=encrypted`: still encrypted at rest, readable via `vercel env pull`.
+- **Money input: normalize, never reinterpret.** `src/lib/money-input.ts` is the ONE normalizer. Stripping
+  every non-digit silently turned `-500000` into `500000` and `12.50` into `1250`. Anything not readable as
+  one unambiguous whole amount returns `""` so the server refuses it **visibly**. Zero stays `"0"` — it is a
+  legal opening balance. Asserted in `tests/money-input.test.ts`; do not "simplify" it.
+- **A write endpoint must return the same shape its list endpoint returns.** `settleDebt`/`updateDebt` used
+  to return a row without `paidUzs`; the client splices that row into its list, so the next payment computed
+  `BigInt(undefined)` and threw *outside* the try/catch — a silent no-save. Checked: Accounts and Categories
+  do NOT have this bug (verified live, they handle it correctly) — do not "fix" working code there.
+- **CRLF churn is real here.** HEAD stores LF; Windows edits write CRLF and a 20-line change reads as 4000.
+  Compare `git diff --shortstat` against `git diff -w --shortstat` before every commit.
+- **`.claude/gate.cmd` runs ONLY typecheck**, though CLAUDE.md promises typecheck + test + build. The
+  pre-commit hook therefore checks less than it claims — run all three by hand. Also: after a fresh clone the
+  hooks are INERT until `git config core.hooksPath .githooks`.
+- **Never run `npm audit fix --force`.** It downgrades next 16→9.3.3 and exceljs 4→3.4.0 and breaks prod. The
+  4 "moderate" advisories (uuid inside exceljs, postcss inside Next) are both unreachable from our code and
+  have no fixed version. Revisit only when exceljs >4.4.0 or a stable Next ships postcss ≥8.5.10.
 
-## ⚡ STATUS (oxirgi yangilangan: 2026-08-11, Opus — DEPLOYED 08-05; blocker = voice/STT key)
-
-> ⚠️ The block below is HISTORY from 2026-07-20 and its "DEPLOY kutilmoqda" / "HALI MERGE
-> QILINMAGAN" lines are FALSE now. The true current state is the `## NEXT STEP (2026-08-11)`
-> section above. Kept for the security-header rationale only.
-
-**GOAL (nima "tayyor" degani):** O'zbek kichik biznesi uchun Telegram bot (matn + ovoz) +
-web dashboard — pul kirim/chiqim, qarzlar, hisobotlar. Prod'da ishlaydi, egasi telefonidan
-kundalik ishlata oladi. Hozir: mahsulot ishlayapti; qolgani bot-tomon sayqal + xavfsizlik.
-
-**Active branch:** ~~`fix/lint-gate-rearm`~~ → **MERGED into `main` 2026-08-05 (`1ac676d`), pushed.**
-Work continues on `main`.
-
-**Oxirgi bajarilgan (2026-07-20):**
-- `888b55e` — **security headers** (`next.config.ts`). Jonli saytda faqat Vercel'ning HSTS'i
-  bor edi; qolgan hammasi yo'q edi. Qo'shildi: nosniff, Referrer-Policy, Permissions-Policy,
-  CSP `frame-ancestors`. Lokal prod-build'da tasdiqlangan (4 header hamma yo'lda; /api/telegram
-  hamon 200; login sahifa ochiladi, CSP xatosi yo'q). typecheck + 124 test + build — yashil.
-- `793ae31` — ovozli xabarlar uchun alohida, qattiqroq rate-limit (8/10daq, matn 20/10daq).
-  Bu ish 8 kun commit qilinmay yotgan edi; tugallangan va izchil bo'lgani uchun saqlandi.
-
-**✅ DEPLOY DONE 2026-08-05** — verified exactly as this line asked: 4 headers present on
-`https://oson-moliya.vercel.app/login`, `x-frame-options` absent. (See NEXT STEP block at the top.)
-
-**⚠️ ENG MUHIM XAVF — Telegram Mini App ramkasi.** `X-Frame-Options` ATAYLAB qo'yilmadi:
-bu ilova Telegram Mini App, Telegram'ning WEB mijozi uni iframe ichida ochadi. DENY ham,
-SAMEORIGIN ham uni oq ekran qilardi. Himoyani faqat CSP `frame-ancestors` ushlab turibdi
-(`'self' https://web.telegram.org https://*.telegram.org`). Kimdir "xavfsizlikni kuchaytiraman"
-deb XFO'ni qaytarsa — Mini App buziladi. Qaytarish oson: `next.config.ts` dagi CSP qatorini
-o'chirib qayta deploy (2 daqiqa, boshqa hech narsaga tegmaydi).
-
-**OWNER TODO (deploy'dan KEYIN, ~2 daqiqa — buni faqat siz qila olasiz):**
-@oson_moliya_bot ni oching → pastki-chapdagi **Moliyachi** tugmasini bosing → dashboard
-ochilishi kerak (grafik va raqamlar ko'rinsin, oq ekran EMAS). Iloji bo'lsa web.telegram.org
-dan ham tekshiring — aynan o'sha iframe yo'li uchun bu o'zgarish qilingan. Oq ekran bo'lsa
-menga ayting, darhol qaytaraman.
-
-### Dependency advisories — QABUL QILINGAN, tuzatilmaydi (2026-07-20 tekshiruvi)
-`npm audit` 4 ta "moderate" ko'rsatadi. Ikkalasi ham bizda yetib bo'lmaydigan joyda, va
-ikkalasining ham tuzatilgan versiyasi YO'Q. **`npm audit fix --force` ni HECH QACHON ishlatmang**
-— u next'ni 16→9.3.3, exceljs'ni 4→3.4.0 ga TUSHIRADI, ya'ni prod'ni buzadi.
-- **uuid** (GHSA-w5hq-g745-h8pq), exceljs ichida: zaiflik `v3/v5/v6` ni `buf` argumenti bilan
-  chaqirganda. exceljs esa faqat `uuidv4()` ni argumentsiz chaqiradi — ikki tomonlama yetib
-  bo'lmaydi. exceljs 4.4.0 eng oxirgi versiya (2023-10-19 chiqqan), yangisi yo'q.
-  *Qachon qayta ko'rish:* exceljs 4.4.0 dan yuqori versiya chiqsa.
-- **postcss** (GHSA-qx2v-qp2m-jg93), Next ichida: build-vaqtidagi CSS zaifligi; CSS'imiz o'zimizniki.
-  next@16.2.10 (eng oxirgi barqaror) hamon `postcss@8.4.31` ni ushlab turadi; faqat 16.3 canary'da
-  tuzatilgan. *Qachon qayta ko'rish:* `postcss>=8.5.10` ni ushlagan barqaror Next chiqsa.
-- Ataylab rad etilgan variant: `overrides` bilan majburan yangilash. Sabab — Excel hisobotning
-  **umuman testi yo'q** va uni faqat egasi Telegramdan `/hisobot` yuborib tekshira oladi.
-  Yetib bo'lmaydigan zaiflik uchun ishlaydigan funksiyani xavf ostiga qo'yish — yomon savdo.
-
-### Bu sessiyada topilgan, TUZATILMAGAN (alohida ish)
-- `.claude/gate.cmd` FAQAT `typecheck` ni ishga tushiradi — CLAUDE.md esa typecheck + test + build
-  talab qiladi. Ya'ni pre-commit hook o'zi va'da qilgandan kamroq tekshiradi. (Bu sessiyada
-  uchalasi QO'LDA ishlatildi, yashil.)
-- `src/lib/report/excel.ts:379` — ustun harfini `String.fromCharCode(64 + totalCols)` bilan
-  hisoblaydi, 26 ustundan keyin buziladi. Hozir uxlab yotibdi (maksimum 6 ustun).
-- "📊 Hisobot" tugmasi yo'li `isRateLimited` tekshiruvidan o'tmaydi (`/hisobot` buyrug'i o'tadi).
-- To'liq CSP (`script-src`/`style-src`, nonce bilan `proxy.ts` orqali) — alohida katta ish.
-- Bu STATE.md hamon ~53 KB (yuqoridagi banner). Siqish kerak.
-
-- **Merge-commit hook tracked (2026-07-18):** `.githooks/pre-merge-commit` is now in git too. It was created but untracked, so a clone carried only half the protection - git routes a MERGE through that hook, and that path would have been silently unguarded.
-- **Native git pre-commit hook (2026-07-18):** `.githooks/pre-commit` runs this repo's own `.claude/gate.cmd` before any commit, so a commit from a terminal, an IDE or another agent is checked too - previously only commits made through Claude's own tools were. Proven BOTH ways before landing: a deliberate breakage blocked the commit with the real failure, and reverting it let the same commit through. Escape hatch `SKIP_GATE=1` (deliberately loud). The gate file `.claude/gate.cmd` is now TRACKED too (it was untracked, so a clone would have run the hook, found no gate and exited 0 - a hook reporting success while checking nothing). **After a fresh clone it is INERT until you run `git config core.hooksPath .githooks`** - that setting is local git config and does not travel with the repo.
-
-- **LIVE on prod (oson-moliya.vercel.app, main `446073b`).** Shipped this session:
-  - **HAMMASI button prominent (`446073b`).** User: in the debt-repayment modal the "Hammasi"
-    (pay-all) button was hard to see, and most debts are repaid IN FULL. Was a tiny chip → now a
-    full-width accent button above the input showing the amount ("↩️ Hammasi · 5 000 000 so'm");
-    tap fills the input + flips to "✓ Hammasi" accent-gradient. Manual input stays under "Yoki
-    qisman summa". Verified on a real preview (full-width 294px, fills on tap, ✓ state).
-  - **TASK 043 — account explainer + onboarding mentions debts (`446073b` batch).** /accounts has a
-    one-line explainer (audit #5: account balance vs Home total). Onboarding gained a debt example
-    + hint so new users discover debts. uz/ru/en. Verified on a real preview.
-  - **TASK 042 — currency rate versioning forward-only (`61bfb3a`).** Additive `rateToUzs Float?`
-    (db push applied); foreign-tx POST stamps the live CBU rate; a foreign tx row now shows
-    "100 USD · kurs 12 052 · 1 205 205 so'm". Home live-reconvert untouched (user's design). Verified.
-  - **TASK 038 — Undo toast + Savatcha (`c40bf8e`).** The restore half of the delete overhaul.
-    Toast gained an action button; after any delete (single/bulk) on Transactions/Debts/Recurring an
-    "O'chirildi · Bekor qilish" toast restores it (bulk = restore all). New POST .../[id]/restore
-    routes (ownership-scoped, soft-deleted only) + restoreDebt/restoreRule. New /trash ("Savatcha",
-    linked from More) lists soft-deleted rows from the last 30 days with "Qaytarish". Verified on a
-    375px preview: delete→undo restores; /trash→Qaytarish returns the row to active + removes from
-    trash. Category/Account stay hard-delete (separate task). Spec `docs/tasks/038`.
-  - **TASK 039 — Home hero declutter (`12ec1e2` batch).** User (on a real screen): hero too busy.
-    Removed the duplicate "Bu oy: +X −Y" line (KPI grid below already shows it). Debt-aside now short
-    + direction-clear: "↗️ {amount} qarz berilgan — qaytishi kutiladi" (lent) / "↘️ ... qarz olingan
-    — qaytarish kerak" (borrowed) — arrow + berilgan/olingan readable at a glance. Verified on 375px.
-  - **TASK 040 — Anthropic prompt caching on the bot brain (`12ec1e2` batch).** Behavior-preserving
-    reorder: static rule block → cacheable PREFIX (cache_control ephemeral), date/categories/reply-
-    lang → dynamic suffix. SAME output. Honest: ~$0 saving at today's volume, prep for scale (~90%
-    input cost cut at hundreds of users). Cost research verdict: STAY on Haiku — cheapest reliable
-    Uzbek tool-use; GPT already A/B'd (no gain); cheaper models risk misclassifying a low-resource
-    language. NOTE: 039 + 040 were done IN PARALLEL (2 agents, independent files page.tsx vs brain.ts)
-    — answering the user's "why not use parallel agents like a commander" point.
-  - **TASK 037 — graduated delete confirmation + bulk multi-select (`5cd79ce`).** Shipped:
-  - **TASK 037 — graduated delete confirmation + bulk multi-select (`5cd79ce`).** User: typing
-    "o'chirish" for every single delete is too heavy; no way to select+delete many. Fixed with 3
-    tiers: ConfirmDialog (NEW, light 2-button for one item, NO typing) used by all 5 list clients;
-    BulkDeleteDialog (NEW, shows "N ta o'chiriladi" + preview + a "Roziman" checkbox that GATES the
-    danger button); TypedDeleteDialog reserved for a future "delete ALL data" only. Bulk multi-select
-    ("Tanlash" toggle → row checkboxes → "N tanlandi" sticky bar → bulk dialog → Promise.all over
-    single DELETE routes) added to Transactions + Debts. Verified on a 375px preview: single→light
-    dialog (no typed input), multi-select→checkboxes + count bar, bulk dialog Roziman gating
-    disabled→enabled. 12 new i18n keys. Spec `docs/tasks/037`. NOTE: deploy needed a retry ("Not
-    authorized" once, succeeded on 2nd try).
-  - **NEXT — TASK 038 (the RESTORE half of the delete overhaul, NOT yet started):** immediate Undo
-    toast (Toast needs an action-button variant) + a "Savatcha" (deleted-items) view in More with
-    restore, for the soft-deleted entities (Transaction/Debt/RecurringRule already have deletedAt).
-    Also: add `deletedAt` to Category/Account so THEY become restorable too (today they hard-delete).
-    Optional: a cron to purge soft-deleted rows older than 30 days.
-  - **TASK 036 — debt terminology + quick-pay + add-on-all-tabs + KPI USD back (`ed51314`).** User
-    feedback batch. (1) KPI USD restored (035 removed it; user: "uzbda ikki valyuta birdek ishlaydi").
-    (2) Debt payment wording direction-aware: given → "↩️ Qaytarildi", taken → "↩️ To'ladim" (was
-    generic "To'lov"). (3) "Hammasi" quick button fills full remaining in the payment modal. (4)
-    "+ Qarz qo'shish" FAB has a visible label, reachable on Barchasi tab. Verified on a 375px preview
-    with seeded data. Spec `docs/tasks/036`.
-  - **NEXT — TASK 037 (delete UX overhaul, user-requested, IN PROGRESS):** graduated delete
-    confirmation (1 item = light prompt; many = strong "N ta o'chadi" + double-confirm; ALL data =
-    typed "o'chirish"), bulk multi-select, soft-delete + immediate undo toast + a "Savatcha"
-    (deleted-items) restore view. User: current TypedDeleteDialog makes you type the word even for
-    ONE item — too heavy. Chose soft-delete + undo. Soft-delete (deletedAt) already on Transaction/
-    Debt/DebtPayment/RecurringRule; Category/Budget/Account need it added if bulk-deletable.
-  - **LIVE on prod (earlier this session), main `37182a1`:** Shipped:
-  - **TASK 035 — UX simplification pass, VERIFIED ON REAL MOBILE SCREENS (`37182a1`).** User asked
-    "murakkab bo'lib ketmadimi? bir qarashda tushunarli bo'ldimi?" — and was right. Opus had shipped
-    028→034 with green gates but WITHOUT opening the screens. Ran the dev server + seeded data on a
-    375px viewport and found real at-a-glance violations, then fixed them:
-    (1) Home: was TWO equal big numbers (Umumiy balans + Naqd qolgan) → now ONE primary "Naqd
-    qolgan" + a small debt-aside link ("Bundan tashqari 3M qarzga berilgan — qaytishi kutiladi");
-    no-debt users still see a single "Umumiy balans". (2) USD: 5 noisy lines → 1, only under the
-    main balance (KPIs are so'm-only). (3) Recurring used comma format "2,000,000" → shared
-    formatMoney space format "2 000 000". (4) Recurring category now REQUIRED at creation (Save
-    disabled + server 400). (5) Recurring FAB "+ Yangi" fits 375px. (6) Debt partial-payment row:
-    two readable lines, "Qoldi" emphasized. (7) Given-debt amount neutral, not green. (8) Removed a
-    REAL duplicate "so'm" on the debt row + action sheet — this was Lovable critique #5, WRONGLY
-    dismissed in task 030 by reading code instead of viewing the screen. Each fix walked on a real
-    preview before commit. Lesson captured in `feedback_verify_delegated_quality`. Spec `docs/tasks/035`.
-    NOTE: dev test-seed (telegramId 999999999) was cleaned from prod DB after verification.
-  - **LIVE on prod (earlier this session), main `41752d0`:** Shipped:
-  - **TASK 034 — recurring transactions via Vercel Cron (`41752d0`).** Audit finding #2 done. New
-    `RecurringRule` model + `Transaction.recurringRuleId` (additive, `prisma db push` applied).
-    Service `generateDueTransactions` uses Tashkent timezone math; idempotent with `lastGeneratedAt`;
-    catch-up loop hard-capped at 366 iterations; per-rule try/catch so one bad rule doesn't poison
-    the batch. Three new API routes: GET/POST `/api/recurring`, GET/PATCH/DELETE
-    `/api/recurring/[id]` (PATCH `?action=pause|resume`), and GET `/api/cron/recurring` gated by
-    `Authorization: Bearer ${CRON_SECRET}`. Verified live: cron without auth → 401, with auth →
-    200 `{ok, rulesProcessed:0, transactionsCreated:0, errors:[]}`. `vercel.json` registers the
-    cron at `0 19 * * *` UTC = 00:00 Tashkent next day (Hobby plan = daily, fine). CRON_SECRET
-    generated via `openssl rand -hex 32` and added to prod Vercel env. New `/recurring` page +
-    RecurringClient (list, status badges, add modal with type/category/amount/frequency/day-of-
-    month picker, pause/resume/delete). Link added to /more. 28 new i18n keys (uz/ru/en).
-    Locked decisions (Opus autopilot): Vercel Cron (D1), monthly+yearly only (D2), past-frozen
-    semantics (D3), category-delete pauses rule (D4), one currency per rule (D5). Bot integration
-    deferred. Spec `docs/tasks/034`.
-  - **TASK 033 — debt partial-payment tracking (`5c6293d`).** Audit finding #3 acted on. New
-    `DebtPayment` table (additive migration applied to prod Neon via `prisma db push` — no data
-    loss). Each debt row now shows "Asl / To'landi / Qoldi" 3-line layout when partial-paid; new
-    "+ To'lov" button per open debt opens an add-payment modal (amount + date + note); cumulative
-    paid >= original auto-flips status to settled; deleting a payment re-opens. `getDebtTotals`
-    now subtracts paid → cash-in-hand math from task 032 stays correct under partial payments.
-    POST `/api/debts/[id]/payments`, DELETE `/api/debts/[id]/payments/[paymentId]`. Web only;
-    bot integration deferred. 9 new i18n keys (uz/ru/en). Spec `docs/tasks/033`.
-  - **TASK 032 — Naqd qolgan / cash-in-hand line (`ca13471`).** Audit finding #1 acted on. Home hero
-    card now has a sub-block under "Umumiy balans" labeled "Naqd qolgan" = `balance − givenOpen +
-    takenOpen`. Visible ONLY when there are open debts (else hidden — no noise). Umumiy balans
-    unchanged (net worth). Cash-in-hand reflects real liquidity (lending 3M now actually drops the
-    cash line by 3M, even though it's correctly NOT subtracted from balance). Reuses getDebtTotals
-    + makeSecondaryLine (task 030). uz "Naqd qolgan" · ru "Свободные деньги" · en "Cash on hand".
-    Spec `docs/tasks/032`.
-  - **TASK 031 — remove redundant in-menu flip + add debt explainer (`2b25709`).** User caught that
-    task 029 left the type-flip in BOTH the card AND the edit-picker menu. Removed from the menu;
-    card-flip stays as the single one-tap fix. Also added a 1-line muted explainer on the Debts page
-    (uz/ru/en): "Qarzlar kirim va chiqimga qo'shilmaydi — pulingiz qaytishi kutilyapti." Spec `docs/tasks/031`.
-  - **TASK 030 — dashboard real-bug fixes (`1f8ca38`).** Acted on a third-party AI ("Lovable") UX
-    critique only after fact-checking each claim against current code — 10 of 15 claims were
-    FALSE/outdated, 5 were real. Fixed: (a) `formatDate(null)` → "Invalid Date" string trust-killer
-    on debts; now guards `isNaN` and `null`, returns em-dash. (b) "Berilgan qarz" summary card was
-    green (`--income-wash`) → reads as realized income; switched to neutral surface (`--surface`,
-    `--fg`) since money-lent is an asset-at-risk, not income. (c) Secondary-currency line under
-    Home balance + each of the 3 KPI cells: small muted `≈ $X,XXX` when main = UZS (or UZS
-    equivalent when main = USD/EUR/RUB), via existing CBU rates; omitted when value≈0 or rate
-    missing. (d) FAB padding — already in place (`pb-32` on the 3 mobile screens). Lovable lesson
-    captured in `feedback_truth_over_compliance` memory. Spec `docs/tasks/030`.
-  - **TASK 029 — visual separation of type vs category (`95b07a4`).** Bot UX fix for the user's
-    "kirimda oziq-ovqat" confusion (turned out to be PERCEPTION, not classification). Edit picker no
-    longer shows twin `[🟢 Kirim][🔴 Chiqim]` pills above the category pills — replaced with a SINGLE
-    full-width action button (`🔄 Kirimga aylantirish` or `🔄 Chiqimga aylantirish`, depending on
-    current type). Confirmation card AND updated-card (after edit) gained a NEW row below
-    `[Tahrirlash, O'chirish]` with the same flip-action button → type errors now fixable in ONE tap,
-    no menu dive. New callback `ft:<txId>` flips type + reassigns category to user's default of the
-    new type (`boshqa kirim`/`boshqa chiqim` preferred). Edit-picker message now leads with
-    "✏️ Hozir: 🔴 Chiqim · sartarosh · 70 000 so'm" so the user sees exactly what they're changing.
-    3 new i18n keys + helper across uz/ru/en. Spec `docs/tasks/029`.
-  - **TASK 028 — STT switch ElevenLabs → Gemini 2.5 Flash (`08c1c4e`, dpl `4fjJxXdccQfXmV8MQqRvEA2rZQuW`).**
-    New `GeminiFlashProvider` (`src/lib/stt/gemini.ts`) hits `generateContent` multimodal with inline-base64
-    OGG/Opus + a language-aware "transcribe verbatim" prompt. Wired into `src/lib/stt/index.ts` alongside
-    ElevenLabs/Groq/OpenAI. Vercel envs flipped: `STT_PROVIDER=gemini` + `GEMINI_API_KEY` added; the other
-    provider keys are KEPT for instant rollback (env-flip only, no code change). User chose DIRECT switch
-    (no shadow mode). Spec: `docs/tasks/028-stt-switch-to-gemini.md`. Gates: typecheck 0 · test 124/124 · build.
-    Verified: /login 200, /api/telegram 405 (POST-only, expected). Pushed to origin/main.
-    **NOTE on the Gemini API key format:** Google now issues keys as `AQ.Ab8RN6...` (not the classic `AIza...`)
-    — captured in `playbook_tech_gotchas` so we don't second-guess that format next time.
-- **USER WENT TO SLEEP — autopilot batch v2 COMPLETE.** User extended autonomy ("hammasini mensiz
-  qilaver aqlli qaror qabul qilib, hammasini hal qilib keyin deploy qil") so Opus continued past
-  the safe-fixes phase and locked task 034's 5 design decisions itself. 3 of 5 audit findings now
-  fully shipped (#1 cash-in-hand, #2 recurring, #3 partial payments).
-- **REMAINING — explicitly DEFERRED with reasons (resume here):**
-  - **BOT SIDE (debt repay + recurring via bot) — DEFER to a REAL-TELEGRAM-TEST session.** User asked
-    to "finish everything" incl. bot-side, and Opus mapped it (new brain intents `repay_debt` +
-    `create_rule`, see the Explore map in this session). Opus DID NOT ship it: a prod-bot brain change
-    (new intent in the forced-tool schema + prompt edits) can't be meaningfully verified here — it
-    needs the live Telegram channel + spends API tokens, and a new intent can regress existing
-    classification. Truth-over-compliance: don't blind-deploy an untestable prod-bot change. NEXT
-    SESSION: Opus writes the bot code (repay_debt as a brain intent: "Sarvar 2 mln qaytardi" →
-    addDebtPayment by counterparty; recurring as a brain intent OR — recommended — keep recurring on
-    the web form since it has 5+ fields that are error-prone in a chat), then the USER sends real
-    voice/text on @oson_moliya_bot to confirm BEFORE it goes live. Recommendation captured: recurring
-    via bot is weak UX; debt-repay via bot is worth it.
-  - **#42 currency rate versioning — user chose FORWARD-ONLY (no backfill).** Stamp the CBU rate used
-    at entry time on each NEW foreign-currency transaction; leave historical rows untouched. Additive
-    DB field (e.g. `rateToUzs` on Transaction). NOT YET DONE — next dashboard-safe task, can ship here.
-  - #5 two-balance confusion (Umumiy balans vs per-account balance) — 035 fixed Home; the per-account
-    balance on /accounts may still read ambiguously. Needs a real-screen look + maybe a label.
-  - Smaller: budget trend, JSON backup, audit trail, onboarding-mentions-debt.
-- **USER ACTION NEEDED on wake — verdicts (bot ones still need a human; web ones Opus already
-  eyeballed on a real mobile preview during task 035):**
-  1. **STT (028)** — `@oson_moliya_bot` ovoz testi, Gemini OK? (BOT — needs human)
-  2. **Bot UX (029)** — Tahrirlash → category pills only (no twin pills); card 🔄 works (BOT)
-  3. **Bot UX (031)** — bot edit menu has NO flip; /debts has explainer (BOT half)
-  4. **Web 030/032/033/034/035** — Opus walked these on a 375px preview in task 035 and simplified
-     what was too busy. Still worth a human glance: Home one-number balance + debt-aside line;
-     /recurring add a rule (category required) then trigger the cron; /debts "+ To'lov" flow.
-     Trigger cron now: `curl -H "Authorization: Bearer <CRON_SECRET>" https://oson-moliya.vercel.app/api/cron/recurring`
-- **NEXT — agreed plan (after both verdicts):**
-  1. **Spam protection** (added by user 2026-06-17): rate-limit `@oson_moliya_bot` per Telegram user_id (voice
-     costs money — separate, tighter cap). Storage: in-memory or DB? Limits TBD — needs a short spec.
-- **WITHDRAWN this session (decided not to do):**
-  - Old issue #2 "edit-in-bot only" — user reconsidered: "men boshqa applar shunaqa qilarkan dedim, biz app emas".
-  - Old issue #3 "multi-transaction in one message" — user said "hozircha to'xtab tursin".
-  - PAT rotation — user said "shartmas".
-- **DEFERRED (still alive):** none — task 026 (Gemini STT) is now done as part of 028. Brain hardening for
-  garbled STT is dropped (Gemini 2.5 should transcribe cleanly in the first place).
-- **ROLLBACK PLAN if Gemini disappoints:**
-  ```
-  cd C:/Users/localhost/Desktop/pultrack
-  printf "elevenlabs" | npx vercel env rm STT_PROVIDER production --yes
-  printf "elevenlabs" | npx vercel env add STT_PROVIDER production
-  npx vercel --prod --yes
-  ```
-  ElevenLabs key is still set; rollback is ~1 minute.
-- **USER-ONLY:** record the demo video (`docs/demo-script.md`); provider spend caps (Anthropic/Gemini/Groq/
-  ElevenLabs) — user asked "why" → answered (runaway-bill insurance, not urgent for a small bot).
-- Gates each task: typecheck 0 · test 124/124 · build. Deploy: `npx vercel --prod --yes` from repo root.
-
----
-
-## (oldingi) STATUS 2026-06-16 — NEW DESIGN SHIPPED TO PROD
-
-- **✅ DESIGN EXPERIMENT IS NOW LIVE.** User reviewed the warm-cream redesign (donut charts, Debts module,
-  bank-statement import) and approved it. `main` fast-forwarded to the experiment and deployed to prod:
-  **oson-moliya.vercel.app**, commit `0370e90` (deployment `dpl_7xDaALCZy887TeM4gqCBp3i21cw2`). Verified live:
-  /login new design loads, `/api/export` → 404 (removed), `/api/import` → 401 (intact). DB pre-check
-  "schema is up to date" — no migration ran on deploy (build = `prisma generate && next build` only).
-- **TASK-023 DONE (Opus-led, 2026-06-16):** removed the redundant "Download my data" CSV export — user's
-  call (the Excel **hisobot** already covers data export). Deleted `/api/export` route, the export card in
-  More, `more.export`/`more.export_sub` i18n keys (uz/ru/en), the `/api/export` line in `proxy.ts`; also
-  trimmed the now-false "download anytime" clause from `more.privacy_note`. Bank-statement import + Excel
-  report untouched. Spec: `docs/tasks/023-remove-csv-export.md`. Gates green (typecheck 0, test 112/112, build).
-- **MERGE detail:** `main` had ONE prod-only commit (`036a2b2`: quick-add amount label + bot welcome copy)
-  that the experiment lacked. Merged main→experiment; the only conflict (bot.ts welcome text) was resolved
-  in favour of main's clearer copy ("log RIGHT HERE / 'Moliyachi' is view-only"). Nothing lost.
-- **ROLLBACK if needed:** `git switch checkpoint/current-stable-2026-06-14` then `npx vercel --prod --yes`.
-- **⚠️ USER TODO (security):** the GitHub PAT is embedded in the `origin` remote URL — rotate it (was already
-  a standing todo). Also: real Uzbek voice test on @oson_moliya_bot; provider spend caps.
-- **NEXT (user-gated, awaiting "boshla"):** optional DATA SAFETY batch 2 per `docs/tasks/017` (undo/restore
-  UI, soft-delete for categories/budgets, "what will be lost" warning, typed-confirm on destructive deletes).
-
----
-
-- **MULTI-CURRENCY OVERVIEW REDESIGN — LIVE (commit `5633526`):** per user (Revolut screenshot). Removed the
-  confusing "ORIGINAL" display mode. Currencies = UZS/RUB/EUR/USD; **main currency** (bosh valyuta) selectable
-  in /more, default UZS. Home overview now groups this-period tx by currency: each currency row shows its
-  native total + the value converted to the main currency BELOW at **live CBU rate**, then a grand total
-  "Hammasi" in the main currency, with a "Markaziy bank (CBU) kursi bo'yicha" caption. Transaction rows always
-  show their own currency. Quick-add (QuickAddForm) got a currency picker → /api/transactions POST converts
-  foreign→UZS via CBU + stores originalCurrency/originalAmount. **UZS-only users: byte-identical to before**
-  (one UZS row, no grand-total/CBU note). Aggregates (analytics/budgets/Excel/accounts/debts) stay on
-  amountUzs (entry-time so'm); only the Home overview live-revalues at current CBU. Migration
-  20260614160250 (default UZS, 0 legacy rows). Gates green (typecheck 0, 104 tests, build); 2 reviewers clean;
-  math verified by hand. Known deviation: foreign amounts stored as WHOLE units (cents dropped, matches bot).
-- **FINAL PRODUCTION REVIEW DONE + ALL FIXES LIVE (2026-06-14, commit `93bab02`):** 6-agent audit
-  (bot / dashboard / API-security / i18n / data-consistency / docs+cost). Bot + data-consistency = CLEAN.
-  Findings fixed + deployed: (1) localized ALL bot error/edge messages uz/ru/en + `formatAmount(lang)`
-  (happy path was already localized; this covers error/limit/voice/photo/receipt messages); (2) 44px touch
-  targets across transactions/categories/debts/accounts; (3) atomic magic-token consume — race fix
-  (`token.ts` updateMany); (4) proxy-protect accounts/analytics/debts; (5) README adds receipt-photo +
-  `/hisobot` + corrects the stale "per-message language auto-detect" → /start language picker. Verified each
-  agent finding before acting (e.g. skipped MoreClient logout = already ~48px; confirmed prod
-  STT=elevenlabs so README was accurate). Gates green (typecheck 0, 104 tests, `next build` OK). **Code-side
-  = production-ready / ideal.** Remaining = USER-ONLY: real Uzbek voice test on @oson_moliya_bot, provider
-  spend caps (Anthropic/Groq/ElevenLabs), demo video, rotate GitHub PAT.
-- **CURRENCY-ORIGINAL DEPLOYED + CODEX WORK VERIFIED (2026-06-14):** Codex committed+pushed `0a7b1b2`
-  (feat(currency): preserve original transaction currency) + README/docs updates, but its Vercel token was
-  invalid → deploy blocked. Opus re-reviewed: Codex work is GOOD — gates green (typecheck 0, 104 tests), the
-  earlier BLOCKER fix (TransactionsClient desktop table → formatTxMoney, both rows) is present, owner-scoping
-  intact, migration additive (`prisma migrate status` = up to date). Two reviewer "issues" were FALSE POSITIVES
-  (verified before acting): prod `STT_PROVIDER=elevenlabs` (+ key) so README "production uses ElevenLabs" is
-  ACCURATE; receipt-photo correctly removed from the 3-day roadmap (it already shipped at 16fc74e). The
-  formatTxMoney "double-sign" is dead code (amounts are always positive). DEPLOYED to prod via the working
-  Vercel CLI auth — currency-original ("$100 stays $100" + Asl valyutada/so'm toggle) is now LIVE.
-- **CODEX RESUME (2026-06-14, Claude limitdan keyin davom):** Claude qoldirgan joydan davom etildi.
-  Uncommitted `ORIGINAL` display-currency / original transaction currency work reviewed; Prisma migration
-  `20260614130528_tx_original_currency` exists and `npx prisma migrate status` says DB is **up to date**.
-  Gates green after resume: `npm run typecheck`, `npm test` (104/104), `npm run build`. Remaining audit gap
-  closed: API routes reviewed for auth/owner scope/origin guards, i18n key parity checked (uz/ru/en 225/225/225,
-  no missing used keys), docs updated from stale Groq/UZS-only/no-accounts wording to current ElevenLabs +
-  multi-currency/accounts/debts reality. Browser smoke on `localhost:3011/login`: no horizontal overflow, new
-  WebApp/auto-login copy visible, old "xavfsiz kirish havolasi" copy gone. Protected route smoke: `/transactions`
-  redirects unauthenticated, `/api/transactions` returns 401. Not deployed and not committed in this Codex resume.
-  USER-ONLY still gates final confidence: real Uzbek voice test in Telegram, provider spend caps, demo video.
-- **FINAL AUDIT + HARDENING (2026-06-14):** 5-agent parallel audit (pages/API-security/docs/i18n/design).
-  Pages PASSED (no placeholders). **Webhook VERIFIED healthy** (live POST: correct secret→200, wrong→401;
-  the old 401 last_error was stale). **Security:** audit claimed 4 "IDOR" + 2 CSRF; on review 3 were
-  OVER-CLAIMED — the 4 update/delete routes already gate on `findFirst({id,userId})`→404, so NOT
-  exploitable. Still added `where:{id,userId}` defense-in-depth (typechecks in Prisma 6) + assertSameOrigin
-  on /api/auth/logout. **REJECTED** assertSameOrigin on /api/auth/telegram (initData HMAC already protects;
-  origin check would risk breaking Mini App login). Fixed stale demo-script Debts line. Gates GREEN
-  (typecheck 0, 104 tests). **Design lessons** extracted → `~/.claude/DESIGN_PRINCIPLES.md` + global CLAUDE.md
-  pointer + memory (auto-loads in all projects). KNOWN/deferred (recorded, not done — deadline risk):
-  currency hardcoded "so'm" in ~9 components (ru/en see so'm not сум/UZS — cosmetic; dict keys complete);
-  .env.example ELEVENLABS comment clarity; bot has no Debts/Accounts integration (dashboard-only, intentional).
-- **STT SWITCH LIVE (2026-06-14):** Brain decision SEALED = stay on Claude (2026 arXiv: Claude excels at
-  Uzbek; no evidence GPT is better; switch = cost+rewrite+risk, no gain). STT switched Groq→**ElevenLabs
-  Scribe v2** for Uzbek accuracy. Prod env STT_PROVIDER=elevenlabs + ELEVENLABS_API_KEY were stored EMPTY
-  (PowerShell stdin + cmd `<` redirect through npx both failed). FIX: upserted via Vercel REST API
-  (token at %APPDATA%\xdg.data\com.vercel.cli\auth.json; projectId/teamId in .vercel/project.json,
-  upsert=true). Verified non-empty (env pull), redeployed prod (dpl_G3pVmFmNy72qyDQyWK6SnE4ziAj9, READY,
-  alias oson-moliya.vercel.app 200). **USER MUST TEST a real Uzbek voice msg to confirm ElevenLabs quality.**
-  ELEVENLABS_API_KEY stays only in .env (gitignored) + Vercel (encrypted) — repo is PUBLIC. Temp secret
-  files deleted. NOTE: build flagged local .env upload (cosmetic; runtime uses Vercel project env).
-
-### ▶️ NEXT STEPS (resume here — session ended on Claude usage limit, 2026-06-14)
-**USER-ONLY (Claude cannot do — these gate submission confidence):**
-1. **TEST voice** — send a real Uzbek voice msg to @oson_moliya_bot (e.g. "logistikaga besh yuz ming chiqim").
-   Confirm it transcribes correctly now (ElevenLabs). If still wrong → report the transcript, I'll tune keyterms/lang.
-2. **Spend caps** — set usage/billing caps on Anthropic + Groq + ElevenLabs keys (bot is PUBLIC → abuse risk).
-3. **Demo video** — record from PROD per docs/demo-script.md (voice → bot confirm → dashboard updates → budget alert).
-
-**CLAUDE TODO next session (ranked):**
-A. **Finish the dashboard+docs audit** — the parallel audit agent (pages render? every /api route auth+owner-scoped+
-   zod+assertSameOrigin? i18n uz/ru/en no missing keys? README/demo-script/.env.example complete? no "Tez orada"
-   placeholders?) was INTERRUPTED before running. Re-run it (Explore agent) and fix any real gap. THIS IS THE ONE
-   AUDIT NOT YET DONE.
-B. **Bot audit DONE (10/11 wired, well-engineered).** Real findings to decide on:
-   - Debts/Accounts are **dashboard-only — NO bot integration** (intentional; confirm with user it's OK to leave).
-   - Category buttons capped at 6 (bot.ts ~360 `take: 6`) → users with >6 cats can't reach the rest via buttons
-     (they can still type / "✏️ Boshqa"). Low-effort fix if a grader might test it.
-   - Minor edge cases (all LOW): pending-draft reset after "Boshqa" if brain re-reads ambiguous; webhook
-     update_id idempotency not guarded (Telegram rarely retries); message:audio defaults to .mp3; correction
-     `target` only handles "last" (not "second-to-last"); single-word lang defaults to uz. None block submission.
-C. **Commit hygiene** — uncommitted before this commit: docs/tasks/017 (modified), docs/design-experiment/ (untracked,
-   leave UNTRACKED per policy). Review & commit/discard next session.
-
-### 🔐 SECURITY FLAG (handle, do NOT paste secret into any tracked file)
-- The git remote URL in `.git/config` has an **embedded GitHub PAT (ghp_…)**. `.git/config` is LOCAL only (not in the
-  repo), so the PUBLIC repo does NOT expose it — currently safe. But it surfaced in terminal output this session.
-  Recommend the user **rotate that GitHub token** to be safe, and never commit it. (Do not write the token value anywhere
-  in tracked files — repo is public.)
-
-- **SUBMISSION-READY P0 — DEPLOYED (2026-06-14):** MASTER_PLAN.md is the expert-reviewed source of truth
-  (3 critics + Codex-coverage + 7-role panel). **Commit 1 (18fc878):** deterministic dates kill the
-  /transactions + Home hydration/theme drop; money spaced+signed; 44px targets; Home "Bu oy natijasi" (not
-  "balans") + safe period-delta; bot net "Sof" (not "Balans"); foreign-currency guard ("100 dollar"→clarify);
-  /api GET validation + assertSameOrigin on mutating routes + voice cap + in-memory rate-limit; analytics
-  window half-open; README+demo-script rewritten to reality. **Commit 2 (833bd72):** bot inline buttons
-  ([🟢 Kirim][🔴 Chiqim] type-clarify + [🗑 O'chirish]→Ha/Yo'q soft-delete; new callbackQuery handler,
-  ownership-checked, try/catch; finalizeLog refactor; text flow unchanged) **+ VOICE BUG FIXED** — Groq
-  400-rejected "voice.oga" (root-caused from prod logs), now "voice.ogg"; voice transcribes. Gates green
-  (typecheck 0, test, next build). Live verified: prod routes 200, "Bu oy natijasi" rendered.
-- **DEFERRED (not blockers):** webhook update_id idempotency (needs migration); multi-currency (016);
-  P1 polish (analytics mobile, shared formatters); hallmark design skill installed (5/10 fit — use its
-  audit-checklist selectively, NOT its bold-aesthetic flow). docs/design-experiment/ left UNTRACKED.
-- **USER ACTIONS LEFT:** (1) make GitHub repo PUBLIC (verified secret-clean) or add evaluator collaborator;
-  (2) phone-test voice + buttons; (3) record the demo (docs/demo-script.md rewritten to reality).
-- **CODEX TASK-017 UI/UX + FINANCE REVIEW PLAN (2026-06-14, local only; NOT implemented/deployed):**
-  User wants the product to stay **sodda va yoqimli** and asked Claude to follow a durable design/fix plan
-  even for future updates. Full Codex review found P0 UI bugs (/transactions hydration/theme mismatch,
-  money spacing), mobile analytics clutter, unfinished primary-nav routes, ambiguous "Umumiy balans" finance
-  wording, fake-looking currency settings, small touch targets, chart hardcoded colors, plus broader product
-  risks (voice bot UX, Telegram WebApp/auth verification, overloaded bot state, webhook timeout risk,
-  missing rate limits/observability/data recovery, local/prod DB separation, incomplete finance model).
-  Short Claude execution plan is saved at `docs/tasks/017-claude-execution-plan.md`.
-  Full audit/reference appendix is `docs/tasks/017-ui-ux-finance-design-plan.md`.
-  Claude should read the short plan first before any UI/dashboard update.
-- **HOZIRGI:** LIVE & WORKING. Bot @oson_moliya_bot + dashboard https://oson-moliya.vercel.app.
-  **Assessment full-audit (3 Explore agent + Opus) = barcha talab bajarilgan:** bot 9/9, dashboard
-  6/6, topshirish hujjatlari to'liq. Yagona ochiq qolgan kamchilik — proactive budget alert — **HOZIR
-  TUZATILDI (task-014, commit 49e867a, deployed).**
-  Eng so'nggi ishlar (hammasi prod'da, deployed): (a) **Kissa-uslubidagi v5 dark-first dizayn**
-  (charcoal + sky-blue, light toggle), (b) **native Telegram WebApp** — `web_app` tugma +
-  `initData` HMAC auth (`/api/auth/telegram`, magic-link emas), (c) **WebApp tugmasi "Moliyachi"**
-  (inline + menu button + /dashboard matni; commit 430dfad), (d) **task-014: proactive budget alert** —
-  bot chiqim yozгach kategoriya limitidan oshsa o'sha javobda ogohlantiradi (uz/ru/en, oyiga 1 marta,
-  `lastAlertedYm` guard); `src/lib/services/budgets.ts` (yangi) + `reply.ts:formatBudgetAlert` +
-  `bot.ts` try/catch; test endi haqiqiy `checkBreach`ni import qiladi (67/67). README+brief "Oson Moliya"ga
-  rebrand qilindi (PulTrack = ichki kod-nomi). **Deploy usuli:** Vercel CLI LOGGED IN
-  (`npx vercel --prod --yes` `C:\Users\localhost\Desktop\pultrack`'dan; token kerak emas; GitHub
-  auto-deploy YO'Q). Telegram menu button API orqali o'rnatiladi (setChatMenuButton, deploysiz darhol).
-- **task-015 DONE (Kissa IA redesign, commit 02d9707, deployed):** bottom nav = Bosh sahifa/Harakatlar/
-  Qarzlar/Yana + floating "+" FAB (`AddSheet.tsx` — bottom-sheet, lazy `/api/categories`, QuickAddForm
-  `bare` mode) on every page. New **/more (Yana)** settings page: **mavzu + til shu yerga ko'chdi** (TopNav'dan
-  olib tashlandi) + Hisoblar/Kategoriyalar/Asosiy valyuta(UZS)/Chiqish. Home = balans hero + xarajat-doira
-  (`HomeExpenseDonut`) + recent + budjet; inline quick-add olib tashlandi. /debts + /accounts = "Tez orada".
-  Barcha sahifa bitta konteyner (max-w-2xl, pb-28) — izchil. Spec `docs/tasks/015` + ultracode workflow
-  (Sonnet impl + 2 adversarial critic) + Opus review. Gate: typecheck 0, test 67/67, build OK. **Verifikatsiya:**
-  skrinshot tool'lari bu muhitda pultrack uchun ishlamadi (Preview = sessiya-cwd/port; Chrome = ulanmagan) →
-  autentifikatsiyalangan HTML fetch bilan 7 route'ning hammasi 200 + /more'da mavzu/til + FAB tasdiqlandi.
-  **VIZUAL ko'rinishni user telefonда tasdiqlaydi.**
-- **Topshirishga qolgan yagona narsa:** user demo videoni yozadi (skript `docs/demo-script.md`).
-- **KEYINGI (user tanlasa):** to'liq **Qarzlar (008)** + **Hisoblar (009)** modullari ("tez orada" o'rniga).
-- **Loyiha:** PulTrack — IELTS emas! data365 vibecoder imtihoni, Task 01 (Business Finance Manager).
-  Telegram bot (matn+ovoz) + ko'p sahifali veb-dashboard, bitta Neon Postgres bazasi. Muddat ~20 soat.
-- **Stack:** Next.js 16 (App Router) + TS + Tailwind v4 + Recharts · Prisma 6 + Neon Postgres ·
-  Claude (miya, tool-use) · Groq Whisper (ovoz, almashtiriladigan) · Vercel deploy.
-- **Qarorlar:** auth=botdan magic-link · +1 feature=oylik byudjet ogohlantirishi · sayt 3 til (uz/ru/en) ·
-  Prisma adapter-neon + pooled URL · hand-rolled i18n · budget alert inline (cronsiz).
-- **Done:** Phase 0 (scaffold + deps + Prisma 6 pin). Plan audit → `docs/PLAN_REVIEW.md`. Specs 001–004.
-  Docs (README/brief/3-more-days/demo) drafted + reviewed. **Phase 1 DONE + Opus-reviewed (2026-06-13):**
-  Sonnet built foundation+bot(text)+auth+dashboard skeleton; gates re-run green (typecheck 0, test 18/18,
-  build OK). Live-tested: Neon DB write/read OK; Claude brain excellent (uz/ru/en, compound amounts,
-  cross-lang category "аренда"→ijara, finance_query). **Opus fixes applied:** db.ts production connection
-  leak (now cached singleton in all envs); proxy.ts replaces middleware.ts (deleted prebuild/postbuild
-  hack); deleted duplicate-`/` notFound hack; set-webhook dotenv dep (installed dotenv, single `.env`);
-  added scripts/bot-dev.ts (local polling); build now `prisma generate && next build` + postinstall.
-  Migration `init` applied to Neon. `.env` has real ANTHROPIC/TELEGRAM/Neon keys (gitignored).
-- **Phase 2+3+integration DONE (2026-06-13, parallel Sonnet agents + Opus integration):** P2 backend
-  (voice STT Groq, finance_query+report, correct/delete, custom cats; clarify-loop type bug FIXED, dead code removed),
-  P3 UI (Analytics+3 charts, Categories, Budgets+bars, Onboarding, full uz/ru/en, DESIGN.md), + Opus added the
-  missing API routes (analytics/categories/budgets — UI called them, didn't exist). Gates re-run green:
-  typecheck 0, test 59/59, build OK (all routes present). Commits 8fc9b58→d5ec4cd→f3e6425→c280757.
-  ⚠️ The "worktree isolation" did NOT apply to this external repo — both agents edited master directly
-  (disjoint files, so the merge was effectively the working tree; integrated fine).
-- **Live-test fixes (Opus, after real Telegram + browser testing):** (a) Telegram rejects http://localhost
-  inline-button URLs → `dashboardReplyOptions` sends the link as TEXT locally, button in prod; (b) added
-  `bot.catch` (one error no longer crashes the bot); (c) rebranded web + bot to **"Oson Moliya"** (PulTrack
-  was a stray; the only remaining "PulTrack" is the internal project/repo name); (d) fixed dashboard "open bot"
-  links from a stray @PulTrackBot → **@oson_moliya_bot** (real bot, token verified); (e) brain now defaults to
-  Uzbek for ambiguous input + no longer leaks the internal brand name in replies; (f) added bot `/login`+`/dashboard`
-  commands (the login page hints `/login`); (g) magic-link TTL 10→30min. Commits 540759a→6364b84→1e80104.
-- **Task 010 DONE (2026-06-13, commit 2393ac3):** Kissa-clean UI polish: BottomNav (mobile bottom-tab, 4 tabs,
-  brand active, safe-area), TopNav mobile-only cleanup, --radius 12px, CategoriesClient icon-tile rows +
-  segmented Xarajat/Daromad toggle, TransactionsClient rounded search + chip filters + DAROMAD/XARAJAT
-  summary cards. Gates green: typecheck 0 · test 59/59 · build OK.
-- **DESIGN v3 DONE (2026-06-13, commits 95b7d04+ba44adb):** research-synthesized professional anti-AI-slop
-  system (`docs/DESIGN.md` v3): rationed terracotta accent, warm neutral ramp + token pairs, re-tuned dark,
-  shared focus ring, borders-over-shadows, Inter 440/540/620, tabular money. Migrated all components off old
-  `--color-*` tokens. Gates green; Opus smoke-tested all 4 pages → 200 (no 500).
-- **PROGRESS:** **Task 01 (assessment) core = ~100% built + working locally + gates green + live-tested.**
-  Remaining REQUIRED for submission: (1) DEPLOY — push to GitHub + Vercel + register webhook (`docs/DEPLOY.md`),
-  (2) user records the screen demo. EXTRA scope (user-added, Kissa-parity, NOT required by Task 01): theme+v3 DONE;
-  Debts(008)/Accounts+More(009)/bot-reply(011) NOT built. **Recommendation: DEPLOY first (lock a working
-  submission), then add extras if time.**
-- **DEPLOYED & LIVE (2026-06-13):** Vercel project `moliyachi/oson-moliya`. Dashboard live at
-  **https://oson-moliya.vercel.app**; bot **@oson_moliya_bot** via prod webhook (set + last_error empty).
-  GitHub repo **github.com/mirkomilovabrorwork-dot/oson-moliya** (private, main). Fixes during deploy:
-  disabled Vercel deployment-protection (was SSO-walling the public); set project `framework=nextjs`
-  (was empty → all routes NOT_FOUND); set all env vars + APP_URL=prod. `/login` renders v3; webhook clean.
-  Deploy via Vercel CLI + token (gh/vercel not installed; sandbox non-interactive). README live-demo filled.
-- **DESIGN v4 — BLUE/SLATE (2026-06-13, commit 876b41c):** User said the warm terracotta/cream v3 looked "too
-  yellow". Per the user's design playbook, switched `globals.css` tokens to a professional **blue #2563eb primary
-  + slate neutrals + green income + red expense** (light & dark) — finance-trust palette, color = signal only.
-  Charts recolored (cool). Token-only swap (components unchanged). Live.
-- **CODEX FIXES INTEGRATED + VERIFIED (2026-06-13, commit 876b41c):** Codex's local uncommitted work (money signs
-  +/-, tx/budget/category API hardening, suppressHydrationWarning, login ?start=login, TypedDeleteDialog, STT
-  audioBufferToBlob) committed. Opus re-ran gates and CAUGHT a TS error Codex missed: `blob.ts` SharedArrayBuffer
-  not a BlobPart → rewrote with a copied Uint8Array. typecheck 0, test 60/60, build OK.
-- **DEPLOY BUGS FOUND & FIXED (Opus, live debugging):** (1) `vercel env add` via stdin stored ALL env vars EMPTY →
-  re-set every var via the Vercel REST API (exact values); (2) Vercel deployment-protection (SSO) was walling the
-  public → disabled; (3) project `framework` was empty → set `nextjs` (routes were NOT_FOUND); (4) webhook returned
-  500 on a failed reply → `route.ts` now `await`s webhookCallback so it always returns 200 (commit 2d8f144).
-- **Active:** LIVE & WORKING. Dashboard https://oson-moliya.vercel.app (blue, light/dark), bot @oson_moliya_bot
-  (webhook verified — real messages parse+log+reply; secret matches). GitHub pushed. Remaining: user records the
-  demo; optional extras Debts(008)/Accounts+More(009)/bot-reply(011)/voice-blob-test/WebApp button (Codex handoff list).
-- **CODEX FULL-REVIEW FIXES (2026-06-13, local only; NOT pushed/deployed):** User asked for full review + fixes and
-  Claude handoff. Fixed visible money signs: Overview KPI cards now show income `+`, expense `-`, net `+/-`; expense
-  deltas now treat higher expense as bad/red and lower expense as good/green. Bot finance answers now sign income,
-  expense, net, expense breakdown/report lines consistently (`+1 000 000`, `-500 000`). Hardened transaction APIs:
-  create/edit reject zero/negative/invalid amounts and reject category IDs that do not belong to the user or do not
-  match transaction type; changing tx type clears incompatible existing category. Hardened budgets/categories: budgets
-  can only be set on expense categories; deleting a category with a budget now needs explicit second confirmation in UI
-  and `confirmBudget=1` server-side. Added i18n copy for the budget-delete confirmation and analytics signed-format
-  regression tests. Gates: `npm run typecheck` PASS, `npm test` PASS 60/60, `npm run build` PASS. Browser smoke:
-  local `http://localhost:3001/login` renders Oson Moliya + correct bot link; protected `/transactions` redirects to
-  `/login`. Existing unrelated dirty files left untouched: `.gitignore`, `build.log`, `test.log`, `typecheck.log`.
-- **CODEX LOCAL-SITE FIX (2026-06-13):** User reported local site did not work in the in-app browser. Root cause:
-  dev server on port 3001 had been stopped after smoke testing, then after restart Next dev overlay showed a React
-  hydration mismatch because the no-flash theme script adds `data-theme` to `<html>` before hydration. Fixed by adding
-  `suppressHydrationWarning` to the root `<html>` in `src/app/layout.tsx` (matches React/Next guidance for unavoidable
-  server/client attribute differences). Re-ran gates: `npm run typecheck` PASS, `npm test` PASS 60/60, `npm run build`
-  PASS. Local server is running on `http://localhost:3001/login`; page renders Oson Moliya, correct bot link, no visible
-  dev overlay.
-- **CODEX LOGIN-FLOW UX FIX (2026-06-13, local only; NOT pushed/deployed):** User asked why the site says "open the
-  Telegram bot" but does not auto-message the bot or auto-login after returning. Root cause/constraint: Telegram does
-  not allow a website to send a bot message on the user's behalf; the app can only deep-link to the bot. Also auth is
-  domain-cookie based, so a magic link for prod/APP_URL does not log the user into a different localhost port. Improved
-  `/login`: CTA now opens `https://t.me/oson_moliya_bot?start=login`; instruction copy now says the bot sends a secure
-  login link and tells the user to tap Start or send `/login`, then tap the bot's Dashboard button. Verified local DOM:
-  href includes `?start=login`, no visible dev overlay. Gates after change: `npm run typecheck` PASS, `npm test` PASS
-  60/60, `npm run build` PASS.
-- **CODEX HANDOFF FOR CLAUDE (2026-06-13, local only; NOT pushed/deployed):** User asked to stop because limits are
-  running out. Important unfinished/active issues for Claude:
-  1. **Safer data deletion:** user wants dashboard deletes to be hard to do accidentally. Codex partially implemented a
-     reusable typed confirmation modal in `src/components/TypedDeleteDialog.tsx` and wired it into
-     `src/app/(dashboard)/transactions/TransactionsClient.tsx` and
-     `src/app/(dashboard)/categories/CategoriesClient.tsx`. Required words by language were added in
-     `src/lib/i18n/dictionaries.ts`: Uzbek `o'chirish`, Russian `удалить`, English `delete`. Next: run gates, visually
-     smoke `/transactions` and `/categories` with an authenticated session, and polish copy if needed.
-  2. **Bot voice messages not reliable:** user expects Telegram voice -> STT text -> Claude intent parse -> logged
-     transaction/query/correction, with a user-visible transcript, immediate clarification if unclear, and ability to
-     edit/delete the last logged transaction. Suspected root cause found: STT providers used `new Blob([audio.buffer])`,
-     which can upload extra bytes from the Buffer pool and corrupt Telegram audio. Codex added
-     `src/lib/stt/blob.ts` and switched Groq/OpenAI STT providers to `audioBufferToBlob(audio)`. Next: add a regression
-     test for sliced Buffers, run gates, and live-test voice carefully without creating local polling conflicts with the
-     production webhook/BOT_TOKEN.
-  3. **Bot WebApp integration missing:** user asked why the bot is not connected as a Telegram WebApp. Current bot uses
-     dashboard magic-link URL buttons/text from `src/lib/telegram/reply.ts`. Telegram WebApp requires an HTTPS URL and
-     a `web_app` button; localhost will not work as a real WebApp. Next: when `APP_URL` starts with `https://`, change
-     dashboard reply markup to use Telegram `web_app: { url }` where grammY/Telegram typings allow it, keep plain text
-     fallback for localhost, then test on prod bot. Do not deploy/change webhook without explicit user approval.
-  4. **Voice UX improvement needed:** after transcript, bot should say what it heard and what it did, e.g. "Eshitdim:
-     ... / Yozildi: ...". For unclear audio, ask the missing field immediately. For logged transactions, reply should
-     clearly say user can write "tuzat ..." or "o'chir" for last transaction; consider inline callback buttons only if
-     implemented end-to-end with safe server handlers.
-- **CODEX BIG-PICTURE REVIEW FOR CLAUDE (2026-06-13):** User asked for the biggest project-level weaknesses so Claude
-  can think before continuing. Highest-impact risks:
-  1. **Local fixes are not in prod.** Many Codex fixes are local only and NOT pushed/deployed. The live assessment bot/site
-     may still have old behavior until the branch is checked, gated, committed, pushed, and Vercel redeploys. Do not assume
-     local `http://localhost:3001` equals live `https://oson-moliya.vercel.app`.
-  2. **Telegram WebApp/auth is not a real WebApp flow yet.** Current dashboard access is magic-link auth. A Telegram WebApp
-     should use a `web_app` button and ideally validate Telegram `initData` server-side or intentionally keep magic-link
-     auth as the security model. Decide the product/auth model before patching buttons only.
-  3. **Bot conversation state is too overloaded.** `PendingAction` stores both clarification drafts and lastTransactionId.
-     This is fragile for quick consecutive messages, voice retries, "tuzat/o'chir" after another prompt, and future inline
-     buttons. Consider separating "pending clarification" from "last logged transaction/action history".
-  4. **Voice path may exceed webhook limits and has little observability.** Telegram webhook route has `maxDuration = 30`.
-     Voice download + STT + Claude + DB can time out on Vercel, especially with longer audio. There is no durable job,
-     retry queue, or user-visible "still processing" state. If voice matters for demo, keep messages short or redesign as
-     async processing.
-  5. **AI reliability is under-tested end-to-end.** There are schema/amount tests, but not enough tests for full bot flows:
-     text/voice -> brain result -> DB write -> confirmation -> correction/delete -> dashboard visibility. Add mocked
-     `runBrain`/STT integration tests before trusting changes.
-  6. **No rate limits / abuse controls.** Telegram webhook, magic-token issuing, and Claude/STT calls can be spammed by any
-     Telegram user who finds the bot. For assessment this may be fine, but production needs per-user throttling and clearer
-     error handling to protect API spend.
-  7. **Data safety is still basic.** Transactions are soft-deleted, but categories/budgets can be hard-deleted. There is no
-     undo/restore UI, audit log, export, backup story, or "danger zone" pattern. Typed delete confirm is a good first patch
-     but not a complete data-loss strategy.
-  8. **One Neon DB appears to serve local + prod.** This is acceptable for a quick assessment but risky: local testing can
-     mutate demo/prod data. For safer work, create separate Neon branches or explicit seed/demo users.
-  9. **Finance model is MVP-level.** There are transactions/categories/budgets, but no accounts/cashboxes, debt/receivables,
-     payment methods, counterparties, transfers, roles/team access, import/export, or reconciliation. This may be the biggest
-     product gap if the target is real SMB finance, not just expense tracking.
-  10. **Observability and support are missing.** Errors mostly go to console. There is no Sentry/log drain, bot admin command,
-      health page, webhook status page, or way for a non-dev user to know why voice/login failed. For demo, at least add
-      clear user-facing failure messages and a short troubleshooting note.
-- **Bot identity:** @oson_moliya_bot (name "Moliyachi"), brand shown to users = "Oson Moliya". Demo data seed:
-  `scripts/_seed.ts` (telegramId 999000001) → prints a magic-link to view a populated dashboard.
-- **Phase 2 hardening notes (Opus found in review):** (1) bot.ts clarify-loop hardcodes draft intent
-  `log_income` + derives txType from the new message, not the draft → a clarified EXPENSE could log as
-  INCOME; preserve draft intent/type on resume. (2) Dead code `getTashkentDateString` unused in bot.ts.
-  (3) Brain reply_text number formatting inconsistent (server formatConfirmation is correct; fine for logs,
-  but Phase-2 query answers must be server-formatted with spaces). (4) Full visual UI/UX audit (DESIGN.md
-  + screenshots) deferred to Phase 3 where the real UI lands; Phase-1 pages are functional-interim.
-- **Account order (user-gated):** (1) Neon DATABASE_URL — first, (2) ANTHROPIC_API_KEY + TELEGRAM_BOT_TOKEN
-  (user has; → `.env.local`, gitignored), (3) GitHub + Vercel — needed to test the LIVE bot (end P1/P2),
-  (4) GROQ_API_KEY — Phase 2 (voice). Deploy/money/external = ask user first.
-- **Next:** Phase 1 (core) → Phase 2 (voice+query+correction) → Phase 3 (analytics+budget+i18n) → Phase 4 (docs+deploy+demo).
-
-## Build phases
-- P0 scaffold ✅ · P1 core (bot text→log+confirm, magic-link auth, Overview+Transactions) ·
-  P2 voice+finance query+correction+custom categories · P3 analytics charts+categories+onboarding+budget alerts+i18n ·
-  P4 README+brief+3-more-days+deploy+demo recording.
+## Known and deliberately unfixed
+- `src/lib/report/excel.ts:379` computes a column letter with `String.fromCharCode(64 + totalCols)` — breaks
+  past 26 columns. Dormant (max 6 today).
+- The "📊 Hisobot" button path skips the `isRateLimited` check (the `/hisobot` command does not).
+- Full CSP (`script-src`/`style-src` with a nonce via `proxy.ts`) — separate, large piece of work.
+- **`X-Frame-Options` is deliberately absent.** This is a Telegram Mini App; Telegram's web client opens it in
+  an iframe and both DENY and SAMEORIGIN turn it into a white screen. Protection is CSP `frame-ancestors`
+  only. If anyone "hardens security" by adding XFO back, the Mini App breaks.
 
 ## Conventions
-- UTF-8 faqat Edit/Write orqali. Additive DB. Sonnet git'ga tegmaydi / commit qilmaydi / secret yozmaydi.
-- Node PATH: `$env:Path = "C:\Program Files\nodejs;" + $env:Path` (PowerShell tool, Bash emas).
-- Gate: `npm run typecheck` + `npm test` + `npm run build` yashil bo'lmasa "tayyor" yo'q.
-- Har task = 1 commit + STATE yangilash (commit'ni Opus qiladi).
+- Gate before "done": `npm run typecheck` + `npm test` + `npm run build` (currently **142 tests**).
+- Node PATH: `$env:Path = "C:\Program Files\nodejs;" + $env:Path` (PowerShell tool, not Bash).
+- Additive DB changes only. UTF-8 via Edit/Write only. Subagents never run git or deploy.
+- Each task = one commit + a STATE update. Feature work gets a blind non-author review before shipping.
+- Local dev: `preview_start` config `pultrack` (port 3002) in `D:\vibecoding\.claude\launch.json`.
+  The API's same-origin guard reads `APP_URL`, which points at prod — for local API testing, temporarily
+  append `APP_URL="http://localhost:3002"` to `.env.local` (gitignored) and restore it afterwards.
+
+## Uncommitted / untracked, on purpose
+`.claude/settings.local.json`, `.codex-checkpoints/`, `RECOVERY_HANDOFF.md`,
+`docs/tasks/022-automated-daily-backup.md` — pre-existing, not from recent work, left untracked by policy.
 
 ## DECISIONS (owner one-tap answers - auto-appended; a decided question is never re-asked)
 - 2026-08-11 [Valyutalar] Qarz va hisobda qaysi valyutalar bo'lsin? -> **[User dismissed ΓÇö do not proceed, wait for next instruction]**
 - 2026-08-11 [Aralash valyuta] Qarz dollarda berilib, so'mda qaytarilsa nima qilamiz? (bu pul aniqligining eng nozik joyi) -> **[User dismissed ΓÇö do not proceed, wait for next instruction]**
 - 2026-08-11 [Hisobot] Umumiy hisobotda qarzlar qanday ko'rinsin? -> **[User dismissed ΓÇö do not proceed, wait for next instruction]**
 - 2026-08-11 [Oldi-berdi] Bir odam bo'yicha 'oldi-berdi' hisobi qayerda ko'rinsin? -> **[User dismissed ΓÇö do not proceed, wait for next instruction]**
+- 2026-08-12 [Ovoz] Bot ovozini nima bilan yozdiraylik? -> **Yangi Gemini kalit berdi; sabab kalit emas, o'lgan model edi — zanjir bilan tuzatildi (`de8aaf4`)**
+- 2026-08-12 [Kod tartibi] Jonli kod `main`da emas edi -> **Birlashtirildi va push qilindi**
+- 2026-08-12 [Deploy] 38 kunlik kutayotgan o'zgarishlarni chiqaraymi? -> **Ha, chiqarildi (`c562e8a`)**
