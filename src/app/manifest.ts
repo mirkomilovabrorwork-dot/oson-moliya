@@ -19,7 +19,11 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Oson Moliya",
     description:
       "Kirim va chiqimni ovoz bilan, chek rasmi bilan yoki qo'lda yozing.",
-    start_url: "/",
+    // The installed icon must land on the microphone, not on the dashboard —
+    // that IS the product requirement ("2 step menga 1 step kerak"). The
+    // dashboard is one tap away from the capture screen; the reverse ordering
+    // would spend the tap the app exists to remove.
+    start_url: "/capture?mode=voice",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

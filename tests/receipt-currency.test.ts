@@ -32,10 +32,10 @@ describe("deriveTxAmountFields — receipt extraction shape", () => {
     expect(fromReceipt.amountUzs).toBe(fromVoice.amountUzs);
   });
 
-  it("an unrecognized foreign currency code still keeps original fields without conversion", () => {
+  it("an unrecognized foreign currency code refuses to invent a rate", () => {
     const fields = deriveTxAmountFields(100, "GBP", rates);
     expect(fields.originalCurrency).toBe("GBP");
     expect(fields.originalAmount).toBe(100n);
-    expect(fields.amountUzs).toBe(100n);
+    expect(fields.amountUzs).toBeNull();
   });
 });

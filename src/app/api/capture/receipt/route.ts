@@ -117,6 +117,11 @@ export async function POST(request: NextRequest): Promise<Response> {
       rates
     );
 
+    if (amountUzs === null) {
+      // No live rate for this currency — never guess. Same shape as "no amount found".
+      return Response.json({ ok: true, saved: false, extracted });
+    }
+
     let categoryId: string | null = null;
     if (extracted.category) {
       categoryId = await resolveOrCreateCategory(user.id, extracted.category, TxType.expense);

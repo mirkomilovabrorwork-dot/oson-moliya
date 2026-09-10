@@ -6,6 +6,7 @@ import type { LangCode } from "@/lib/i18n/translate";
 import { QuickAddForm } from "@/components/QuickAddForm";
 import { translateCategoryName } from "@/lib/categories-i18n";
 import { resizeImageForUpload } from "@/lib/capture/resize-image";
+import { tashkentParts } from "@/lib/capture/occurred-at";
 import { IconMic, IconCam, IconPen, IconChart, IconClose, IconCheck } from "./icons";
 
 type Mode = "voice" | "photo" | "text" | null;
@@ -13,6 +14,7 @@ type Screen = "home" | "record" | "process" | "done" | "error" | "photo" | "text
 type ErrorKind =
   | "no-speech" // V-F1
   | "no-amount" // V-F2 / P-F1
+  | "unknown-currency" // receipt total WAS read, but its currency has no rate
   | "network" // V-F4 / P-F3
   | "permission"; // V-F5
 
@@ -63,18 +65,6 @@ function formatUzs(raw: string): string {
   const digits = raw.replace(/[^0-9]/g, "");
   const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   return (negative ? "-" : "") + grouped;
-}
-
-/** Asia/Tashkent (UTC+5, no DST) calendar date + time for an ISO timestamp. */
-function tashkentParts(iso: string) {
-  const tt = new Date(new Date(iso).getTime() + 5 * 60 * 60 * 1000);
-  return {
-    y: tt.getUTCFullYear(),
-    m: tt.getUTCMonth(),
-    d: tt.getUTCDate(),
-    hh: tt.getUTCHours(),
-    mm: tt.getUTCMinutes(),
-  };
 }
 
 /** Short WebAudio "done" ding — no audio asset needed. */
@@ -157,6 +147,9 @@ export function CaptureClient({ lang, categories, mainCurrency, todayCount, toda
   }, []);
 
   useEffect(() => {
+    // Restore on (re)mount — Strict Mode double-invokes effects in dev, so without
+    // this the cleanup below leaves mountedRef permanently false on every dev session.
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       finishedRef.current = true;
@@ -445,7 +438,12 @@ export function CaptureClient({ lang, categories, mainCurrency, todayCount, toda
         return;
       }
       const data = (await res.json().catch(() => null)) as
-        | { ok: boolean; saved?: boolean; transaction?: TxLike }
+        | {
+            ok: boolean;
+            saved?: boolean;
+            transaction?: TxLike;
+            extracted?: { found?: boolean; amount?: number | null; currency?: string | null };
+          }
         | null;
       if (stale()) return;
       if (!data || !data.ok) {
@@ -457,7 +455,17 @@ export function CaptureClient({ lang, categories, mainCurrency, todayCount, toda
         onDone(data.transaction);
         return;
       }
-      setErrorKind("no-amount");
+      // Not saved. Distinguish "could not read it" from "read it, but its
+      // currency has no rate" — telling the user to send a clearer photo when
+      // the total was already read sends them in a circle, at the cost of
+      // another paid vision call each time.
+      const ex = data.extracted;
+      if (ex?.found && ex.amount != null && ex.currency) {
+        setTranscript(`${ex.amount} ${ex.currency}`);
+        setErrorKind("unknown-currency");
+      } else {
+        setErrorKind("no-amount");
+      }
       setScreen("error");
     } catch {
       if (stale()) return;
@@ -495,14 +503,27 @@ export function CaptureClient({ lang, categories, mainCurrency, todayCount, toda
           return;
         }
         const data = (await res.json().catch(() => null)) as
-          | { ok: boolean; saved?: boolean; transaction?: TxLike }
+          | {
+              ok: boolean;
+              saved?: boolean;
+              transaction?: TxLike;
+              extracted?: { found?: boolean; amount?: number | null; currency?: string | null };
+            }
           | null;
         if (stale()) return;
         if (data?.ok && data.saved && data.transaction) {
           onDone(data.transaction);
           return;
         }
-        setErrorKind(data?.ok ? "no-amount" : "network");
+        // Same distinction as the first attempt: a retry of an unconvertible
+        // currency is guaranteed to fail again, so route it to manual entry.
+        const exRetry = data?.extracted;
+        if (data?.ok && exRetry?.found && exRetry.amount != null && exRetry.currency) {
+          setTranscript(`${exRetry.amount} ${exRetry.currency}`);
+          setErrorKind("unknown-currency");
+        } else {
+          setErrorKind(data?.ok ? "no-amount" : "network");
+        }
         setScreen("error");
       } catch {
         if (stale()) return;
@@ -1066,6 +1087,18 @@ function ErrorCard({
       wash: "var(--warning-wash)",
       primaryLabel: "Qayta",
       onPrimary: retry,
+    },
+    // The receipt WAS read; only its currency is unconvertible. Repeating the
+    // photo cannot help, so the primary action is manual entry, and the figure
+    // the receipt showed is repeated back so it does not have to be re-read.
+    "unknown-currency": {
+      title: transcript
+        ? `Chekda ${transcript} — bu valyuta kursini bilmayman`
+        : "Bu valyuta kursini bilmayman",
+      tone: "var(--warning)",
+      wash: "var(--warning-wash)",
+      primaryLabel: "So'mda yozish",
+      onPrimary: onWrite,
     },
     network: {
       title: "Saqlanmadi — internet yo'q",

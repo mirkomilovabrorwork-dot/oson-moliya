@@ -48,6 +48,13 @@ export function getBotLabels(lang: string): {
   photoProcessErrMsg: string;
   receiptHeader: string;
   receiptNoAmountMsg: string;
+  /**
+   * Shown when the total WAS read but its currency has no live CBU rate
+   * (only UZS/USD/EUR/RUB do). Saying "I could not read the total" there would
+   * be a lie and would send the user back for a clearer photo that cannot help.
+   * Placeholders: {amount} {currency}.
+   */
+  receiptUnknownCurrencyMsg: string;
   audioDownloadErrMsg: string;
   audioTranscribeErrMsg: string;
   // Edit-UI labels
@@ -84,6 +91,7 @@ export function getBotLabels(lang: string): {
       photoProcessErrMsg: "Произошла ошибка при обработке фото. Пожалуйста, попробуйте ещё раз.",
       receiptHeader: "🧾 Прочитал чек:",
       receiptNoAmountMsg: "Не смог определить сумму из чека. Напишите вручную или пришлите более чёткое фото.",
+      receiptUnknownCurrencyMsg: "В чеке указано {amount} {currency}, но курса этой валюты у меня нет. Напишите сумму в сумах.",
       audioDownloadErrMsg: "Не удалось загрузить аудиофайл.",
       audioTranscribeErrMsg: "Не удалось распознать аудио. Напишите сообщение.",
       editAmountLabel: "💰 Сумма",
@@ -118,6 +126,7 @@ export function getBotLabels(lang: string): {
       photoProcessErrMsg: "An error occurred while processing the photo. Please try again.",
       receiptHeader: "🧾 Read receipt:",
       receiptNoAmountMsg: "Could not read the total from the receipt. Please type it manually or send a clearer photo.",
+      receiptUnknownCurrencyMsg: "The receipt says {amount} {currency}, but I have no exchange rate for that currency. Please type the amount in so'm.",
       audioDownloadErrMsg: "Could not download the audio file.",
       audioTranscribeErrMsg: "Could not transcribe the audio. Please send a text message.",
       editAmountLabel: "💰 Amount",
@@ -152,6 +161,7 @@ export function getBotLabels(lang: string): {
       photoProcessErrMsg: "Rasmni qayta ishlashda xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.",
       receiptHeader: "🧾 Chekdan o'qidim:",
       receiptNoAmountMsg: "Chekdan summani aniqlay olmadim. Iltimos qo'lda yozing yoki aniqroq rasm yuboring.",
+      receiptUnknownCurrencyMsg: "Chekda {amount} {currency} yozilgan, lekin men bu valyuta kursini bilmayman. Summani so'mda yozing.",
       audioDownloadErrMsg: "Audio faylni yuklab bo'lmadi.",
       audioTranscribeErrMsg: "Ovozni tanib bo'lmadi. Yozma xabar yuboring.",
       editAmountLabel: "💰 Summa",

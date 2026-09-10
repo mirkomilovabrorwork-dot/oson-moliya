@@ -16,3 +16,15 @@ export function dateStringToUtc(dateStr: string): Date {
   const parsed = new Date(dateStr + "T00:00:00+05:00");
   return isNaN(parsed.getTime()) ? new Date() : parsed;
 }
+
+/** Asia/Tashkent (UTC+5, no DST) calendar date + time for an ISO timestamp. */
+export function tashkentParts(iso: string) {
+  const tt = new Date(new Date(iso).getTime() + 5 * 60 * 60 * 1000);
+  return {
+    y: tt.getUTCFullYear(),
+    m: tt.getUTCMonth(),
+    d: tt.getUTCDate(),
+    hh: tt.getUTCHours(),
+    mm: tt.getUTCMinutes(),
+  };
+}

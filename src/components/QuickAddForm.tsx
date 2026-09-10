@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { LangCode } from "@/lib/i18n/translate";
 import { t } from "@/lib/i18n/translate";
 import { translateCategoryName } from "@/lib/categories-i18n";
+import { tashkentParts } from "@/lib/capture/occurred-at";
 
 type SupportedCurrency = "UZS" | "USD" | "EUR" | "RUB";
 
@@ -37,6 +38,12 @@ interface QuickAddFormProps {
   } | null;
 }
 
+/** Tashkent calendar date ("YYYY-MM-DD") for an ISO timestamp — for the date <input>. */
+function tashkentDateStr(iso: string): string {
+  const { y, m, d } = tashkentParts(iso);
+  return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
 const CURRENCIES: SupportedCurrency[] = ["UZS", "USD", "EUR", "RUB"];
 
 const CURRENCY_LABELS: Record<SupportedCurrency, Record<LangCode, string>> = {
@@ -56,7 +63,10 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
   const [note, setNote] = useState(editTx?.note ?? "");
   // A4: Initialize to empty string to avoid SSR/client mismatch (hydration fix).
   // A useEffect sets today's date on mount so the field still defaults to today.
-  const [occurredAt, setOccurredAt] = useState(editTx ? editTx.occurredAt.slice(0, 10) : "");
+  // Edit mode pre-fills from the row's Tashkent calendar date (not UTC) so a capture
+  // made 00:00-04:59 Tashkent doesn't appear to be "yesterday" and shift when saved.
+  const originalTashkentDate = editTx ? tashkentDateStr(editTx.occurredAt) : "";
+  const [occurredAt, setOccurredAt] = useState(originalTashkentDate);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -66,7 +76,10 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
   useEffect(() => {
     if (editTx) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- date must be client-only to avoid SSR/hydration mismatch
-    setOccurredAt(new Date().toISOString().slice(0, 10));
+    // Tashkent date, not the UTC one: between 00:00 and 04:59 local the UTC
+    // string is still YESTERDAY, which pre-filled the wrong day and also broke
+    // the "chosen day is today -> stamp the real moment" branch in submit.
+    setOccurredAt(tashkentDateStr(new Date().toISOString()));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only
   }, []);
 
@@ -106,6 +119,12 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
       if (editTx) {
         // Edit mode: PATCH the existing transaction. The PATCH route only accepts
         // amountUzs (no multi-currency fields), so send the amount as-is.
+        // Only rewrite occurredAt when the user actually changed the date field —
+        // otherwise keep the row's original instant (date AND time) untouched.
+        const occurredAtOut =
+          occurredAt !== originalTashkentDate
+            ? new Date(occurredAt + "T00:00:00+05:00").toISOString()
+            : editTx.occurredAt;
         res = await fetch(`/api/transactions/${editTx.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -114,7 +133,7 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
             amountUzs: cleanAmount,
             categoryId: categoryId || null,
             note: note || null,
-            occurredAt: new Date(occurredAt + "T00:00:00+05:00").toISOString(),
+            occurredAt: occurredAtOut,
           }),
         });
       } else {
@@ -124,7 +143,15 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
           categoryId: categoryId || undefined,
           accountId: accountId || undefined,
           note: note || undefined,
-          occurredAt: new Date(occurredAt + "T00:00:00+05:00").toISOString(),
+          // A date input carries no time, so a plain parse stamps Tashkent
+          // midnight — and the capture confirmation then reads "bugun, 00:00"
+          // for an entry made at 18:23. When the chosen day IS today, use the
+          // real moment instead, exactly as the bot does for the word "today".
+          // Other days keep midnight: the hour is genuinely unknown there.
+          occurredAt:
+            occurredAt === tashkentDateStr(new Date().toISOString())
+              ? new Date().toISOString()
+              : new Date(occurredAt + "T00:00:00+05:00").toISOString(),
         };
 
         if (currency === "UZS") {
@@ -267,7 +294,7 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
             className="block text-xs font-medium mb-1.5"
             style={{ color: "var(--fg-muted)" }}
           >
-            {t("form.amount", lang)}
+            {editTx ? `${t("form.amount", lang)} (${CURRENCY_LABELS.UZS[lang]})` : t("form.amount", lang)}
           </label>
           <input
             type="text"
@@ -280,30 +307,34 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
             style={inputStyle}
           />
         </div>
-        <div style={{ minWidth: 100 }}>
-          <label
-            className="block text-xs font-medium mb-1.5"
-            style={{ color: "var(--fg-muted)" }}
-          >
-            {t("form.currency", lang)}
-          </label>
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value as SupportedCurrency)}
-            className={inputCls}
-            style={inputStyle}
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c} value={c}>
-                {CURRENCY_LABELS[c][lang]}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Edit mode always sends amountUzs (PATCH), so the currency picker would be
+            misleading — the row's actual currency can only be changed via a new capture. */}
+        {!editTx && (
+          <div style={{ minWidth: 100 }}>
+            <label
+              className="block text-xs font-medium mb-1.5"
+              style={{ color: "var(--fg-muted)" }}
+            >
+              {t("form.currency", lang)}
+            </label>
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as SupportedCurrency)}
+              className={inputCls}
+              style={inputStyle}
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {CURRENCY_LABELS[c][lang]}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* CBU note when foreign currency is selected */}
-      {currency !== "UZS" && (
+      {/* CBU note when foreign currency is selected (create mode only) */}
+      {!editTx && currency !== "UZS" && (
         <p className="text-xs -mt-2" style={{ color: "var(--fg-subtle)" }}>
           {t("more.currency_cbu_note", lang)}
         </p>

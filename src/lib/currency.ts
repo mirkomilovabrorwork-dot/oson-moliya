@@ -94,7 +94,8 @@ export function convertToUzs(
 }
 
 export interface TxAmountFields {
-  amountUzs: bigint;
+  /** null when the currency has no known rate — caller must refuse to save, never guess. */
+  amountUzs: bigint | null;
   originalCurrency: string | null;
   originalAmount: bigint | null;
 }
@@ -114,11 +115,17 @@ export function deriveTxAmountFields(
     return { amountUzs: BigInt(Math.round(amount)), originalCurrency: null, originalAmount: null };
   }
   const known = code === "USD" || code === "EUR" || code === "RUB";
-  const amountUzs = known
-    ? convertToUzs(amount, code as "USD" | "EUR" | "RUB", rates)
-    : BigInt(Math.round(amount));
+  if (!known) {
+    // No live rate for this currency — never invent one (would silently store
+    // the printed number as so'm, off by 10-1000x). Caller must refuse to save.
+    return {
+      amountUzs: null,
+      originalCurrency: code,
+      originalAmount: BigInt(Math.round(amount)),
+    };
+  }
   return {
-    amountUzs,
+    amountUzs: convertToUzs(amount, code as "USD" | "EUR" | "RUB", rates),
     originalCurrency: code,
     originalAmount: BigInt(Math.round(amount)),
   };

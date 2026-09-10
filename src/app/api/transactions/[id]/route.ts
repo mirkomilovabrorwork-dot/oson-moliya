@@ -106,6 +106,13 @@ export async function PATCH(
     }
   }
 
+  // A changed so'm amount on a foreign-currency row means the user stated a plain
+  // so'm figure — the old original-currency amount is now stale, clear it. Leave
+  // it alone when the amount wasn't actually changed (still sent every PATCH).
+  const amountChanged =
+    data.amountUzs !== undefined && data.amountUzs !== existing.amountUzs;
+  const clearOriginal = amountChanged && existing.originalCurrency != null;
+
   const updated = await prisma.transaction.update({
     where: { id, userId: user.id },
     data: {
@@ -115,6 +122,9 @@ export async function PATCH(
       note: data.note,
       occurredAt: data.occurredAt ? new Date(data.occurredAt) : undefined,
       ...(resolvedAccountId !== undefined ? { accountId: resolvedAccountId } : {}),
+      ...(clearOriginal
+        ? { originalCurrency: null, originalAmount: null, rateToUzs: null }
+        : {}),
     },
     include: { category: true },
   });

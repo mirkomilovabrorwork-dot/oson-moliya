@@ -59,7 +59,27 @@ time. It is fixed now; whether that brings anyone back is the open question, not
    6.7 s, i.e. it short-circuited before transcription. The capture home lays out as designed at
    375×812 (primary 343×72 px in the thumb zone, two 48 px secondaries, no horizontal overflow) and
    renders correctly in dark mode (bg `#0d1117`, green gradient primary, white label).
-   A **second blind review** is running. Nothing ships until it returns.
+   The **second blind review also said DO NOT SHIP** — and it was right to. All 7 original defects are
+   confirmed closed, but the repairs introduced 6 more, 5 of them CONFIRMED: `deriveTxAmountFields`
+   silently stored a receipt in an unknown currency at face value (a 15 000 KZT receipt → 15 000 so'm,
+   **off by 10-1000x**, and `tests/receipt-currency.test.ts` pinned the wrong number as intended); the
+   BOT's receipt path dropped `originalCurrency`/`originalAmount`; edit mode rendered a currency picker
+   it ignored, so "correcting" 1 265 000 to 100 wrote 100 so'm; editing moved the date a day back for
+   any capture made between 00:00 and 04:59 Tashkent and threw the time away; editing the so'm amount
+   of a foreign row left the stale original showing "$100" next to a different total; and `mountedRef`
+   was never reset, so React Strict Mode made `/capture` a permanent spinner **on the dev server only**
+   — which is why the repaired screen could not be driven locally.
+   The **third fix wave has landed** (typecheck exit 0, 171 tests) and a third review is running.
+   Three review rounds have now each found real money defects that green gates did not — the reviews
+   are the reason this has not shipped broken.
+   **Driven live in the browser after wave 3** (the dev server works again now that `mountedRef` is
+   reset): manual capture → "Saqlandi · −750 000 so'm · Boshqa · chiqim", header count "Bugun · 1";
+   "Bekor qilish" → row deleted, list back to 0, idle home with its empty state.
+   That drive found one more defect **I fixed myself**: a date input carries no time, so every manual
+   entry was stamped Tashkent midnight and the card read "bugun, 00:00" for an entry made at 21:23.
+   Create mode now sends the real moment when the chosen day is today (exactly what the bot does for
+   the word "today") and keeps midnight for other days — re-driven: stored `…T16:23:14Z`, card reads
+   "bugun, 21:23", correct for UTC+5.
    Also fixed in passing, found by live testing: `src/lib/serialize.ts` walked a `Date` into `{}`, so
    **every** API response returned empty dates — pre-existing, app-wide, now `toISOString()`.
 3. APK wrapper — **source complete** at `android/`, **but it cannot be built on this machine**: there
@@ -77,7 +97,16 @@ stay green.
 are settled — see Locked decisions — so it can resume any time without asking him again.
 
 ## Blockers
-None on my side.
+**Deploy is blocked on the owner, and only on him.** Measured 2026-09-10:
+- `vercel whoami` → **"Logged out."** The CLI cannot deploy until he runs `vercel login` (a browser
+  confirmation only he can complete — I must never enter his credentials).
+- **Pushing to GitHub does NOT deploy.** Checked with `gh api`: the repo has **zero** deployments and
+  no commit statuses, so the Vercel project is not wired to GitHub pushes despite the `VERCEL_GIT_*`
+  variables in the pulled env (those come from CLI deploys inferring git metadata). Do not assume a
+  push ships it.
+So the path is: he runs `vercel login`, then `npx vercel --prod --yes` **and then**
+`vercel alias set <new-url> oson-moliya.vercel.app` — the alias step is the one this project has
+skipped three times before, producing a green build the public could not see.
 
 ## OWNER TODO
 - _(none right now — the 2026-08-12 voice test is absorbed into the app work: v1 cannot pass its
@@ -154,8 +183,14 @@ these as "dismissed" because he answered in a different session — the answers 
   to return a row without `paidUzs`; the client splices that row into its list, so the next payment computed
   `BigInt(undefined)` and threw *outside* the try/catch — a silent no-save. Checked: Accounts and Categories
   do NOT have this bug (verified live, they handle it correctly) — do not "fix" working code there.
-- **CRLF churn is real here.** HEAD stores LF; Windows edits write CRLF and a 20-line change reads as 4000.
-  Compare `git diff --shortstat` against `git diff -w --shortstat` before every commit.
+- **CRLF churn — FIXED 2026-09-10, and the old note here was wrong.** It said "HEAD stores LF". It did
+  not: HEAD stored **MIXED** endings, with CRLF and LF lines inside the SAME tracked file, which is why
+  nothing ever matched cleanly in either direction. A `.gitattributes` (`* text=auto eol=lf`, binaries
+  marked, `.bat`/`.cmd` kept CRLF) plus `git add --renormalize` on the touched files settled it —
+  afterwards a 4-line edit to `src/lib/serialize.ts` read as exactly 4 lines. Files not yet touched
+  still carry their old endings and normalize the first time they are edited. Keep comparing
+  `git diff --shortstat` against `git diff -w --shortstat` before a commit; the pre-commit EOL guard
+  will also stop you.
 - **`.claude/gate.cmd` runs ONLY typecheck**, though CLAUDE.md promises typecheck + test + build. The
   pre-commit hook therefore checks less than it claims — run all three by hand. Also: after a fresh clone the
   hooks are INERT until `git config core.hooksPath .githooks`.
@@ -164,6 +199,12 @@ these as "dismissed" because he answered in a different session — the answers 
   have no fixed version. Revisit only when exceljs >4.4.0 or a stable Next ships postcss ≥8.5.10.
 
 ## Known and deliberately unfixed
+- **Only USD / EUR / RUB can be converted.** `src/lib/rates.ts` fetches the CBU feed, which carries
+  ~20 currencies, but narrows the result to those three and falls back to hardcoded approximations if
+  any is missing. After the 2026-09-10 fix, a receipt printed in KZT/CNY/TRY is therefore **refused
+  rather than guessed** — the user types it by hand. Widening `Rates` to a dictionary keyed by code is
+  cheap (the map at `rates.ts:64-70` already holds every currency the feed returns) and is the obvious
+  next step if he ever photographs a non-USD foreign receipt.
 - `src/lib/report/excel.ts:379` computes a column letter with `String.fromCharCode(64 + totalCols)` — breaks
   past 26 columns. Dormant (max 6 today).
 - The "📊 Hisobot" button path skips the `isRateLimited` check (the `/hisobot` command does not).

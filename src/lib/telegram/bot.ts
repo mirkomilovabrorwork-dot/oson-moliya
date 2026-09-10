@@ -2280,7 +2280,24 @@ export function createBot(): Bot {
         // Convert the printed amount to so'm at live CBU rates (receipt is
         // returned in its own currency, never pre-converted).
         const rates = await getRates();
-        const { amountUzs } = deriveTxAmountFields(result.amount, result.currency, rates);
+        const { amountUzs, originalCurrency, originalAmount } = deriveTxAmountFields(
+          result.amount,
+          result.currency,
+          rates
+        );
+
+        if (amountUzs === null) {
+          // The total WAS read; we simply have no rate for its currency. Saying
+          // "could not read the total" would be false and would send the user
+          // back for a clearer photo that cannot possibly help — so show what
+          // the receipt said and ask for the so'm figure instead.
+          await ctx.reply(
+            photoLabels.receiptUnknownCurrencyMsg
+              .replace("{amount}", String(result.amount ?? ""))
+              .replace("{currency}", String(result.currency ?? ""))
+          );
+          return;
+        }
 
         // Prepend a receipt header then delegate to the shared finalizeLog
         await ctx.reply(photoLabels.receiptHeader);
@@ -2294,6 +2311,8 @@ export function createBot(): Bot {
             category: result.category ?? null,
             dateStr: "today",
             note: result.note ?? null,
+            originalAmount: originalAmount != null ? Number(originalAmount) : null,
+            originalCurrency,
           },
           lang
         );
