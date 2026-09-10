@@ -69,7 +69,13 @@ time. It is fixed now; whether that brings anyone back is the open question, not
    of a foreign row left the stale original showing "$100" next to a different total; and `mountedRef`
    was never reset, so React Strict Mode made `/capture` a permanent spinner **on the dev server only**
    — which is why the repaired screen could not be driven locally.
-   The **third fix wave has landed** (typecheck exit 0, 171 tests) and a third review is running.
+   ✅ **The third review returned SHIP** — all six of its predecessor's findings closed, none of its
+   own findings corrupting money. Committed as `8fe27a3` (feature) and `5c7cce2` (the repairs).
+   Three review rounds each found real money defects that green gates did not; that is the whole
+   reason this did not ship broken. Its three residual notes were all handled before the commit: the
+   refusal now repeats back what the receipt said instead of asking for a clearer photo it cannot use,
+   the create-mode default date comes from the Tashkent day (the UTC one is still yesterday between
+   00:00 and 04:59), and the `start_url` change is named explicitly in the commit as scope.
    Three review rounds have now each found real money defects that green gates did not — the reviews
    are the reason this has not shipped broken.
    **Driven live in the browser after wave 3** (the dev server works again now that `mountedRef` is
@@ -109,9 +115,16 @@ So the path is: he runs `vercel login`, then `npx vercel --prod --yes` **and the
 skipped three times before, producing a green build the public could not see.
 
 ## OWNER TODO
-- _(none right now — the 2026-08-12 voice test is absorbed into the app work: v1 cannot pass its
-  done-criterion without a real spoken entry on his phone, so it will be tested there instead of asking
-  him to test the bot a sixth time.)_
+- **(since 2026-09-10) Vercel login — the ONE thing blocking the app from reaching his phone.**
+  Action: run `vercel login` in a terminal and confirm in the browser that opens.
+  What he will SEE: the terminal prints `Success! ... you are now logged in`.
+  Undo/valve: if it looks wrong, tell me — but note there is no alternative path; a GitHub push does
+  NOT deploy this project (verified with `gh api`: zero deployments, no commit statuses).
+  My verdict on the duty: **to'g'ri va zarur** — I must never type his credentials, and everything else
+  is already done and committed.
+- _(The 2026-08-12 bot voice test is absorbed into the app work: v1 cannot pass its done-criterion
+  without a real spoken entry on his phone, so it gets tested there rather than asking him a sixth
+  time.)_
 
 ## Open decisions — asked, NOT answered
 - **Admin panel — waiting on his "ha".** Plan was shown 2026-08-05, no reply. Agreed scope: see users +
@@ -234,11 +247,11 @@ server held a stale Prisma client and returned 500 on every capture until it was
 client regenerated. **A future schema change must apply the migration first, or ship a deploy step
 that does.**
 
-## ⚠️ TEMPORARY local env edits (2026-09-10) — undo before trusting a local run
-`.env.local` (gitignored) had four lines APPENDED so the app could be driven live in a browser:
-`ALLOW_INSECURE_DEV=1`, `APP_URL="http://localhost:3002"`, `CRON_SECRET="local-dev-only"`,
-`STT_PROVIDER="groq"`. The original file is backed up in this session's scratchpad.
-Two things a future session must know:
+## Local env — RESTORED, but read this before the next local run
+`.env.local` was temporarily given four extra lines so the app could be driven live in a browser
+(`ALLOW_INSECURE_DEV=1`, `APP_URL="http://localhost:3002"`, `CRON_SECRET="local-dev-only"`,
+`STT_PROVIDER="groq"`). **It has been restored to its original 34 lines** — so the next local run will
+fail again the same way unless you re-add them. Two things a future session must know:
 - **`CRON_SECRET` is REQUIRED by `src/lib/env.ts` but was missing from `.env.local`,** so `getEnv()`
   threw on every call and voice/receipt failed locally with a misleading `stt_failed`. That was an
   environment gap, not a code defect.
