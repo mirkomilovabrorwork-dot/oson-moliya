@@ -41,6 +41,9 @@
   --warning-fg: #ffffff;
   --warning-wash: #fbead0;
 
+  /* /capture STATE D success wash — see docs/plans/2026-09-10-android-one-step-capture.md */
+  --done-wash: #e6f6ec;
+
   --chart-1: #0e663c;
   --chart-2: #0b8f5a;
   --chart-3: #d98407;
@@ -104,6 +107,8 @@
   --warning: #f0a73a;
   --warning-fg: #2e1f04;
   --warning-wash: rgba(240, 167, 58, .13);
+
+  --done-wash: #0f2419;
 
   --chart-1: #2fbe76;
   --chart-2: #5fd3a0;

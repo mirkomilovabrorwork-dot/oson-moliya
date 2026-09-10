@@ -6,7 +6,8 @@ import { getEnv } from "../env";
 
 const ReceiptExtractSchema = z.object({
   found: z.boolean(),
-  amountUzs: z.number().int().nullable(),
+  amount: z.number().nullable(),
+  currency: z.string().nullable(),
   category: z.string().nullable(),
   note: z.string().nullable(),
 });
@@ -21,17 +22,22 @@ const RECEIPT_TOOL = {
     "Extract the grand total and category from a receipt or check image.",
   input_schema: {
     type: "object" as const,
-    required: ["found", "amountUzs", "category", "note"] as string[],
+    required: ["found", "amount", "currency", "category", "note"] as string[],
     properties: {
       found: {
         type: "boolean",
         description:
           "true if a clear grand total amount was found on the receipt, false otherwise.",
       },
-      amountUzs: {
-        type: ["integer", "null"],
+      amount: {
+        type: ["number", "null"],
         description:
-          "The GRAND TOTAL of the receipt in Uzbek so'm (integer). If the receipt is in another currency, convert at approximate current rates. If no total is found, return null.",
+          "The GRAND TOTAL exactly as printed on the receipt, in the receipt's own currency (no conversion). If no total is found, return null.",
+      },
+      currency: {
+        type: ["string", "null"],
+        description:
+          "The ISO currency code the total is printed in (e.g. \"UZS\", \"USD\", \"EUR\", \"RUB\"). Null if not determinable.",
       },
       category: {
         type: ["string", "null"],
@@ -67,7 +73,8 @@ export async function extractReceipt(
 ): Promise<ReceiptExtract> {
   const fallback: ReceiptExtract = {
     found: false,
-    amountUzs: null,
+    amount: null,
+    currency: null,
     category: null,
     note: null,
   };
@@ -86,9 +93,9 @@ export async function extractReceipt(
 ${catList}
 
 Rules:
-- amountUzs must be the GRAND TOTAL (bottom line), not a line item.
-- If receipt is in USD/EUR/RUB, convert to so'm at approximate rates (1 USD ≈ 12800 UZS, 1 EUR ≈ 14000 UZS, 1 RUB ≈ 142 UZS) and return the UZS integer.
-- If the image is not a receipt or no total is readable, return found=false, amountUzs=null.
+- amount must be the GRAND TOTAL (bottom line) exactly as printed on the receipt, in the receipt's own currency. Do NOT convert it.
+- currency must be the ISO code of that printed currency (e.g. UZS, USD, EUR, RUB).
+- If the image is not a receipt or no total is readable, return found=false, amount=null, currency=null.
 - note: merchant name or very short description (max 5 words). Null if unclear.
 - Always call the extract_receipt tool. Never reply in plain text.`;
 

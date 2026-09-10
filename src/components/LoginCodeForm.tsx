@@ -6,6 +6,9 @@ import { t, type LangCode } from "@/lib/i18n/translate";
 
 type Props = {
   lang: LangCode;
+  /** Where to send the user after a successful code, e.g. "/capture" when the first
+   *  visit to /capture bounced through /login. Falls back to the server's own default. */
+  next?: string;
 };
 
 type CodeResponse = {
@@ -14,7 +17,7 @@ type CodeResponse = {
   redirectTo?: string;
 };
 
-export function LoginCodeForm({ lang }: Props) {
+export function LoginCodeForm({ lang, next }: Props) {
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -37,7 +40,7 @@ export function LoginCodeForm({ lang }: Props) {
       const res = await fetch("/api/auth/code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: normalized }),
+        body: JSON.stringify({ code: normalized, next }),
       });
       const data = (await res.json()) as CodeResponse;
 

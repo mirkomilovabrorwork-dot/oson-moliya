@@ -40,6 +40,8 @@ function mimeFromFilename(filename: string): string {
       return "audio/mp4";
     case "wav":
       return "audio/wav";
+    case "webm":
+      return "audio/webm";
     case "ogg":
     case "oga":
     default:

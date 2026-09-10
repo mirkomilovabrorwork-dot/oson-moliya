@@ -93,6 +93,37 @@ export function convertToUzs(
   return BigInt(Math.round(amount * rate));
 }
 
+export interface TxAmountFields {
+  amountUzs: bigint;
+  originalCurrency: string | null;
+  originalAmount: bigint | null;
+}
+
+/**
+ * Turns a receipt/voice extraction's printed amount + currency into the
+ * fields a Transaction row stores: converted so'm, plus the original
+ * currency/amount for a foreign receipt (both null for a plain UZS one).
+ */
+export function deriveTxAmountFields(
+  amount: number,
+  currency: string | null | undefined,
+  rates: Rates
+): TxAmountFields {
+  const code = (currency ?? "UZS").toUpperCase();
+  if (code === "UZS") {
+    return { amountUzs: BigInt(Math.round(amount)), originalCurrency: null, originalAmount: null };
+  }
+  const known = code === "USD" || code === "EUR" || code === "RUB";
+  const amountUzs = known
+    ? convertToUzs(amount, code as "USD" | "EUR" | "RUB", rates)
+    : BigInt(Math.round(amount));
+  return {
+    amountUzs,
+    originalCurrency: code,
+    originalAmount: BigInt(Math.round(amount)),
+  };
+}
+
 /** Space-group an integer string (e.g. 1234567 → "1 234 567"). */
 function spaceGroup(n: number): string {
   const parts: string[] = [];

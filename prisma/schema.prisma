@@ -90,6 +90,7 @@ model Transaction {
   occurredAt       DateTime
   source           String    @default("bot")
   rateToUzs        Float?    // entry-time so'm per 1 unit of originalCurrency; null for UZS / legacy
+  captureId        String?   @unique // client-generated idempotency key for /capture saves; null for bot-sourced rows
   deletedAt        DateTime?
   createdAt        DateTime  @default(now())
   recurringRuleId  String?

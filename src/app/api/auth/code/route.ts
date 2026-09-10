@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { safeNextPath } from "@/lib/http/safe-next";
 import { consumeMagicToken } from "@/lib/auth/token";
 import { createSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -46,9 +47,12 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   let code = "";
+  let next: string | undefined;
   try {
-    const body = (await request.json()) as { code?: unknown };
+    const body = (await request.json()) as { code?: unknown; next?: unknown };
     code = String(body.code ?? "").replace(/\D/g, "");
+    // Internal path only — never let a client-supplied value redirect off-site.
+    next = safeNextPath(body.next);
   } catch {
     return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
   }
@@ -72,6 +76,6 @@ export async function POST(request: Request): Promise<Response> {
 
   return NextResponse.json({
     ok: true,
-    redirectTo: txCount === 0 ? "/onboarding" : "/",
+    redirectTo: next ?? (txCount === 0 ? "/onboarding" : "/"),
   });
 }

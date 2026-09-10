@@ -16,12 +16,25 @@ interface AccountOption {
 interface QuickAddFormProps {
   lang: LangCode;
   categories: Array<{ id: string; name: string; type: string; emoji: string | null }>;
-  onSuccess?: () => void;
+  /** Called after a successful save. Receives the created/updated transaction (serialized, with
+   *  its `category` relation) when the caller wants to render it (e.g. /capture's Done
+   *  card) — existing callers that ignore the argument keep working unchanged. */
+  onSuccess?: (tx?: Record<string, unknown>) => void;
   /** Default main currency for the currency picker (from user settings). Defaults to UZS. */
   mainCurrency?: SupportedCurrency;
   /** When true, renders without the outer card chrome (background/border/rounded/padding)
    *  and without the inner <h3> title. Use inside AddSheet which already provides a header. */
   bare?: boolean;
+  /** When set, the form edits this existing transaction instead of creating a new one:
+   *  fields are pre-filled from it and submit sends PATCH /api/transactions/[id]. */
+  editTx?: {
+    id: string;
+    type: "income" | "expense";
+    amountUzs: string;
+    categoryId?: string | null;
+    note?: string | null;
+    occurredAt: string;
+  } | null;
 }
 
 const CURRENCIES: SupportedCurrency[] = ["UZS", "USD", "EUR", "RUB"];
@@ -33,25 +46,28 @@ const CURRENCY_LABELS: Record<SupportedCurrency, Record<LangCode, string>> = {
   RUB: { uz: "RUB ₽", ru: "RUB ₽", en: "RUB ₽" },
 };
 
-export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS", bare = false }: QuickAddFormProps) {
-  const [type, setType] = useState<"income" | "expense">("expense");
-  const [amount, setAmount] = useState("");
+export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS", bare = false, editTx = null }: QuickAddFormProps) {
+  const [type, setType] = useState<"income" | "expense">(editTx?.type ?? "expense");
+  const [amount, setAmount] = useState(editTx ? editTx.amountUzs : "");
   const [currency, setCurrency] = useState<SupportedCurrency>(mainCurrency);
-  const [categoryId, setCategoryId] = useState("");
+  const [categoryId, setCategoryId] = useState(editTx?.categoryId ?? "");
   const [accountId, setAccountId] = useState("");
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(editTx?.note ?? "");
   // A4: Initialize to empty string to avoid SSR/client mismatch (hydration fix).
   // A useEffect sets today's date on mount so the field still defaults to today.
-  const [occurredAt, setOccurredAt] = useState("");
+  const [occurredAt, setOccurredAt] = useState(editTx ? editTx.occurredAt.slice(0, 10) : "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   // A4: Set today's date on mount (client-side only) to avoid SSR/hydration mismatch.
+  // Edit mode already pre-fills the transaction's own date — skip the today-default.
   useEffect(() => {
+    if (editTx) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- date must be client-only to avoid SSR/hydration mismatch
     setOccurredAt(new Date().toISOString().slice(0, 10));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only
   }, []);
 
   // Lazy-load accounts once on mount
@@ -86,44 +102,64 @@ export function QuickAddForm({ lang, categories, onSuccess, mainCurrency = "UZS"
     try {
       const cleanAmount = amount.replace(/[\s ,]/g, "");
 
-      // Build request body based on currency
-      const body: Record<string, unknown> = {
-        type,
-        categoryId: categoryId || undefined,
-        accountId: accountId || undefined,
-        note: note || undefined,
-        occurredAt: new Date(occurredAt + "T00:00:00+05:00").toISOString(),
-      };
-
-      if (currency === "UZS") {
-        // Legacy path: send amountUzs as integer string
-        body.amountUzs = cleanAmount;
+      let res: Response;
+      if (editTx) {
+        // Edit mode: PATCH the existing transaction. The PATCH route only accepts
+        // amountUzs (no multi-currency fields), so send the amount as-is.
+        res = await fetch(`/api/transactions/${editTx.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type,
+            amountUzs: cleanAmount,
+            categoryId: categoryId || null,
+            note: note || null,
+            occurredAt: new Date(occurredAt + "T00:00:00+05:00").toISOString(),
+          }),
+        });
       } else {
-        // Multi-currency path: send nativeAmount + currency
-        body.nativeAmount = cleanAmount;
-        body.currency = currency;
+        // Build request body based on currency
+        const body: Record<string, unknown> = {
+          type,
+          categoryId: categoryId || undefined,
+          accountId: accountId || undefined,
+          note: note || undefined,
+          occurredAt: new Date(occurredAt + "T00:00:00+05:00").toISOString(),
+        };
+
+        if (currency === "UZS") {
+          // Legacy path: send amountUzs as integer string
+          body.amountUzs = cleanAmount;
+        } else {
+          // Multi-currency path: send nativeAmount + currency
+          body.nativeAmount = cleanAmount;
+          body.currency = currency;
+        }
+
+        res = await fetch("/api/transactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
       }
 
-      const res = await fetch("/api/transactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(
           (data as { error?: string }).error || t("error.generic", lang)
         );
       }
 
-      setAmount("");
-      setCategoryId("");
-      setAccountId("");
-      setNote("");
+      if (!editTx) {
+        setAmount("");
+        setCategoryId("");
+        setAccountId("");
+        setNote("");
+      }
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-      onSuccess?.();
+      onSuccess?.(data as Record<string, unknown>);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : t("error.generic", lang)

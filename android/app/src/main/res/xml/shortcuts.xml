@@ -1,0 +1,35 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="voice"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_voice"
+        android:shortcutLongLabel="@string/shortcut_voice">
+        <intent
+            android:action="uz.osonmoliya.app.CAPTURE_VOICE"
+            android:targetPackage="uz.osonmoliya.app"
+            android:targetClass="uz.osonmoliya.app.WebViewActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="photo"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_photo"
+        android:shortcutLongLabel="@string/shortcut_photo">
+        <intent
+            android:action="uz.osonmoliya.app.CAPTURE_PHOTO"
+            android:targetPackage="uz.osonmoliya.app"
+            android:targetClass="uz.osonmoliya.app.WebViewActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="text"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_text"
+        android:shortcutLongLabel="@string/shortcut_text">
+        <intent
+            android:action="uz.osonmoliya.app.CAPTURE_TEXT"
+            android:targetPackage="uz.osonmoliya.app"
+            android:targetClass="uz.osonmoliya.app.WebViewActivity" />
+    </shortcut>
+</shortcuts>

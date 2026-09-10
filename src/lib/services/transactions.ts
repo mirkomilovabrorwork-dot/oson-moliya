@@ -22,6 +22,8 @@ export interface CreateTransactionInput {
   note?: string | null;
   occurredAt?: Date;
   source?: string;
+  /** Client-generated idempotency key for /capture saves. Undefined for bot-sourced rows. */
+  captureId?: string | null;
 }
 
 export async function createTransaction(input: CreateTransactionInput) {
@@ -39,7 +41,28 @@ export async function createTransaction(input: CreateTransactionInput) {
       note: input.note ?? null,
       occurredAt: input.occurredAt ?? new Date(),
       source: input.source ?? "bot",
+      captureId: input.captureId ?? null,
     },
+    include: { category: true },
+  });
+}
+
+/** True when `err` is a Prisma unique-constraint violation (P2002) — used to
+ * detect a concurrent captureId retry racing this request's own insert. */
+export function isUniqueCaptureIdViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: unknown }).code === "P2002"
+  );
+}
+
+/** Looks up a previously-saved transaction by its client-generated captureId, for this user. */
+export async function findTransactionByCaptureId(userId: string, captureId: string) {
+  const prisma = db as import("@prisma/client").PrismaClient;
+  return prisma.transaction.findFirst({
+    where: { userId, captureId },
     include: { category: true },
   });
 }

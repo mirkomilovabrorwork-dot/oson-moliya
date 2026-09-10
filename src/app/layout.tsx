@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Lora } from "next/font/google";
 import Script from "next/script";
 import { TelegramBackButton } from "@/components/TelegramBackButton";
@@ -23,6 +23,18 @@ const lora = Lora({
 export const metadata: Metadata = {
   title: "Oson Moliya — Biznes moliyasi",
   description: "Biznesingiz kirim va chiqimlarini kuzating. Telegram orqali yozing — biz qayd qilamiz.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Oson Moliya", statusBarStyle: "default" },
+};
+
+// Installed-app chrome: the Android status bar takes theme_color, and viewportFit
+// "cover" keeps the layout under the gesture bar instead of letterboxing it.
+// Zoom is deliberately NOT disabled — capping user scaling breaks accessibility.
+export const viewport: Viewport = {
+  themeColor: "#15803d",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

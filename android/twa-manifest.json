@@ -1,0 +1,50 @@
+{
+  "packageId": "app.netlify.readwiser.highlights",
+  "host": "readwiser.netlify.app",
+  "name": "Highlights",
+  "launcherName": "Highlights",
+  "display": "standalone",
+  "themeColor": "#0F1115",
+  "themeColorDark": "#000000",
+  "navigationColor": "#0F1115",
+  "navigationColorDark": "#0F1115",
+  "navigationDividerColor": "#0F1115",
+  "navigationDividerColorDark": "#0F1115",
+  "backgroundColor": "#0F1115",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://readwiser.netlify.app/icons/icon-512.png",
+  "maskableIconUrl": "https://readwiser.netlify.app/icons/icon-512.png",
+  "monochromeIconUrl": "",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "highlights.keystore",
+    "alias": "highlights"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 2,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://readwiser.netlify.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://readwiser.netlify.app/",
+  "minSdkVersion": 19,
+  "orientation": "portrait",
+  "fingerprints": [
+    {
+      "type": "SHA256",
+      "value": "02:10:C6:D2:55:1E:6E:70:3E:37:8A:AA:9C:0C:67:BD:2D:B3:0B:07:D6:EF:A9:95:BF:B6:5C:0D:77:6E:F6:96"
+    }
+  ],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "displayOverride": [],
+  "appVersion": "1.0.0"
+}

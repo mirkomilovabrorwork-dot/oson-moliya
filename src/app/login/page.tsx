@@ -1,11 +1,20 @@
 import { cookies } from "next/headers";
+import { safeNextPath } from "@/lib/http/safe-next";
 import { t, type LangCode } from "@/lib/i18n";
 import { LangSwitcher } from "@/components/LangSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TelegramBootstrap } from "@/components/TelegramBootstrap";
 import { LoginCodeForm } from "@/components/LoginCodeForm";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  // Only allow an internal path — never redirect off-site from an untrusted query param.
+  const safeNext = safeNextPath(next);
+
   let lang: LangCode = "uz";
   try {
     const cookieStore = await cookies();
@@ -124,7 +133,7 @@ export default async function LoginPage() {
           <h2 className="text-base font-semibold" style={{ color: "var(--fg)" }}>
             {t("login.code.title", lang)}
           </h2>
-          <LoginCodeForm lang={lang} />
+          <LoginCodeForm lang={lang} next={safeNext} />
         </div>
 
         {/* CTA */}

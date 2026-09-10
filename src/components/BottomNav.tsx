@@ -43,6 +43,17 @@ function IconDebts() {
   );
 }
 
+function IconCapture() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {/* Mic — "Yozish" / one-step capture entry point */}
+      <rect x="9" y="2" width="6" height="12" rx="3"/>
+      <path d="M5 10v1a7 7 0 0 0 14 0v-1"/>
+      <path d="M12 18v4M8 22h8"/>
+    </svg>
+  );
+}
+
 function IconMore() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -57,6 +68,7 @@ function IconMore() {
 const tabs = [
   { href: "/", labelKey: "nav.home", Icon: IconHome },
   { href: "/transactions", labelKey: "nav.transactions", Icon: IconTransactions },
+  { href: "/capture", labelKey: "nav.capture", Icon: IconCapture },
   { href: "/debts", labelKey: "nav.debts", Icon: IconDebts },
   { href: "/more", labelKey: "nav.more", Icon: IconMore },
 ] as const;
@@ -69,7 +81,7 @@ export function BottomNav({ lang }: BottomNavProps) {
 
   return (
     <nav
-      className="sm:hidden fixed left-3 right-3 z-40 grid grid-cols-4 items-stretch"
+      className="sm:hidden fixed left-3 right-3 z-40 grid grid-cols-5 items-stretch"
       style={{
         bottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
         background: "var(--surface-elevated)",

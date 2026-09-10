@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_voice">Ovoz</string>
+    <string name="shortcut_photo">Chek</string>
+    <string name="shortcut_text">Yoz</string>
+</resources>

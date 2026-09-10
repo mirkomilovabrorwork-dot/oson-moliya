@@ -1,0 +1,53 @@
+plugins {
+    id 'com.android.application'
+}
+
+def appManifest = [
+    applicationId: 'uz.osonmoliya.app',
+    hostName: 'oson-moliya.vercel.app',
+    name: 'Oson Moliya',
+    launcherName: 'Oson Moliya',
+    themeColor: '#111110',
+    themeColorDark: '#000000',
+]
+
+android {
+    compileSdkVersion 34
+    namespace "uz.osonmoliya.app"
+    defaultConfig {
+        applicationId "uz.osonmoliya.app"
+        minSdkVersion 21
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+
+        resValue "string", "appName", appManifest.name
+        resValue "string", "launcherName", appManifest.launcherName
+        resValue "string", "hostName", appManifest.hostName
+        resValue "color", "colorPrimary", appManifest.themeColor
+        resValue "color", "colorPrimaryDark", appManifest.themeColorDark
+        resValue "string", "providerAuthority", appManifest.applicationId + '.fileprovider'
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lintOptions {
+        checkReleaseBuilds false
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'androidx.core:core:1.9.0'
+}

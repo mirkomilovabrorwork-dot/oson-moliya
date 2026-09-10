@@ -1,0 +1,31 @@
+# Line endings — normalized 2026-09-10.
+#
+# Before this file, the repository stored MIXED endings: individual tracked files
+# contained both CRLF and LF lines, so every Windows edit re-wrote whole files and a
+# 4-line change read as 21 changed lines. An unreviewable diff is an unreviewed diff.
+#
+# Everything text is stored LF in git and checked out LF. Binaries are marked so git
+# never touches their bytes.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.webm binary
+*.oga binary
+*.ogg binary
+*.jar binary
+*.keystore binary
+*.apk binary
+*.aab binary
+*.xlsx binary
+*.pdf binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+
+# Windows-only scripts must keep CRLF or cmd.exe mis-parses them.
+*.bat text eol=crlf
+*.cmd text eol=crlf

@@ -25,9 +25,12 @@ import { downloadTelegramFile } from "./download";
 import { runAggregation } from "../services/analytics";
 import type { FinanceQuery } from "../types";
 import { extractReceipt } from "../claude/receipt";
+import { getRates } from "../rates";
+import { deriveTxAmountFields } from "../currency";
 import { buildMonthlyReportXlsx } from "../report/excel";
 import { InputFile } from "grammy";
 import { getTashkentNow } from "../dates";
+import { dateStringToUtc } from "../capture/occurred-at";
 
 // ── Per-user rate limiter (in-memory, sliding window) ────────────────────────
 // Guards brain calls: 20 AI messages per 10 minutes per Telegram user.
@@ -88,17 +91,8 @@ function isVoiceRateLimited(telegramUserId: number): boolean {
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
 // NOTE: getTashkentDateString was kept in brain.ts; it is not needed here.
-
-function dateStringToUtc(dateStr: string): Date {
-  if (dateStr === "today" || !dateStr) return new Date();
-  if (dateStr === "yesterday") {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - 1);
-    return d;
-  }
-  const parsed = new Date(dateStr + "T00:00:00+05:00");
-  return isNaN(parsed.getTime()) ? new Date() : parsed;
-}
+// dateStringToUtc now lives in src/lib/capture/occurred-at.ts (shared with the
+// capture API routes).
 
 // ── finalizeLog: shared log-completion helper (text path + callback path) ────
 //
@@ -2282,7 +2276,12 @@ export function createBot(): Bot {
         lang,
       });
 
-      if (result.found && result.amountUzs && result.amountUzs > 0) {
+      if (result.found && result.amount && result.amount > 0) {
+        // Convert the printed amount to so'm at live CBU rates (receipt is
+        // returned in its own currency, never pre-converted).
+        const rates = await getRates();
+        const { amountUzs } = deriveTxAmountFields(result.amount, result.currency, rates);
+
         // Prepend a receipt header then delegate to the shared finalizeLog
         await ctx.reply(photoLabels.receiptHeader);
         await finalizeLog(
@@ -2290,7 +2289,7 @@ export function createBot(): Bot {
           photoUser,
           prisma,
           {
-            amount: result.amountUzs,
+            amount: Number(amountUzs),
             txType: TxType.expense,
             category: result.category ?? null,
             dateStr: "today",

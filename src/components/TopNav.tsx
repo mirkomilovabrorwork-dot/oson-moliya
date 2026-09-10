@@ -15,6 +15,7 @@ export function TopNav({ lang }: TopNavProps) {
   const navLinks = [
     { href: "/", label: t("nav.home", lang) },
     { href: "/transactions", label: t("nav.transactions", lang) },
+    { href: "/capture", label: t("nav.capture", lang) },
     { href: "/debts", label: t("nav.debts", lang) },
     { href: "/more", label: t("nav.more", lang) },
   ];

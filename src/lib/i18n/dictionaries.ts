@@ -11,6 +11,7 @@ const uz: Dictionary = {
   "nav.logout": "Chiqish",
   "nav.theme": "Mavzu",
   "nav.home": "Bosh sahifa",
+  "nav.capture": "Yozish",
   "nav.debts": "Qarzlar",
   "nav.more": "Yana",
   // ── Theme
@@ -433,6 +434,7 @@ const ru: Dictionary = {
   "nav.logout": "Выйти",
   "nav.theme": "Тема",
   "nav.home": "Главная",
+  "nav.capture": "Запись",
   "nav.debts": "Долги",
   "nav.more": "Ещё",
   // ── Theme
@@ -854,6 +856,7 @@ const en: Dictionary = {
   "nav.logout": "Logout",
   "nav.theme": "Theme",
   "nav.home": "Home",
+  "nav.capture": "Capture",
   "nav.debts": "Debts",
   "nav.more": "More",
   // ── Theme
