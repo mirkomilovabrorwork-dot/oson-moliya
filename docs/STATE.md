@@ -88,7 +88,12 @@ time. It is fixed now; whether that brings anyone back is the open question, not
    "bugun, 21:23", correct for UTC+5.
    Also fixed in passing, found by live testing: `src/lib/serialize.ts` walked a `Date` into `{}`, so
    **every** API response returned empty dates — pre-existing, app-wide, now `toISOString()`.
-3. APK wrapper — **source complete** at `android/`, **but it cannot be built on this machine**: there
+3. ✅ **APK now builds on GitHub (2026-09-27, owner's idea):** workflow `.github/workflows/android-apk.yml`
+   (run 36299772375 = success) produces `app-debug.apk` (1.4 MB, artifact `oson-moliya-apk`) — no local
+   SDK needed. Debug-signed: a later rebuild may need uninstall-then-install until a fixed release key
+   exists (repo is PUBLIC, so the key must live in a GitHub secret, never in git). **The APK opens
+   `/capture`, which is 404 live until the Vercel deploy — installing it before the deploy shows an error.**
+   Older note: APK wrapper — **source complete** at `android/`, **but it cannot be built on this machine**: there
    is no JDK and no Android SDK here (the Takrorla plan describes the pre-reinstall laptop). Building
    needs ~1.5 GB of tooling installed first. **Not on the critical path** — the site is already
    installable as a PWA, which on Android gives a real home-screen icon, its own window, working
@@ -105,7 +110,7 @@ are settled — see Locked decisions — so it can resume any time without askin
 ## Blockers
 **Re-checked 2026-09-27:** `vercel whoami` still "Logged out"; live `https://oson-moliya.vercel.app/capture`
 returns **404** (the app is NOT deployed); `main` is **ahead of origin by 3** (8fe27a3, 5c7cce2, d4126c9 —
-unpushed, push to main needs owner approval). New since 09-10: a **JDK 17 now exists** (Eclipse Adoptium),
+pushed 2026-09-27 with owner's yes). New since 09-10: a **JDK 17 now exists** (Eclipse Adoptium),
 but there is still **no Android SDK** (`ANDROID_HOME` empty, no `%LOCALAPPDATA%\Android\Sdk`).
 **Deploy is blocked on the owner, and only on him.** Measured 2026-09-10:
 - `vercel whoami` → **"Logged out."** The CLI cannot deploy until he runs `vercel login` (a browser
@@ -282,3 +287,5 @@ fail again the same way unless you re-add them. Two things a future session must
 - 2026-09-10 [Nega app] Telegram bot NEGA yetmayapti? (bittadan ko'p tanlash mumkin) -> **2stap menga 1step kerak**
 - 2026-09-10 [Bot taqdiri] Telegram bot qolsinmi yoki app uni almashtirsinmi? -> **Faqat app qolsin, bot o'chsin**
 - 2026-09-10 [Birinchi ekran] Appni ochganda BIRINCHI nima ko'rinsin? -> **chuqurroq oylab yechim top yoki fabel 5.1ga yechim topdir creativroq bu**
+- 2026-09-27 [GitHub] Oxirgi ishlarni GitHub'ga yuklaymi? Bu zaxira nusxa bo'ladi. Saytni o'zgartirmaydi. -> **Ha, yukla (Tavsiya)**
+- 2026-09-27 [APK] Haqiqiy APK uchun Android SDK o'rnataymi? U ~1.5 GB joy oladi, saytni chiqarishga esa kerak emas. -> **github bn qilish mumkinku**
