@@ -1,7 +1,7 @@
 # PulTrack / Oson Moliya — resume board
 
 _Trigger words: "pultrack", "pul track", "oson moliya". Source of truth for resume._
-_Last updated: **2026-09-10** (owner redirect → Android app). History → `docs/STATE_ARCHIVE.md` (nothing
+_Last updated: **2026-09-27** (status re-check); prior **2026-09-10** (owner redirect → Android app). History → `docs/STATE_ARCHIVE.md` (nothing
 deleted). Deploys → `docs/DEPLOY_LOG.md`._
 
 ## GOAL — what "done" looks like
@@ -103,6 +103,10 @@ stay green.
 are settled — see Locked decisions — so it can resume any time without asking him again.
 
 ## Blockers
+**Re-checked 2026-09-27:** `vercel whoami` still "Logged out"; live `https://oson-moliya.vercel.app/capture`
+returns **404** (the app is NOT deployed); `main` is **ahead of origin by 3** (8fe27a3, 5c7cce2, d4126c9 —
+unpushed, push to main needs owner approval). New since 09-10: a **JDK 17 now exists** (Eclipse Adoptium),
+but there is still **no Android SDK** (`ANDROID_HOME` empty, no `%LOCALAPPDATA%\Android\Sdk`).
 **Deploy is blocked on the owner, and only on him.** Measured 2026-09-10:
 - `vercel whoami` → **"Logged out."** The CLI cannot deploy until he runs `vercel login` (a browser
   confirmation only he can complete — I must never enter his credentials).
