@@ -1,0 +1,30 @@
+name: Android APK
+
+# Builds the WebView wrapper in android/ on GitHub's runner (it ships the Android SDK),
+# so no local SDK is needed. Output: a debug-signed APK as a downloadable artifact.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["android/**", ".github/workflows/android-apk.yml"]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      # local.properties points at the old laptop's SDK; the runner's ANDROID_HOME must win.
+      - run: rm -f local.properties && chmod +x gradlew
+      - run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oson-moliya-apk
+          path: android/app/build/outputs/apk/debug/*.apk
